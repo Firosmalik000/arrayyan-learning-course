@@ -10,10 +10,16 @@ ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
  && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
+# Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 WORKDIR /var/www/html
 COPY . .
 
-# IMPORTANT: di repo yang kamu copy ke VPS harus SUDAH ADA vendor/ dan public/build
+# Install vendor (WAJIB supaya artisan & index.php nggak error)
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Cache Laravel (kalau env belum siap, tetap lanjut)
 RUN php artisan config:cache || true \
  && php artisan route:cache || true \
  && php artisan view:cache || true
