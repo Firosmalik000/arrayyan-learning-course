@@ -18,14 +18,14 @@ export default function AdminLayout({ children }) {
             <div className="flex min-h-screen">
                 <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white px-4 py-6 md:flex">
                     <Link href="/admin" className="flex items-center gap-3 px-2">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-700 text-white shadow">
                             <span className="text-sm font-bold">ALC</span>
                         </div>
                         <div>
                             <p className="text-sm font-semibold">
                                 Admin Panel
                             </p>
-                            <p className="text-xs text-emerald-600">
+                            <p className="text-xs text-violet-600">
                                 Ar Rayyan LC
                             </p>
                         </div>
@@ -39,7 +39,7 @@ export default function AdminLayout({ children }) {
                                     href={item.href}
                                     className={`flex items-center justify-between rounded-xl px-3 py-2 transition ${
                                         isActive
-                                            ? 'bg-emerald-50 text-emerald-700'
+                                            ? 'bg-violet-50 text-violet-700'
                                             : 'hover:bg-slate-100'
                                     }`}
                                 >
@@ -69,7 +69,7 @@ export default function AdminLayout({ children }) {
                                     admin@alclearning.id
                                 </p>
                             </div>
-                            <div className="h-10 w-10 rounded-full bg-emerald-200" />
+                            <div className="h-10 w-10 rounded-full bg-amber-200" />
                         </div>
                     </header>
 

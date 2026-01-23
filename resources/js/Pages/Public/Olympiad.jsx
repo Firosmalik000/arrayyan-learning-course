@@ -54,7 +54,7 @@ export default function Olympiad() {
                 />
             </Head>
 
-            <section className="bg-gradient-to-br from-slate-50 via-white to-emerald-50 py-16 alc-pattern">
+            <section className="bg-gradient-to-br from-violet-50 via-white to-amber-50 py-16 alc-pattern">
                 <div className="mx-auto w-full max-w-6xl px-6">
                     <SectionTitle
                         eyebrow="Prestasi"
@@ -82,7 +82,7 @@ export default function Olympiad() {
                                             {event.level}
                                         </p>
                                     </div>
-                                    <span className="rounded-full bg-emerald-100/60 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                    <span className="rounded-full bg-amber-100/70 px-3 py-1 text-xs font-semibold text-amber-700">
                                         {event.category}
                                     </span>
                                 </div>

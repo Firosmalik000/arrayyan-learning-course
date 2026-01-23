@@ -5,7 +5,7 @@ export default function SectionTitle({ eyebrow, title, subtitle, align = 'left' 
     return (
         <div className={`flex flex-col gap-3 ${alignClass}`}>
             {eyebrow ? (
-                <span className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-600">
+                <span className="text-xs font-semibold uppercase tracking-[0.35em] text-violet-600">
                     {eyebrow}
                 </span>
             ) : null}

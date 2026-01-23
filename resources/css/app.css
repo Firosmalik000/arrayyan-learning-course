@@ -27,15 +27,15 @@
 
 @layer utilities {
     .alc-pattern {
-        background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='96'%20height='96'%20viewBox='0%200%2096%2096'%20fill='none'%3E%3Cpath%20d='M48%206L56%2036L86%2048L56%2060L48%2090L40%2060L10%2048L40%2036Z'%20stroke='%23059669'%20stroke-opacity='0.12'%20stroke-width='1'/%3E%3C/svg%3E"),
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='96'%20height='96'%20viewBox='0%200%2096%2096'%20fill='none'%3E%3Cpath%20d='M48%206L56%2036L86%2048L56%2060L48%2090L40%2060L10%2048L40%2036Z'%20stroke='%235b2a86'%20stroke-opacity='0.12'%20stroke-width='1'/%3E%3C/svg%3E"),
             radial-gradient(
                 circle at top,
-                rgba(16, 185, 129, 0.16),
+                rgba(91, 42, 134, 0.18),
                 transparent 55%
             ),
             radial-gradient(
                 circle at 25% 80%,
-                rgba(56, 189, 248, 0.12),
+                rgba(245, 175, 50, 0.18),
                 transparent 60%
             );
         background-size: 96px 96px, auto, auto;
@@ -47,6 +47,6 @@
     }
 
     .alc-glow {
-        box-shadow: 0 28px 80px -40px rgba(8, 145, 178, 0.45);
+        box-shadow: 0 28px 80px -40px rgba(88, 28, 135, 0.4);
     }
 }

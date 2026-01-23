@@ -7,7 +7,7 @@ export default function Register() {
     const { language } = useI18n();
     const flashSuccess = props.flash?.success;
     const inputClass =
-        'w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100';
+        'w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-200';
 
     const studentForm = useForm({
         student_name: '',
@@ -59,7 +59,7 @@ export default function Register() {
                 />
             </Head>
 
-            <section className="bg-gradient-to-br from-emerald-50 via-white to-sky-50 py-16 alc-pattern">
+            <section className="bg-gradient-to-br from-violet-50 via-white to-amber-50 py-16 alc-pattern">
                 <div className="mx-auto w-full max-w-6xl px-6">
                     <SectionTitle
                         eyebrow="Join ALC"
@@ -68,7 +68,7 @@ export default function Register() {
                     />
 
                     {flashSuccess ? (
-                        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-700">
+                        <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-700">
                             {flashSuccess}
                         </div>
                     ) : null}
@@ -82,7 +82,7 @@ export default function Register() {
                                     onSuccess: () => studentForm.reset(),
                                 });
                             }}
-                            className="rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow-sm"
+                            className="rounded-3xl border border-violet-100/70 bg-white/90 p-6 shadow-sm"
                         >
                             <h3 className="font-display text-lg font-semibold text-slate-800">
                                 {text.studentTitle}
@@ -184,7 +184,7 @@ export default function Register() {
                             <button
                                 type="submit"
                                 disabled={studentForm.processing}
-                                className="mt-6 w-full rounded-full bg-gradient-to-r from-emerald-500 to-sky-500 px-6 py-3 text-sm font-semibold text-white shadow transition hover:from-emerald-600 hover:to-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="mt-6 w-full rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-6 py-3 text-sm font-semibold text-white shadow transition hover:from-violet-800 hover:to-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {text.submitStudent}
                             </button>
@@ -198,7 +198,7 @@ export default function Register() {
                                     onSuccess: () => teacherForm.reset(),
                                 });
                             }}
-                            className="rounded-3xl border border-sky-100/70 bg-white/90 p-6 shadow-sm"
+                            className="rounded-3xl border border-amber-100/70 bg-white/90 p-6 shadow-sm"
                         >
                             <h3 className="font-display text-lg font-semibold text-slate-800">
                                 {text.teacherTitle}
@@ -300,7 +300,7 @@ export default function Register() {
                             <button
                                 type="submit"
                                 disabled={teacherForm.processing}
-                                className="mt-6 w-full rounded-full border border-emerald-200 bg-white px-6 py-3 text-sm font-semibold text-emerald-700 shadow transition hover:border-emerald-300 hover:text-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="mt-6 w-full rounded-full border border-violet-200 bg-white px-6 py-3 text-sm font-semibold text-violet-700 shadow transition hover:border-violet-300 hover:text-violet-800 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {text.submitTeacher}
                             </button>

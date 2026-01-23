@@ -17,16 +17,16 @@ export default function Login() {
                     <input
                         type="email"
                         placeholder="Email"
-                        className="w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-emerald-400"
+                        className="w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-violet-500"
                     />
                     <input
                         type="password"
                         placeholder="Password"
-                        className="w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-emerald-400"
+                        className="w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-violet-500"
                     />
                     <button
                         type="button"
-                        className="w-full rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600"
+                        className="w-full rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-6 py-3 text-sm font-semibold text-white transition hover:from-violet-800 hover:to-amber-500"
                     >
                         Masuk (Dummy)
                     </button>
