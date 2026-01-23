@@ -1,3 +1,14 @@
+### 1) Stage build frontend (Vite / Laravel Mix)
+FROM node:20-alpine AS frontend
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+
+### 2) Stage runtime PHP + Apache
 FROM php:8.4-apache
 
 RUN apt-get update && apt-get install -y \
@@ -14,8 +25,14 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader \
- && php artisan config:cache || true \
+# Install PHP deps
+RUN composer install --no-dev --optimize-autoloader
+
+# Copy hasil build frontend ke public/build (untuk Vite)
+COPY --from=frontend /app/public/build /var/www/html/public/build
+
+# Cache (optional)
+RUN php artisan config:cache || true \
  && php artisan route:cache || true \
  && php artisan view:cache || true
 
