@@ -14,15 +14,9 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader \
+ && php artisan config:cache || true \
+ && php artisan route:cache || true \
+ && php artisan view:cache || true
+
 RUN chown -R www-data:www-data storage bootstrap/cache
-RUN php artisan config:cache || true
-
-composer install --no-dev --optimize-autoloader
-php artisan config:cache
-php artisan route:cache || true
-php artisan view:cache || true
-php artisan migrate --force
-
-npm ci
-npm run build
