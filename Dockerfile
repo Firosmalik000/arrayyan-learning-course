@@ -1,6 +1,7 @@
 FROM php:8.4-apache
 
 RUN apt-get update && apt-get install -y \
+    nano \
     git unzip libzip-dev libicu-dev \
   && docker-php-ext-install pdo pdo_mysql zip intl \
   && a2enmod rewrite \
