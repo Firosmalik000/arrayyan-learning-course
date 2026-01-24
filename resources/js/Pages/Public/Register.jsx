@@ -7,7 +7,7 @@ export default function Register() {
     const { language } = useI18n();
     const flashSuccess = props.flash?.success;
     const inputClass =
-        'w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-200';
+        'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-200 sm:rounded-2xl sm:px-4';
 
     const studentForm = useForm({
         student_name: '',
@@ -59,8 +59,8 @@ export default function Register() {
                 />
             </Head>
 
-            <section className="bg-gradient-to-br from-violet-50 via-white to-amber-50 py-16 alc-pattern">
-                <div className="mx-auto w-full max-w-6xl px-6">
+            <section className="bg-gradient-to-br from-violet-50 via-white to-amber-50 py-10 alc-pattern sm:py-16">
+                <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
                     <SectionTitle
                         eyebrow="Join ALC"
                         title={text.title}
@@ -68,12 +68,12 @@ export default function Register() {
                     />
 
                     {flashSuccess ? (
-                        <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-700">
+                        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm text-amber-700 sm:mt-6 sm:rounded-2xl sm:px-4 sm:py-3">
                             {flashSuccess}
                         </div>
                     ) : null}
 
-                    <div className="mt-10 grid gap-8 lg:grid-cols-2">
+                    <div className="mt-6 grid gap-4 sm:mt-10 sm:gap-8 lg:grid-cols-2">
                         <form
                             onSubmit={(event) => {
                                 event.preventDefault();
@@ -82,12 +82,12 @@ export default function Register() {
                                     onSuccess: () => studentForm.reset(),
                                 });
                             }}
-                            className="rounded-3xl border border-violet-100/70 bg-white/90 p-6 shadow-sm"
+                            className="rounded-2xl border border-violet-100/70 bg-white/90 p-4 shadow-sm sm:rounded-3xl sm:p-6"
                         >
-                            <h3 className="font-display text-lg font-semibold text-slate-800">
+                            <h3 className="font-display text-base font-semibold text-slate-800 sm:text-lg">
                                 {text.studentTitle}
                             </h3>
-                            <div className="mt-4 grid gap-4">
+                            <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-4">
                                 <input
                                     type="text"
                                     className={inputClass}
@@ -184,7 +184,7 @@ export default function Register() {
                             <button
                                 type="submit"
                                 disabled={studentForm.processing}
-                                className="mt-6 w-full rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-6 py-3 text-sm font-semibold text-white shadow transition hover:from-violet-800 hover:to-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="mt-4 w-full rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-4 py-2.5 text-sm font-semibold text-white shadow transition hover:from-violet-800 hover:to-amber-500 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-6 sm:px-6 sm:py-3"
                             >
                                 {text.submitStudent}
                             </button>
@@ -198,12 +198,12 @@ export default function Register() {
                                     onSuccess: () => teacherForm.reset(),
                                 });
                             }}
-                            className="rounded-3xl border border-amber-100/70 bg-white/90 p-6 shadow-sm"
+                            className="rounded-2xl border border-amber-100/70 bg-white/90 p-4 shadow-sm sm:rounded-3xl sm:p-6"
                         >
-                            <h3 className="font-display text-lg font-semibold text-slate-800">
+                            <h3 className="font-display text-base font-semibold text-slate-800 sm:text-lg">
                                 {text.teacherTitle}
                             </h3>
-                            <div className="mt-4 grid gap-4">
+                            <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-4">
                                 <input
                                     type="text"
                                     className={inputClass}
@@ -300,7 +300,7 @@ export default function Register() {
                             <button
                                 type="submit"
                                 disabled={teacherForm.processing}
-                                className="mt-6 w-full rounded-full border border-violet-200 bg-white px-6 py-3 text-sm font-semibold text-violet-700 shadow transition hover:border-violet-300 hover:text-violet-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="mt-4 w-full rounded-full border border-violet-200 bg-white px-4 py-2.5 text-sm font-semibold text-violet-700 shadow transition hover:border-violet-300 hover:text-violet-800 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-6 sm:px-6 sm:py-3"
                             >
                                 {text.submitTeacher}
                             </button>

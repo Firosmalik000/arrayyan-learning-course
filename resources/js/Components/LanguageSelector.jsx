@@ -1,30 +1,34 @@
 import { useI18n } from '../lib/i18n';
 
-const options = [
-    { value: 'id', label: 'Bahasa Indonesia' },
-    { value: 'en', label: 'English' },
-];
-
 export default function LanguageSelector() {
-    const { language, setLanguage, t } = useI18n();
+    const { language, setLanguage } = useI18n();
 
     return (
-        <label className="flex items-center gap-2 rounded-full border border-violet-200/70 bg-white/90 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm backdrop-blur">
-            <span className="hidden text-[11px] text-slate-500 sm:inline">
-                {t('languageLabel')}
-            </span>
-            <select
-                value={language}
-                onChange={(event) => setLanguage(event.target.value)}
-                className="bg-transparent text-xs font-semibold text-violet-700 outline-none"
-                aria-label="Language selector"
+        <div className="flex items-center rounded-full border border-violet-200/70 bg-white/90 p-0.5 text-xs font-semibold shadow-sm backdrop-blur">
+            <button
+                type="button"
+                onClick={() => setLanguage('id')}
+                className={`rounded-full px-2.5 py-1 transition ${
+                    language === 'id'
+                        ? 'bg-violet-600 text-white shadow-sm'
+                        : 'text-slate-500 hover:text-violet-700'
+                }`}
+                aria-label="Bahasa Indonesia"
             >
-                {options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                        {option.label}
-                    </option>
-                ))}
-            </select>
-        </label>
+                ID
+            </button>
+            <button
+                type="button"
+                onClick={() => setLanguage('en')}
+                className={`rounded-full px-2.5 py-1 transition ${
+                    language === 'en'
+                        ? 'bg-violet-600 text-white shadow-sm'
+                        : 'text-slate-500 hover:text-violet-700'
+                }`}
+                aria-label="English"
+            >
+                EN
+            </button>
+        </div>
     );
 }

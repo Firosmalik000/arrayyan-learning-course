@@ -54,15 +54,15 @@ export default function Olympiad() {
                 />
             </Head>
 
-            <section className="bg-gradient-to-br from-violet-50 via-white to-amber-50 py-16 alc-pattern">
-                <div className="mx-auto w-full max-w-6xl px-6">
+            <section className="bg-gradient-to-br from-violet-50 via-white to-amber-50 py-10 alc-pattern sm:py-16">
+                <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
                     <SectionTitle
                         eyebrow="Prestasi"
                         title={text.title}
                         subtitle={text.subtitle}
                     />
 
-                    <div className="mt-10 grid gap-6 md:grid-cols-2">
+                    <div className="mt-6 grid gap-4 sm:mt-10 sm:gap-6 md:grid-cols-2">
                         {events.map((event) => (
                             <motion.div
                                 key={event.name}
@@ -71,29 +71,29 @@ export default function Olympiad() {
                                 whileHover={{ y: -4 }}
                                 viewport={{ once: true, amount: 0.2 }}
                                 transition={{ duration: 0.5 }}
-                                className="rounded-3xl border border-slate-100 bg-white/90 p-6 shadow-sm transition hover:shadow-md"
+                                className="rounded-2xl border border-slate-100 bg-white/90 p-4 shadow-sm transition hover:shadow-md sm:rounded-3xl sm:p-6"
                             >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
+                                <div className="flex items-start justify-between gap-2 sm:gap-4">
+                                    <div className="min-w-0 flex-1">
                                         <p className="font-display text-sm font-semibold text-slate-800">
                                             {event.name}
                                         </p>
-                                        <p className="mt-2 text-xs text-slate-500">
+                                        <p className="mt-1 text-xs text-slate-500 sm:mt-2">
                                             {event.level}
                                         </p>
                                     </div>
-                                    <span className="rounded-full bg-amber-100/70 px-3 py-1 text-xs font-semibold text-amber-700">
+                                    <span className="shrink-0 rounded-full bg-amber-100/70 px-2 py-0.5 text-[10px] font-semibold text-amber-700 sm:px-3 sm:py-1 sm:text-xs">
                                         {event.category}
                                     </span>
                                 </div>
-                                <div className="mt-4 space-y-2 text-sm text-slate-600">
+                                <div className="mt-3 space-y-1 text-sm text-slate-600 sm:mt-4 sm:space-y-2">
                                     <p>
                                         <span className="font-semibold text-slate-700">
                                             Jadwal:
                                         </span>{' '}
                                         {event.schedule}
                                     </p>
-                                    <p>
+                                    <p className="text-[13px] sm:text-sm">
                                         <span className="font-semibold text-slate-700">
                                             Sistem seleksi:
                                         </span>{' '}

@@ -1,11 +1,30 @@
 {
+  "_vendor-inertia-C03_m0AB.js": {
+    "file": "assets/vendor-inertia-C03_m0AB.js",
+    "name": "vendor-inertia"
+  },
+  "_vendor-motion-fN_umd0A.js": {
+    "file": "assets/vendor-motion-fN_umd0A.js",
+    "name": "vendor-motion",
+    "imports": [
+      "_vendor-inertia-C03_m0AB.js"
+    ]
+  },
+  "_vendor-react-l0sNRNKZ.js": {
+    "file": "assets/vendor-react-l0sNRNKZ.js",
+    "name": "vendor-react"
+  },
   "resources/js/app.jsx": {
-    "file": "assets/app-B_0O6sbT.js",
+    "file": "assets/app-BIS5VZtm.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
+    "imports": [
+      "_vendor-motion-fN_umd0A.js",
+      "_vendor-inertia-C03_m0AB.js"
+    ],
     "css": [
-      "assets/app-Cep7Metg.css"
+      "assets/app-BGFiJ1KA.css"
     ]
   }
 }

@@ -17,4 +17,19 @@ export default defineConfig({
             ignored: ['**/storage/framework/views/**'],
         },
     },
+    build: {
+        // Code splitting untuk mengurangi ukuran chunk
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    // Vendor chunks
+                    'vendor-react': ['react', 'react-dom'],
+                    'vendor-inertia': ['@inertiajs/react'],
+                    'vendor-motion': ['framer-motion'],
+                },
+            },
+        },
+        // Opsional: naikkan limit warning jika masih muncul
+        chunkSizeWarningLimit: 600,
+    },
 });
