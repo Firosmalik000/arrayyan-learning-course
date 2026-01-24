@@ -6,7 +6,9 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
-        @viteReactRefresh
+        @if (app()->environment('local') && file_exists(public_path('hot')))
+            @viteReactRefresh
+        @endif
         @vite('resources/js/app.jsx')
         @inertiaHead
     </head>
