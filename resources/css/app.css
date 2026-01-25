@@ -26,6 +26,129 @@
 }
 
 @layer utilities {
+    .alc-eyebrow {
+        font-size: clamp(0.6rem, 0.6vw, 0.7rem);
+        letter-spacing: 0.35em;
+    }
+
+    .alc-container {
+        width: 100%;
+        margin-inline: auto;
+        padding-inline: clamp(1rem, 2.6vw, 2rem);
+    }
+
+    .alc-section {
+        padding-block: clamp(2.75rem, 6vw, 4.5rem);
+    }
+
+    .alc-section-tight {
+        padding-block: clamp(2.25rem, 5vw, 4rem);
+    }
+
+    .alc-section-compact {
+        padding-block: clamp(2rem, 4vw, 3.25rem);
+    }
+
+    .alc-gap-lg {
+        gap: clamp(1.5rem, 3vw, 3rem);
+    }
+
+    .alc-gap-md {
+        gap: clamp(1rem, 2vw, 2rem);
+    }
+
+    .alc-gap-sm {
+        gap: clamp(0.75rem, 1.4vw, 1.2rem);
+    }
+
+    .alc-card {
+        padding: clamp(1rem, 2.2vw, 1.6rem);
+        border-radius: clamp(1rem, 2.4vw, 1.75rem);
+    }
+
+    .alc-card-lg {
+        padding: clamp(1.25rem, 2.8vw, 2rem);
+        border-radius: clamp(1.1rem, 2.8vw, 2rem);
+    }
+
+    .alc-media {
+        border-radius: clamp(1.25rem, 3vw, 2.25rem);
+    }
+
+    .alc-panel {
+        padding: clamp(0.75rem, 1.4vw, 1.1rem);
+        border-radius: clamp(0.8rem, 1.6vw, 1.3rem);
+    }
+
+    .alc-pill {
+        padding-inline: clamp(0.6rem, 1.3vw, 0.9rem);
+        padding-block: clamp(0.25rem, 0.7vw, 0.5rem);
+        border-radius: 9999px;
+    }
+
+    .alc-button {
+        padding-inline: clamp(1.1rem, 2.2vw, 1.6rem);
+        padding-block: clamp(0.7rem, 1.3vw, 0.95rem);
+        border-radius: 9999px;
+    }
+
+    .alc-icon {
+        width: clamp(2.75rem, 4.2vw, 3.6rem);
+        height: clamp(2.75rem, 4.2vw, 3.6rem);
+        border-radius: clamp(0.9rem, 1.8vw, 1.3rem);
+    }
+
+    .alc-icon-sm {
+        width: clamp(2rem, 3.2vw, 2.6rem);
+        height: clamp(2rem, 3.2vw, 2.6rem);
+        border-radius: clamp(0.7rem, 1.4vw, 1rem);
+    }
+
+    .alc-hero-title {
+        font-size: clamp(2rem, 3.8vw, 3.2rem);
+        line-height: 1.1;
+    }
+
+    .alc-hero-tagline {
+        font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+    }
+
+    .alc-section-title {
+        font-size: clamp(1.25rem, 2vw, 1.6rem);
+        line-height: 1.2;
+    }
+
+    .alc-subtitle {
+        font-size: clamp(0.95rem, 1.1vw, 1.05rem);
+        line-height: 1.6;
+    }
+
+    .alc-card-title {
+        font-size: clamp(0.95rem, 1.1vw, 1.05rem);
+    }
+
+    .alc-body {
+        font-size: clamp(0.95rem, 1vw, 1.05rem);
+        line-height: 1.6;
+    }
+
+    .alc-body-sm {
+        font-size: clamp(0.82rem, 0.9vw, 0.95rem);
+        line-height: 1.55;
+    }
+
+    .alc-caption {
+        font-size: clamp(0.65rem, 0.7vw, 0.75rem);
+    }
+
+    .alc-stat-value {
+        font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+    }
+
+    .alc-stat-label {
+        font-size: clamp(0.65rem, 0.8vw, 0.75rem);
+    }
+
     .alc-pattern {
         background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='96'%20height='96'%20viewBox='0%200%2096%2096'%20fill='none'%3E%3Cpath%20d='M48%206L56%2036L86%2048L56%2060L48%2090L40%2060L10%2048L40%2036Z'%20stroke='%235b2a86'%20stroke-opacity='0.12'%20stroke-width='1'/%3E%3C/svg%3E"),
             radial-gradient(

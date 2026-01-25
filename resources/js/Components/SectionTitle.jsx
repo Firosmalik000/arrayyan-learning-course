@@ -3,17 +3,17 @@ export default function SectionTitle({ eyebrow, title, subtitle, align = 'left' 
         align === 'center' ? 'text-center items-center' : 'text-left items-start';
 
     return (
-        <div className={`flex flex-col gap-3 ${alignClass}`}>
+        <div className={`flex flex-col gap-2.5 ${alignClass}`}>
             {eyebrow ? (
-                <span className="text-xs font-semibold uppercase tracking-[0.35em] text-violet-600">
+                <span className="alc-eyebrow font-semibold uppercase text-violet-600">
                     {eyebrow}
                 </span>
             ) : null}
-            <h2 className="font-display text-2xl font-semibold text-slate-900 sm:text-3xl">
+            <h2 className="font-display alc-section-title font-semibold text-slate-900">
                 {title}
             </h2>
             {subtitle ? (
-                <p className="max-w-2xl text-sm text-slate-600 sm:text-base">
+                <p className="max-w-2xl alc-subtitle text-slate-600">
                     {subtitle}
                 </p>
             ) : null}
