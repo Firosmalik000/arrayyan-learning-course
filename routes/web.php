@@ -7,7 +7,10 @@ use Inertia\Inertia;
 
 Route::get('/', fn () => Inertia::render('Public/Home'))->name('home');
 Route::get('/olimpiade', fn () => Inertia::render('Public/Olympiad'))->name('olympiad');
+Route::get('/olimpiade/{slug}', fn ($slug) => Inertia::render('Public/Olympiad/Detail', ['slug' => $slug]))->name('olympiad.detail');
 Route::get('/pendaftaran', fn () => Inertia::render('Public/Register'))->name('register');
+Route::get('/bank-soal', fn () => Inertia::render('Public/BankSoal'))->name('banksoal');
+Route::get('/bank-soal/{slug}', fn ($slug) => Inertia::render('Public/BankSoal/Detail', ['slug' => $slug]))->name('banksoal.detail');
 
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])
     ->middleware('guest')

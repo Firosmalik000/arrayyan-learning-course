@@ -14,7 +14,11 @@ const pages = import.meta.glob('./Pages/**/*.jsx', { eager: true });
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => {
-        const page = pages[`./Pages/${name}.jsx`];
+        // Support both flat files (Page.jsx) and folder structure (Page/index.jsx)
+        let page = pages[`./Pages/${name}.jsx`];
+        if (!page) {
+            page = pages[`./Pages/${name}/index.jsx`];
+        }
         if (!page) {
             throw new Error(`Page not found: ${name}`);
         }
