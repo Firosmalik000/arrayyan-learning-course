@@ -1,30 +1,34 @@
 {
-  "_vendor-inertia-CJknDJPn.js": {
-    "file": "assets/vendor-inertia-CJknDJPn.js",
-    "name": "vendor-inertia"
-  },
-  "_vendor-motion-j0pCidP-.js": {
-    "file": "assets/vendor-motion-j0pCidP-.js",
-    "name": "vendor-motion",
+  "_vendor-inertia-k7FJVHLV.js": {
+    "file": "assets/vendor-inertia-k7FJVHLV.js",
+    "name": "vendor-inertia",
     "imports": [
-      "_vendor-inertia-CJknDJPn.js"
+      "_vendor-react-ZwENbJqZ.js"
     ]
   },
-  "_vendor-react-l0sNRNKZ.js": {
-    "file": "assets/vendor-react-l0sNRNKZ.js",
+  "_vendor-motion-ei3ph0Aj.js": {
+    "file": "assets/vendor-motion-ei3ph0Aj.js",
+    "name": "vendor-motion",
+    "imports": [
+      "_vendor-react-ZwENbJqZ.js"
+    ]
+  },
+  "_vendor-react-ZwENbJqZ.js": {
+    "file": "assets/vendor-react-ZwENbJqZ.js",
     "name": "vendor-react"
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-c_PRjquB.js",
+    "file": "assets/app-B2_hqr9A.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
     "imports": [
-      "_vendor-motion-j0pCidP-.js",
-      "_vendor-inertia-CJknDJPn.js"
+      "_vendor-react-ZwENbJqZ.js",
+      "_vendor-inertia-k7FJVHLV.js",
+      "_vendor-motion-ei3ph0Aj.js"
     ],
     "css": [
-      "assets/app-BhGH58Q2.css"
+      "assets/app-KsD4R_pq.css"
     ]
   }
 }

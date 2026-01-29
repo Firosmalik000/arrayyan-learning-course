@@ -27,11 +27,16 @@ export default defineConfig({
         // Code splitting untuk mengurangi ukuran chunk
         rollupOptions: {
             output: {
-                manualChunks: {
-                    // Vendor chunks
-                    'vendor-react': ['react', 'react-dom'],
-                    'vendor-inertia': ['@inertiajs/react'],
-                    'vendor-motion': ['framer-motion'],
+                manualChunks(id) {
+                    if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
+                        return 'vendor-react';
+                    }
+                    if (id.includes('node_modules/@inertiajs')) {
+                        return 'vendor-inertia';
+                    }
+                    if (id.includes('node_modules/framer-motion')) {
+                        return 'vendor-motion';
+                    }
                 },
             },
         },
