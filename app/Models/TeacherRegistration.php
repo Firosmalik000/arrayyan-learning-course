@@ -11,10 +11,12 @@ class TeacherRegistration extends Model
 
     protected $fillable = [
         'name',
+        'address',
         'education',
         'subjects',
         'experience',
         'contact',
+        'cv_path',
         'notes',
     ];
 }

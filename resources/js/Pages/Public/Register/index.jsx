@@ -1,14 +1,16 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage, router } from '@inertiajs/react';
+import { useState } from 'react';
 import SectionTitle from '@/Components/SectionTitle';
 import { useI18n } from '@/lib/i18n';
 
 // Page-specific data
-import { pageContent, formFields, initialStudentForm, initialTeacherForm } from './data';
+import { pageContent, formFields, initialStudentForm, initialTeacherForm, programOptions, packageOptions } from './data';
 
 export default function Register() {
     const { props } = usePage();
     const { language } = useI18n();
     const flashSuccess = props.flash?.success;
+    const [activeTab, setActiveTab] = useState('student');
 
     const text = pageContent[language] || pageContent.id;
     const studentFields = formFields.student[language] || formFields.student.id;
@@ -16,6 +18,9 @@ export default function Register() {
 
     const inputClass =
         'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-200 sm:rounded-2xl sm:px-4';
+
+    const selectClass =
+        'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-200 sm:rounded-2xl sm:px-4 appearance-none';
 
     const studentForm = useForm(initialStudentForm);
     const teacherForm = useForm(initialTeacherForm);
@@ -30,11 +35,21 @@ export default function Register() {
 
     const handleTeacherSubmit = (event) => {
         event.preventDefault();
-        teacherForm.post('/pendaftaran/pengajar', {
+        router.post('/pendaftaran/pengajar', {
+            ...teacherForm.data,
+            cv: teacherForm.data.cv,
+        }, {
+            forceFormData: true,
             preserveScroll: true,
             onSuccess: () => teacherForm.reset(),
+            onError: (errors) => teacherForm.setError(errors),
         });
     };
+
+    const tabs = [
+        { key: 'student', label: language === 'en' ? 'Student' : 'Murid' },
+        { key: 'teacher', label: language === 'en' ? 'Teacher' : 'Pengajar' },
+    ];
 
     return (
         <>
@@ -47,7 +62,7 @@ export default function Register() {
             </Head>
 
             <section className="bg-gradient-to-br from-violet-50 via-white to-amber-50 py-10 alc-pattern sm:py-16">
-                <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+                <div className="mx-auto w-full max-w-xl px-4 sm:px-6">
                     <SectionTitle
                         eyebrow="Join ALC"
                         title={text.title}
@@ -60,11 +75,31 @@ export default function Register() {
                         </div>
                     )}
 
-                    <div className="mt-6 grid gap-4 sm:mt-10 sm:gap-8 lg:grid-cols-2">
-                        {/* Student Registration Form */}
+                    {/* Tabs */}
+                    <div className="mt-6 flex rounded-full border border-slate-200 bg-white p-1 sm:mt-10">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.key}
+                                type="button"
+                                onClick={() => setActiveTab(tab.key)}
+                                className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                                    activeTab === tab.key
+                                        ? tab.key === 'student'
+                                            ? 'bg-gradient-to-r from-violet-700 to-violet-500 text-white shadow'
+                                            : 'bg-gradient-to-r from-amber-500 to-amber-400 text-white shadow'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Student Registration Form */}
+                    {activeTab === 'student' && (
                         <form
                             onSubmit={handleStudentSubmit}
-                            className="rounded-2xl border border-violet-100/70 bg-white/90 p-4 shadow-sm sm:rounded-3xl sm:p-6"
+                            className="mt-4 rounded-2xl border border-violet-100/70 bg-white/90 p-4 shadow-sm sm:mt-6 sm:rounded-3xl sm:p-6"
                         >
                             <h3 className="font-display text-base font-semibold text-slate-800 sm:text-lg">
                                 {text.studentTitle}
@@ -80,6 +115,30 @@ export default function Register() {
                                     />
                                     {studentForm.errors.student_name && (
                                         <p className="mt-1 text-xs text-rose-500">{studentForm.errors.student_name}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <textarea
+                                        rows="2"
+                                        className={`${inputClass} resize-none`}
+                                        placeholder={studentFields.address}
+                                        value={studentForm.data.address}
+                                        onChange={(e) => studentForm.setData('address', e.target.value)}
+                                    />
+                                    {studentForm.errors.address && (
+                                        <p className="mt-1 text-xs text-rose-500">{studentForm.errors.address}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <input
+                                        type="text"
+                                        className={inputClass}
+                                        placeholder={studentFields.schoolName}
+                                        value={studentForm.data.school_name}
+                                        onChange={(e) => studentForm.setData('school_name', e.target.value)}
+                                    />
+                                    {studentForm.errors.school_name && (
+                                        <p className="mt-1 text-xs text-rose-500">{studentForm.errors.school_name}</p>
                                     )}
                                 </div>
                                 <div>
@@ -104,6 +163,40 @@ export default function Register() {
                                     />
                                     {studentForm.errors.subjects && (
                                         <p className="mt-1 text-xs text-rose-500">{studentForm.errors.subjects}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <select
+                                        className={`${selectClass} ${!studentForm.data.program ? 'text-slate-400' : 'text-slate-700'}`}
+                                        value={studentForm.data.program}
+                                        onChange={(e) => studentForm.setData('program', e.target.value)}
+                                    >
+                                        <option value="" disabled>{studentFields.program}</option>
+                                        {programOptions.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label[language] || opt.label.id}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {studentForm.errors.program && (
+                                        <p className="mt-1 text-xs text-rose-500">{studentForm.errors.program}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <select
+                                        className={`${selectClass} ${!studentForm.data.package ? 'text-slate-400' : 'text-slate-700'}`}
+                                        value={studentForm.data.package}
+                                        onChange={(e) => studentForm.setData('package', e.target.value)}
+                                    >
+                                        <option value="" disabled>{studentFields.package}</option>
+                                        {packageOptions.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {studentForm.errors.package && (
+                                        <p className="mt-1 text-xs text-rose-500">{studentForm.errors.package}</p>
                                     )}
                                 </div>
                                 <div>
@@ -141,11 +234,13 @@ export default function Register() {
                                 {text.submitStudent}
                             </button>
                         </form>
+                    )}
 
-                        {/* Teacher Registration Form */}
+                    {/* Teacher Registration Form */}
+                    {activeTab === 'teacher' && (
                         <form
                             onSubmit={handleTeacherSubmit}
-                            className="rounded-2xl border border-amber-100/70 bg-white/90 p-4 shadow-sm sm:rounded-3xl sm:p-6"
+                            className="mt-4 rounded-2xl border border-amber-100/70 bg-white/90 p-4 shadow-sm sm:mt-6 sm:rounded-3xl sm:p-6"
                         >
                             <h3 className="font-display text-base font-semibold text-slate-800 sm:text-lg">
                                 {text.teacherTitle}
@@ -161,6 +256,18 @@ export default function Register() {
                                     />
                                     {teacherForm.errors.name && (
                                         <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.name}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <textarea
+                                        rows="2"
+                                        className={`${inputClass} resize-none`}
+                                        placeholder={teacherFields.address}
+                                        value={teacherForm.data.address}
+                                        onChange={(e) => teacherForm.setData('address', e.target.value)}
+                                    />
+                                    {teacherForm.errors.address && (
+                                        <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.address}</p>
                                     )}
                                 </div>
                                 <div>
@@ -206,6 +313,18 @@ export default function Register() {
                                         <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.contact}</p>
                                     )}
                                 </div>
+                                <div>
+                                    <label className="block text-sm text-slate-500 mb-1.5">{teacherFields.cv}</label>
+                                    <input
+                                        type="file"
+                                        accept=".pdf,.doc,.docx"
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-violet-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-violet-700 hover:file:bg-violet-100 sm:rounded-2xl sm:px-4"
+                                        onChange={(e) => teacherForm.setData('cv', e.target.files[0])}
+                                    />
+                                    {teacherForm.errors.cv && (
+                                        <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.cv}</p>
+                                    )}
+                                </div>
                                 <textarea
                                     rows="3"
                                     className={`${inputClass} resize-none`}
@@ -222,7 +341,7 @@ export default function Register() {
                                 {text.submitTeacher}
                             </button>
                         </form>
-                    </div>
+                    )}
                 </div>
             </section>
         </>
