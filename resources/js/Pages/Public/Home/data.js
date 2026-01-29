@@ -149,6 +149,7 @@ export const subjects = {
 
 export const bankSoalContent = {
     id: {
+        eyebrow: 'Fitur Unggulan',
         title: 'Bank Soal Unggulan',
         subtitle: 'Latihan soal berkualitas yang memperkuat pemahaman dan kesiapan ujian.',
         offline: {
@@ -164,6 +165,7 @@ export const bankSoalContent = {
         questionCount: 'soal',
     },
     en: {
+        eyebrow: 'Featured',
         title: 'Featured Question Bank',
         subtitle: 'Quality practice modules that strengthen mastery and exam readiness.',
         offline: {
@@ -283,30 +285,42 @@ export const sectionTitles = {
                 'Kami hadir dengan metode pembelajaran yang personal, interaktif, dan penuh perhatian untuk membantu anak berkembang secara akademik dan berkarakter.',
         },
         why: {
+            eyebrow: 'ALC',
             title: 'Kenapa Memilih Ar Rayyan Learning Course',
             subtitle: 'Pendampingan belajar yang aman, nyaman, dan terarah dengan metode personal dan penuh perhatian.',
         },
         profile: {
+            eyebrow: 'ALC',
             title: 'Profil Lembaga',
             subtitle: 'Ar Rayyan Learning Course membangun lingkungan belajar yang aman, nyaman, dan penuh perhatian.',
         },
         education: {
+            eyebrow: 'Akademik',
             title: 'Jenjang Pendidikan & Mata Pelajaran',
             subtitle: 'Layanan pendidikan untuk berbagai jenjang dengan beragam mata pelajaran.',
         },
         program: {
+            eyebrow: 'Program',
             title: 'Program & Paket Belajar',
             subtitle: 'Paket belajar yang fleksibel untuk kebutuhan siswa dan keluarga.',
         },
+        gallery: {
+            eyebrow: 'Galeri',
+            title: 'Galeri Kegiatan',
+            subtitle: 'Dokumentasi aktivitas belajar dan kegiatan ALC.',
+        },
         olympiad: {
+            eyebrow: 'Prestasi',
             title: 'Info Olimpiade',
             subtitle: 'Pantau jadwal lomba dan persiapan prestasi siswa.',
         },
         register: {
+            eyebrow: 'Join Us',
             title: 'Pendaftaran',
             subtitle: 'Ajak anak belajar bersama ALC atau bergabung menjadi pengajar.',
         },
         contact: {
+            eyebrow: 'Hubungi Kami',
             title: 'Kontak & Informasi',
             subtitle: 'Hubungi kami untuk konsultasi program belajar terbaik.',
         },
@@ -318,30 +332,42 @@ export const sectionTitles = {
                 'We provide personal, interactive, and caring learning methods to help children grow academically and build strong character.',
         },
         why: {
+            eyebrow: 'ALC',
             title: 'Why Choose Ar Rayyan Learning Course',
             subtitle: 'Safe, comfortable, and guided learning support with personal and caring methods.',
         },
         profile: {
+            eyebrow: 'ALC',
             title: 'Institution Profile',
             subtitle: 'Ar Rayyan Learning Course builds a safe, comfortable, and caring learning environment.',
         },
         education: {
+            eyebrow: 'Academic',
             title: 'Education Levels & Subjects',
             subtitle: 'Education services across various levels with a wide range of subjects.',
         },
         program: {
+            eyebrow: 'Program',
             title: 'Learning Programs & Packages',
             subtitle: 'Flexible learning packages tailored to every student.',
         },
+        gallery: {
+            eyebrow: 'Gallery',
+            title: 'Activity Gallery',
+            subtitle: 'Snapshots of learning activities and ALC events.',
+        },
         olympiad: {
+            eyebrow: 'Achievement',
             title: 'Olympiad Info',
             subtitle: 'Stay updated with competitions and schedules.',
         },
         register: {
+            eyebrow: 'Join Us',
             title: 'Registration',
             subtitle: 'Enroll your child or join as an inspiring teacher at ALC.',
         },
         contact: {
+            eyebrow: 'Contact Us',
             title: 'Contact & Information',
             subtitle: 'Reach us anytime for the best learning consultation.',
         },
@@ -365,4 +391,8 @@ export const ctaButtons = {
         viewMap: 'View Map',
         viewOlympiad: 'View olympiad details',
     },
+};
+
+export const galleryContent = {
+    items: [],
 };

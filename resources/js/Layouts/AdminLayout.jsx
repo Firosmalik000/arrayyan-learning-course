@@ -375,6 +375,7 @@ const icons = {
 
 export default function AdminLayout({ children }) {
     const { url, props } = usePage();
+    const appLogo = props.appLogo;
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const profileRef = useRef(null);
@@ -404,9 +405,13 @@ export default function AdminLayout({ children }) {
                     {/* Sidebar Header */}
                     <div className="border-b border-slate-100 px-5 py-5">
                         <Link href="/admin" className="flex items-center gap-3 group">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-violet-700 text-white shadow-lg shadow-violet-200 transition-transform group-hover:scale-105">
-                                <span className="text-sm font-bold tracking-wide">ALC</span>
-                            </div>
+                            {appLogo ? (
+                                <img src={appLogo} alt="Logo" className="h-12 w-12 rounded-2xl object-contain shadow-lg shadow-violet-200 transition-transform group-hover:scale-105" />
+                            ) : (
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-violet-700 text-white shadow-lg shadow-violet-200 transition-transform group-hover:scale-105">
+                                    <span className="text-sm font-bold tracking-wide">ALC</span>
+                                </div>
+                            )}
                             <div>
                                 <p className="text-sm font-bold text-slate-800">Admin Console</p>
                                 <p className="text-xs font-medium text-violet-600">Ar Rayyan Learning</p>
@@ -683,9 +688,13 @@ export default function AdminLayout({ children }) {
                     {/* Mobile Sidebar Header */}
                     <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                         <Link href="/admin" className="flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-violet-700 text-white shadow-lg">
-                                <span className="text-xs font-bold">ALC</span>
-                            </div>
+                            {appLogo ? (
+                                <img src={appLogo} alt="Logo" className="h-10 w-10 rounded-xl object-contain shadow-lg" />
+                            ) : (
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-violet-700 text-white shadow-lg">
+                                    <span className="text-xs font-bold">ALC</span>
+                                </div>
+                            )}
                             <div>
                                 <p className="text-sm font-bold text-slate-800">Admin</p>
                                 <p className="text-xs text-violet-600">Ar Rayyan Learning</p>

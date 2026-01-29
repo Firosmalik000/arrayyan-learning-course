@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import SectionTitle from '@/Components/SectionTitle';
 import PasskeyModal from '@/Components/PasskeyModal';
 import { useI18n } from '@/lib/i18n';
@@ -8,7 +8,7 @@ import { useI18n } from '@/lib/i18n';
 // Shared data
 import { fadeUp, stagger, icons, toneStyles } from '@/data';
 import { siteConfig, contactInfo, operatingHours, stats } from '@/data/content/site';
-import { getLocalizedPackages, getLocalizedOlympiads } from '@/data/content/programs';
+import { packages as defaultPackages, olympiadHighlights as defaultOlympiadHighlights } from '@/data/content/programs';
 
 // Page-specific data
 import {
@@ -20,12 +20,14 @@ import {
     subjects,
     bankSoalContent,
     bankSoalPasskey,
+    bankSoalCategories,
+    bankSoalItems,
     sectionTitles,
     ctaButtons,
 } from './data';
 import { olympiadPasskey } from '../Olympiad/data';
 
-export default function Home() {
+export default function Home({ landingContent }) {
     const { language } = useI18n();
 
     // State for Bank Soal passkey modal
@@ -33,6 +35,7 @@ export default function Home() {
     const [bankSoalTargetUrl, setBankSoalTargetUrl] = useState('');
     const [showOlympiadPasskey, setShowOlympiadPasskey] = useState(false);
     const [olympiadTargetUrl, setOlympiadTargetUrl] = useState('');
+    const galleryRef = useRef(null);
 
     // Handler for Bank Soal access
     const handleBankSoalClick = (format) => {
@@ -56,24 +59,106 @@ export default function Home() {
         }
     };
 
-    // Get localized content
-    const t = sectionTitles[language] || sectionTitles.id;
-    const cta = ctaButtons[language] || ctaButtons.id;
-    const about = aboutContent[language] || aboutContent.id;
-    const vm = visionMission[language] || visionMission.id;
-    const levels = educationLevels[language] || educationLevels.id;
-    const subj = subjects[language] || subjects.id;
-    const bank = bankSoalContent[language] || bankSoalContent.id;
-    const hours = operatingHours[language] || operatingHours.id;
-    const badges = heroContent.badges[language] || heroContent.badges.id;
-    const heroPanel = {
-        left: heroContent.panels.left[language] || heroContent.panels.left.id,
-        right: heroContent.panels.right[language] || heroContent.panels.right.id,
+    const scrollGallery = (direction) => {
+        if (!galleryRef.current) return;
+        const scrollAmount = galleryRef.current.clientWidth * 0.85;
+        galleryRef.current.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
     };
-    const features = featureCards[language] || featureCards.id;
-    const statItems = stats[language] || stats.id;
-    const packages = getLocalizedPackages(language);
-    const olympiads = getLocalizedOlympiads(language);
+
+    const mergeContent = (base, override) => {
+        if (Array.isArray(base)) {
+            return Array.isArray(override) ? override : base;
+        }
+        if (base && typeof base === 'object') {
+            const result = { ...base };
+            if (override && typeof override === 'object') {
+                Object.keys(override).forEach((key) => {
+                    if (override[key] === undefined || override[key] === null) {
+                        return;
+                    }
+                    result[key] = mergeContent(base[key], override[key]);
+                });
+            }
+            return result;
+        }
+        return override !== undefined ? override : base;
+    };
+
+    const localizeField = (value, lang) => {
+        if (!value) return '';
+        if (typeof value === 'string') return value;
+        return value[lang] || value.id || '';
+    };
+
+    const localizeList = (value, lang) => {
+        if (!value) return [];
+        if (Array.isArray(value)) return value;
+        return value[lang] || value.id || [];
+    };
+
+    const defaultContent = {
+        siteConfig,
+        contactInfo,
+        operatingHours,
+        stats,
+        heroContent,
+        featureCards,
+        aboutContent,
+        visionMission,
+        educationLevels,
+        subjects,
+        bankSoalContent,
+        bankSoalPasskey,
+        bankSoalCategories,
+        bankSoalItems,
+        sectionTitles,
+        ctaButtons,
+        packages: defaultPackages,
+        olympiadHighlights: defaultOlympiadHighlights,
+        gallery: {
+            items: [],
+        },
+        media: {
+            heroImage: { url: null, alt: { id: 'Siswa ALC', en: 'ALC student' } },
+            aboutImage: { url: null, alt: { id: 'Kelas ALC', en: 'ALC class' } },
+        },
+    };
+
+    const landing = mergeContent(defaultContent, landingContent || {});
+    const socialCards = landing.contactInfo?.socials?.length
+        ? landing.contactInfo.socials
+        : defaultContent.contactInfo.socials;
+
+    // Get localized content
+    const t = landing.sectionTitles[language] || landing.sectionTitles.id;
+    const cta = landing.ctaButtons[language] || landing.ctaButtons.id;
+    const about = landing.aboutContent[language] || landing.aboutContent.id;
+    const vm = landing.visionMission[language] || landing.visionMission.id;
+    const levels = landing.educationLevels[language] || landing.educationLevels.id;
+    const subj = landing.subjects[language] || landing.subjects.id;
+    const bank = landing.bankSoalContent[language] || landing.bankSoalContent.id;
+    const hours = landing.operatingHours[language] || landing.operatingHours.id;
+    const badges = landing.heroContent.badges[language] || landing.heroContent.badges.id;
+    const heroPanel = {
+        left: landing.heroContent.panels.left[language] || landing.heroContent.panels.left.id,
+        right: landing.heroContent.panels.right[language] || landing.heroContent.panels.right.id,
+    };
+    const features = landing.featureCards[language] || landing.featureCards.id;
+    const statItems = landing.stats[language] || landing.stats.id;
+    const packages = (landing.packages || []).map((pkg) => ({
+        id: pkg.id,
+        name: localizeField(pkg.name, language),
+        level: localizeField(pkg.level, language),
+        sessions: localizeField(pkg.sessions, language),
+        mode: localizeField(pkg.mode, language),
+        description: localizeField(pkg.description, language),
+        highlights: localizeList(pkg.highlights, language),
+    }));
+    const heroImageUrl = landing.media?.heroImage?.url || landing.media?.heroImage?.path || '/images/hero-student.jpg';
+    const aboutImageUrl = landing.media?.aboutImage?.url || landing.media?.aboutImage?.path || '/images/about-class.jpg';
+    const heroImageAlt = localizeField(landing.media?.heroImage?.alt, language) || (language === 'en' ? 'ALC student' : 'Siswa ALC');
+    const aboutImageAlt = localizeField(landing.media?.aboutImage?.alt, language) || (language === 'en' ? 'ALC class' : 'Kelas ALC');
+    const galleryItems = landing.gallery?.items || [];
 
     return (
         <>
@@ -101,7 +186,7 @@ export default function Home() {
                             variants={fadeUp}
                             className="font-hero alc-hero-title font-bold leading-snug text-violet-700"
                         >
-                            {siteConfig.name}
+                            {landing.siteConfig.name}
                         </motion.h1>
                         <motion.p
                             variants={fadeUp}
@@ -160,8 +245,8 @@ export default function Home() {
                     >
                         <div className="relative aspect-[4/5] sm:aspect-[4/4] lg:aspect-[4/5] overflow-hidden rounded-2xl sm:rounded-3xl lg:rounded-[36px] border border-violet-100/80 bg-white/90 shadow-xl sm:shadow-2xl">
                             <img
-                                src="/images/hero-student.jpg"
-                                alt="Siswa ALC"
+                                src={heroImageUrl}
+                                alt={heroImageAlt}
                                 className="h-full w-full object-cover"
                                 onError={(event) => {
                                     event.currentTarget.style.display = 'none';
@@ -211,7 +296,7 @@ export default function Home() {
             <section className="bg-white alc-section-tight">
                 <div className="alc-container max-w-6xl">
                     <SectionTitle
-                        eyebrow="ALC"
+                        eyebrow={t.why.eyebrow}
                         title={t.why.title}
                         subtitle={t.why.subtitle}
                         align="center"
@@ -250,7 +335,7 @@ export default function Home() {
             <section id="profil" className="bg-white alc-section">
                 <div className="alc-container max-w-6xl">
                     <SectionTitle
-                        eyebrow="ALC"
+                        eyebrow={t.profile.eyebrow}
                         title={t.profile.title}
                         subtitle={t.profile.subtitle}
                     />
@@ -265,8 +350,8 @@ export default function Home() {
                         >
                             <div className="relative aspect-[4/3] sm:aspect-[4/4] lg:aspect-[4/5] overflow-hidden rounded-2xl sm:rounded-3xl lg:rounded-[36px] border border-violet-100/70 bg-white shadow-lg sm:shadow-xl">
                                 <img
-                                    src="/images/about-class.jpg"
-                                    alt="Kelas ALC"
+                                    src={aboutImageUrl}
+                                    alt={aboutImageAlt}
                                     className="h-full w-full object-cover"
                                     onError={(event) => {
                                         event.currentTarget.style.display = 'none';
@@ -341,7 +426,7 @@ export default function Home() {
 
                 <div className="relative alc-container max-w-6xl">
                     <SectionTitle
-                        eyebrow="Akademik"
+                        eyebrow={t.education.eyebrow}
                         title={t.education.title}
                         subtitle={t.education.subtitle}
                         align="center"
@@ -439,7 +524,7 @@ export default function Home() {
             <section id="program" className="bg-white alc-section">
                 <div className="alc-container max-w-6xl">
                     <SectionTitle
-                        eyebrow="Program"
+                        eyebrow={t.program.eyebrow}
                         title={t.program.title}
                         subtitle={t.program.subtitle}
                     />
@@ -518,11 +603,106 @@ export default function Home() {
                 </div>
             </section>
 
+            <section className="bg-white alc-section">
+                <div className="alc-container max-w-6xl">
+                    <SectionTitle
+                        eyebrow={t.gallery?.eyebrow}
+                        title={t.gallery?.title}
+                        subtitle={t.gallery?.subtitle}
+                        align="center"
+                    />
+                    <div className="mt-8 sm:mt-10 flex items-center justify-between">
+                        <div />
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => scrollGallery(-1)}
+                                className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-violet-300 hover:text-violet-600"
+                                aria-label="Previous"
+                            >
+                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+                                </svg>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => scrollGallery(1)}
+                                className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-violet-300 hover:text-violet-600"
+                                aria-label="Next"
+                            >
+                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <motion.div
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true, amount: 0.2 }}
+                        variants={stagger}
+                        className="mt-4 flex gap-3 overflow-x-auto pb-3"
+                        ref={galleryRef}
+                    >
+                        {galleryItems.length > 0 ? (
+                            galleryItems.map((item, index) => {
+                                const src = item.url || item.path || item.src;
+                                const alt = localizeField(item.alt, language) || `Gallery ${index + 1}`;
+                                if (!src) {
+                                    return null;
+                                }
+                                return (
+                                    <motion.div
+                                        key={`gallery-${index}`}
+                                        variants={fadeUp}
+                                        whileHover={{ y: -6 }}
+                                        className="group min-w-[200px] sm:min-w-[220px] lg:min-w-[240px] overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:shadow-lg"
+                                    >
+                                        <div className="h-36 sm:h-40 lg:h-44 overflow-hidden">
+                                            <img
+                                                src={src}
+                                                alt={alt}
+                                                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                                            />
+                                        </div>
+                                    </motion.div>
+                                );
+                            })
+                        ) : (
+                            [
+                                'bg-gradient-to-br from-violet-100/70 via-white to-violet-200/60',
+                                'bg-gradient-to-br from-amber-100/70 via-white to-amber-200/60',
+                                'bg-gradient-to-br from-rose-100/70 via-white to-rose-200/60',
+                            ].map((bgClass, index) => (
+                                <motion.div
+                                    key={`gallery-placeholder-${index}`}
+                                    variants={fadeUp}
+                                    whileHover={{ y: -6 }}
+                                    className="group relative min-w-[200px] sm:min-w-[220px] lg:min-w-[240px] overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 shadow-sm"
+                                >
+                                    <div className="h-36 sm:h-40 lg:h-44 p-4">
+                                        <div className={`h-full w-full rounded-xl ${bgClass}`} />
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                            <p className="text-sm font-semibold text-slate-700">
+                                                {language === 'en' ? 'Gallery Photo' : 'Foto Galeri'}
+                                            </p>
+                                            <p className="mt-1 text-xs text-slate-500">
+                                                {language === 'en' ? 'Upload from admin panel' : 'Upload dari admin'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))
+                        )}
+                    </motion.div>
+                </div>
+            </section>
+
             {/* Bank Soal Section */}
             <section id="banksoal" className="bg-gradient-to-br from-slate-50 via-white to-violet-50 alc-section">
                 <div className="alc-container max-w-6xl">
                     <SectionTitle
-                        eyebrow="Fitur Unggulan"
+                        eyebrow={bank.eyebrow}
                         title={bank.title}
                         subtitle={bank.subtitle}
                         align="center"
@@ -639,7 +819,7 @@ export default function Home() {
             <section className="bg-gradient-to-br from-white via-white to-amber-50 alc-section">
                 <div className="alc-container max-w-6xl">
                     <SectionTitle
-                        eyebrow="Prestasi"
+                        eyebrow={t.olympiad.eyebrow}
                         title={t.olympiad.title}
                         subtitle={t.olympiad.subtitle}
                         align="center"
@@ -761,7 +941,7 @@ export default function Home() {
                 <div className="alc-container grid max-w-6xl alc-gap-md md:grid-cols-[1.1fr_0.9fr] md:items-center">
                     <div className="flex flex-col alc-gap-sm">
                         <SectionTitle
-                            eyebrow="Join Us"
+                            eyebrow={t.register.eyebrow}
                             title={t.register.title}
                             subtitle={t.register.subtitle}
                         />
@@ -787,61 +967,43 @@ export default function Home() {
             <section id="kontak" className="bg-gradient-to-br from-violet-50 via-white to-amber-50 alc-section">
                 <div className="alc-container max-w-5xl">
                     <SectionTitle
-                        eyebrow="Hubungi Kami"
+                        eyebrow={t.contact.eyebrow}
                         title={t.contact.title}
                         subtitle={t.contact.subtitle}
                         align="center"
                     />
 
                     <div className="mt-8 sm:mt-10 grid alc-gap-md md:grid-cols-2 lg:grid-cols-4">
-                        <motion.a
-                            href={contactInfo.whatsapp.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, amount: 0.3 }}
-                            transition={{ duration: 0.5 }}
-                            className="group flex flex-col items-center alc-card border border-green-100 bg-white shadow-sm transition hover:shadow-lg hover:-translate-y-1 hover:border-green-200"
-                        >
-                            <div className="flex alc-icon items-center justify-center bg-green-50 text-green-600 transition group-hover:bg-green-100 group-hover:scale-110">
-                                {icons.whatsapp}
-                            </div>
-                            <p className="mt-3 sm:mt-4 alc-card-title font-semibold text-slate-800">WhatsApp</p>
-                            <p className="mt-1 alc-body-sm text-slate-500">{contactInfo.whatsapp.number}</p>
-                        </motion.a>
-
-                        <motion.a
-                            href={contactInfo.instagram.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, amount: 0.3 }}
-                            transition={{ duration: 0.5, delay: 0.1 }}
-                            className="group flex flex-col items-center alc-card border border-pink-100 bg-white shadow-sm transition hover:shadow-lg hover:-translate-y-1 hover:border-pink-200"
-                        >
-                            <div className="flex alc-icon items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50 text-pink-600 transition group-hover:from-pink-100 group-hover:to-purple-100 group-hover:scale-110">
-                                {icons.instagram}
-                            </div>
-                            <p className="mt-3 sm:mt-4 alc-card-title font-semibold text-slate-800">Instagram</p>
-                            <p className="mt-1 alc-body-sm text-slate-500">{contactInfo.instagram.handle}</p>
-                        </motion.a>
-
-                        <motion.a
-                            href={contactInfo.email.link}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, amount: 0.3 }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                            className="group flex flex-col items-center alc-card border border-violet-100 bg-white shadow-sm transition hover:shadow-lg hover:-translate-y-1 hover:border-violet-200"
-                        >
-                            <div className="flex alc-icon items-center justify-center bg-violet-50 text-violet-600 transition group-hover:bg-violet-100 group-hover:scale-110">
-                                {icons.mail}
-                            </div>
-                            <p className="mt-3 sm:mt-4 alc-card-title font-semibold text-slate-800">Email</p>
-                            <p className="mt-1 alc-body-sm text-slate-500">{contactInfo.email.address}</p>
-                        </motion.a>
+                        {socialCards.map((item, index) => {
+                            const icon = icons[item.icon] || icons.mail;
+                            const toneClass = toneStyles[item.tone] || toneStyles.violet;
+                            const label = localizeField(item.label, language) || item.label || '';
+                            const link = item.link || '#';
+                            const isExternal = link.startsWith('http');
+                            return (
+                                <motion.a
+                                    key={item.key || `${item.icon}-${index}`}
+                                    href={link}
+                                    target={isExternal ? '_blank' : undefined}
+                                    rel={isExternal ? 'noopener noreferrer' : undefined}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true, amount: 0.3 }}
+                                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                                    className="group flex flex-col items-center alc-card border border-slate-100 bg-white shadow-sm transition hover:shadow-lg hover:-translate-y-1"
+                                >
+                                    <div className={`flex alc-icon items-center justify-center ${toneClass} transition group-hover:scale-110`}>
+                                        {icon}
+                                    </div>
+                                    <p className="mt-3 sm:mt-4 alc-card-title font-semibold text-slate-800">
+                                        {label}
+                                    </p>
+                                    <p className="mt-1 alc-body-sm text-slate-500">
+                                        {item.value}
+                                    </p>
+                                </motion.a>
+                            );
+                        })}
 
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
@@ -877,11 +1039,11 @@ export default function Home() {
                                     {language === 'en' ? 'Office Address' : 'Alamat Kantor'}
                                 </p>
                                 <p className="mt-1 alc-body-sm text-slate-500">
-                                    {contactInfo.address[language] || contactInfo.address.id}
+                                    {landing.contactInfo.address[language] || landing.contactInfo.address.id}
                                 </p>
                             </div>
                             <a
-                                href={contactInfo.address.mapLink}
+                                href={landing.contactInfo.address.mapLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center alc-button border border-violet-200 bg-white alc-body-sm font-semibold text-violet-700 transition hover:bg-violet-50 hover:border-violet-300 min-h-[44px] flex-shrink-0"
@@ -901,7 +1063,7 @@ export default function Home() {
                     setBankSoalTargetUrl('');
                 }}
                 targetUrl={bankSoalTargetUrl}
-                correctPasskey={bankSoalPasskey}
+                correctPasskey={landing.bankSoalPasskey}
                 language={language}
                 onSuccess={() => {
                     // Store global access for Bank Soal

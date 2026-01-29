@@ -2,7 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\PageContent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -40,6 +43,15 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
             ],
+            'appLogo' => fn () => $this->getLogoUrl(),
         ];
+    }
+
+    private function getLogoUrl(): ?string
+    {
+        $content = PageContent::where('slug', 'landing')->first()?->content;
+        $path = Arr::get($content ?? [], 'media.logo.path');
+
+        return $path ? Storage::url($path) : null;
     }
 }

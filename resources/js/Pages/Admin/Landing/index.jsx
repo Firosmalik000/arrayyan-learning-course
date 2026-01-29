@@ -29,6 +29,7 @@ const tabs = [
     { id: 'bank-soal', label: 'Bank Soal' },
     { id: 'cta', label: 'CTA' },
     { id: 'contact', label: 'Contact' },
+    { id: 'logo', label: 'Logo' },
 ];
 
 const iconOptions = [
@@ -87,6 +88,7 @@ const defaultContent = {
     media: {
         heroImage: { url: null, alt: { id: 'Siswa ALC', en: 'ALC student' } },
         aboutImage: { url: null, alt: { id: 'Kelas ALC', en: 'ALC class' } },
+        logo: { url: null, path: null },
     },
 };
 
@@ -315,6 +317,7 @@ export default function Landing({ landingContent }) {
         content: initialContent,
         hero_image: null,
         about_image: null,
+        logo: null,
         gallery_images: [],
         gallery_item_files: [],
     });
@@ -396,9 +399,18 @@ export default function Landing({ landingContent }) {
         }
     };
 
+    const updateLogo = (file) => {
+        setData('logo', file);
+        if (file) {
+            const previewUrl = URL.createObjectURL(file);
+            updateContent('media.logo.url', previewUrl);
+        }
+    };
+
     const content = data.content;
     const heroPreview = content?.media?.heroImage?.url || content?.media?.heroImage?.path;
     const aboutPreview = content?.media?.aboutImage?.url || content?.media?.aboutImage?.path;
+    const logoPreview = content?.media?.logo?.url || content?.media?.logo?.path;
 
     return (
         <>
@@ -1681,6 +1693,27 @@ export default function Landing({ landingContent }) {
                                 </div>
                             </Card>
                         </div>
+                    </div>
+                )}
+
+                {activeTab === 'logo' && (
+                    <div className="space-y-6">
+                        <Card>
+                            <CardHeader
+                                title="Logo Website"
+                                subtitle="Logo ini digunakan di navbar & footer halaman publik, serta sidebar admin dashboard."
+                            />
+                            <ImageUpload
+                                label="Upload Logo"
+                                description="Format: JPG, PNG, SVG. Maks 3MB. Rekomendasi: gambar persegi atau transparan."
+                                previewUrl={logoPreview}
+                                onChange={updateLogo}
+                                onClear={() => {
+                                    setData('logo', null);
+                                    updateContent('media.logo', { url: null, path: null });
+                                }}
+                            />
+                        </Card>
                     </div>
                 )}
             </div>

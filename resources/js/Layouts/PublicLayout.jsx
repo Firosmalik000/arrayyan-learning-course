@@ -1,11 +1,13 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import LanguageSelector from '../Components/LanguageSelector';
 import { useI18n } from '../lib/i18n';
 
 export default function PublicLayout({ children }) {
     const { t } = useI18n();
+    const { props } = usePage();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const logoSrc = props.appLogo || '/images/logo.jpeg';
 
     const navItems = [
         { href: '/', label: t('navHome') },
@@ -26,7 +28,7 @@ export default function PublicLayout({ children }) {
                     <Link href="/" className="flex items-center gap-2 sm:gap-3">
                         <div className="flex items-center">
                             <img
-                                src="/images/logo.jpeg"
+                                src={logoSrc}
                                 alt="ALC logo"
                                 className="h-16 w-16 object-contain sm:h-20 sm:w-20"
                                 onError={(event) => {
@@ -189,7 +191,7 @@ export default function PublicLayout({ children }) {
                         <div className="flex items-center gap-3">
                             <div className="flex items-center">
                                 <img
-                                    src="/images/logo.jpeg"
+                                    src={logoSrc}
                                     alt="ALC logo"
                                     className="h-16 w-16 object-contain sm:h-20 sm:w-20"
                                     onError={(event) => {

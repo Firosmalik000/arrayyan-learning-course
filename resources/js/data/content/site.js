@@ -25,6 +25,32 @@ export const contactInfo = {
         address: 'info@alclearning.id',
         link: 'mailto:info@alclearning.id',
     },
+    socials: [
+        {
+            key: 'whatsapp',
+            label: { id: 'WhatsApp', en: 'WhatsApp' },
+            value: '+62 812-3456-7890',
+            link: 'https://wa.me/6281234567890',
+            icon: 'whatsapp',
+            tone: 'green',
+        },
+        {
+            key: 'instagram',
+            label: { id: 'Instagram', en: 'Instagram' },
+            value: '@alclearning',
+            link: 'https://instagram.com/alclearning',
+            icon: 'instagram',
+            tone: 'rose',
+        },
+        {
+            key: 'email',
+            label: { id: 'Email', en: 'Email' },
+            value: 'info@alclearning.id',
+            link: 'mailto:info@alclearning.id',
+            icon: 'mail',
+            tone: 'violet',
+        },
+    ],
     address: {
         id: 'Jl. Pendidikan Islami No. 8, Bandung, Jawa Barat 40123',
         en: 'Jl. Pendidikan Islami No. 8, Bandung, West Java 40123',

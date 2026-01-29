@@ -1,6 +1,6 @@
 {
-  "_vendor-inertia-k7FJVHLV.js": {
-    "file": "assets/vendor-inertia-k7FJVHLV.js",
+  "_vendor-inertia-X-rXzlwc.js": {
+    "file": "assets/vendor-inertia-X-rXzlwc.js",
     "name": "vendor-inertia",
     "imports": [
       "_vendor-react-ZwENbJqZ.js"
@@ -18,17 +18,17 @@
     "name": "vendor-react"
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-B2_hqr9A.js",
+    "file": "assets/app-01UgmTDr.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
     "imports": [
       "_vendor-react-ZwENbJqZ.js",
-      "_vendor-inertia-k7FJVHLV.js",
+      "_vendor-inertia-X-rXzlwc.js",
       "_vendor-motion-ei3ph0Aj.js"
     ],
     "css": [
-      "assets/app-KsD4R_pq.css"
+      "assets/app-CrCAEhlc.css"
     ]
   }
 }

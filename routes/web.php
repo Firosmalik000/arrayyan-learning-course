@@ -1,11 +1,12 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\LandingContentController;
 use App\Http\Controllers\RegistrationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', fn () => Inertia::render('Public/Home'))->name('home');
+Route::get('/', [LandingContentController::class, 'show'])->name('home');
 Route::get('/olimpiade', fn () => Inertia::render('Public/Olympiad'))->name('olympiad');
 Route::get('/olimpiade/{slug}', fn ($slug) => Inertia::render('Public/Olympiad/Detail', ['slug' => $slug]))->name('olympiad.detail');
 Route::get('/pendaftaran', fn () => Inertia::render('Public/Register'))->name('register');
@@ -33,7 +34,8 @@ Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])
 
 Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/', fn () => Inertia::render('Admin/Dashboard'))->name('dashboard');
-    Route::get('/landing', fn () => Inertia::render('Admin/Landing'))->name('landing');
+    Route::get('/landing', [LandingContentController::class, 'edit'])->name('landing');
+    Route::put('/landing', [LandingContentController::class, 'update'])->name('landing.update');
     Route::get('/program', fn () => Inertia::render('Admin/Programs'))->name('programs');
     Route::get('/bank-soal', fn () => Inertia::render('Admin/BankSoal'))->name('banksoal');
     Route::get('/olimpiade', fn () => Inertia::render('Admin/Olympiads'))->name('olympiads');
