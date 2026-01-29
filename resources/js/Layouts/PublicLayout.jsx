@@ -21,15 +21,14 @@ export default function PublicLayout({ children }) {
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900">
             <header className="sticky top-0 z-30 border-b border-violet-100/70 bg-white/95 shadow-sm backdrop-blur-md">
-                <div className="h-1 w-full bg-gradient-to-r from-violet-700 via-purple-700 to-amber-400" />
                 <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2 sm:gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-violet-200/70 sm:h-10 sm:w-10 sm:rounded-2xl">
+                        <div className="flex items-center">
                             <img
-                                src="/images/alc-logo.png"
+                                src="/images/logo.jpeg"
                                 alt="ALC logo"
-                                className="h-7 w-7 object-contain sm:h-8 sm:w-8"
+                                className="h-16 w-16 object-contain sm:h-20 sm:w-20"
                                 onError={(event) => {
                                     event.currentTarget.style.display = 'none';
                                     if (event.currentTarget.nextSibling) {
@@ -37,17 +36,6 @@ export default function PublicLayout({ children }) {
                                     }
                                 }}
                             />
-                            <span className="hidden text-[10px] font-bold text-violet-700">
-                                ALC
-                            </span>
-                        </div>
-                        <div className="hidden sm:block">
-                            <p className="font-display text-sm font-semibold text-slate-800">
-                                Ar Rayyan Learning Course
-                            </p>
-                            <p className="text-[10px] text-violet-600">
-                                Membimbing dengan Hati
-                            </p>
                         </div>
                     </Link>
 
@@ -57,7 +45,7 @@ export default function PublicLayout({ children }) {
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className="rounded-full px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-violet-50 hover:text-violet-700"
+                                className="rounded-full px-3 py-2 text-base font-medium text-slate-600 transition hover:bg-violet-50 hover:text-violet-700"
                             >
                                 {item.label}
                             </Link>
@@ -69,7 +57,7 @@ export default function PublicLayout({ children }) {
                         <LanguageSelector />
                         <Link
                             href="/pendaftaran"
-                            className="hidden rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:from-violet-800 hover:to-amber-500 sm:inline-flex"
+                            className="hidden rounded-full bg-violet-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:bg-violet-800 sm:inline-flex"
                         >
                             Daftar
                         </Link>
@@ -137,7 +125,7 @@ export default function PublicLayout({ children }) {
                                     key={item.href}
                                     href={item.href}
                                     onClick={closeMenu}
-                                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-violet-50 hover:text-violet-700"
+                                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-medium text-slate-700 transition hover:bg-violet-50 hover:text-violet-700"
                                 >
                                     <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
                                     {item.label}
@@ -151,7 +139,7 @@ export default function PublicLayout({ children }) {
                         <Link
                             href="/pendaftaran"
                             onClick={closeMenu}
-                            className="flex w-full items-center justify-center rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:from-violet-800 hover:to-amber-500"
+                            className="flex w-full items-center justify-center rounded-full bg-violet-700 px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-violet-800"
                         >
                             Daftar Sekarang
                         </Link>
@@ -199,11 +187,11 @@ export default function PublicLayout({ children }) {
                 <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:px-6 sm:py-12 md:grid-cols-[1.3fr_1fr_1fr]">
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-violet-200/70 sm:h-12 sm:w-12">
+                            <div className="flex items-center">
                                 <img
-                                    src="/images/alc-logo.png"
+                                    src="/images/logo.jpeg"
                                     alt="ALC logo"
-                                    className="h-8 w-8 object-contain sm:h-9 sm:w-9"
+                                    className="h-16 w-16 object-contain sm:h-20 sm:w-20"
                                     onError={(event) => {
                                         event.currentTarget.style.display = 'none';
                                         if (event.currentTarget.nextSibling) {
@@ -211,17 +199,7 @@ export default function PublicLayout({ children }) {
                                         }
                                     }}
                                 />
-                                <span className="hidden text-xs font-bold text-violet-700">
-                                    ALC
-                                </span>
-                            </div>
-                            <div>
-                                <p className="font-display text-base font-semibold text-slate-800">
-                                    Ar Rayyan Learning Course
-                                </p>
-                                <p className="text-xs text-violet-600">
-                                    Membimbing dengan Hati
-                                </p>
+                              
                             </div>
                         </div>
                         <p className="text-sm text-slate-600 leading-relaxed">
@@ -264,10 +242,10 @@ export default function PublicLayout({ children }) {
                         </div>
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-slate-800">
+                        <p className="text-base font-semibold text-slate-800">
                             Menu
                         </p>
-                        <nav className="mt-3 grid gap-2 text-sm text-slate-600">
+                        <nav className="mt-3 grid gap-2 text-base text-slate-600">
                             {navItems.map((item) => (
                                 <Link
                                     key={`footer-${item.href}`}

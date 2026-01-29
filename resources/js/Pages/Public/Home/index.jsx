@@ -99,7 +99,7 @@ export default function Home() {
                     >
                         <motion.h1
                             variants={fadeUp}
-                            className="font-display alc-hero-title font-semibold leading-snug text-transparent bg-clip-text bg-gradient-to-r from-violet-700 via-indigo-600 to-amber-500"
+                            className="font-hero alc-hero-title font-bold leading-snug text-violet-700"
                         >
                             {siteConfig.name}
                         </motion.h1>
@@ -121,7 +121,7 @@ export default function Home() {
                         >
                             <Link
                                 href="/pendaftaran"
-                                className="inline-flex items-center justify-center alc-button bg-gradient-to-r from-violet-700 to-amber-400 alc-body-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:from-violet-800 hover:to-amber-500 min-h-[44px]"
+                                className="inline-flex items-center justify-center alc-button bg-violet-700 alc-body-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-violet-800 min-h-[44px]"
                             >
                                 {cta.primary}
                             </Link>
@@ -215,6 +215,7 @@ export default function Home() {
                         title={t.why.title}
                         subtitle={t.why.subtitle}
                         align="center"
+                        highlight
                     />
                     <div className="mt-8 sm:mt-10 grid alc-gap-md md:grid-cols-2 lg:grid-cols-3">
                         {features.map((feature) => {
@@ -288,7 +289,7 @@ export default function Home() {
                             </div>
                         </motion.div>
 
-                        <div className="flex flex-col alc-gap-md mt-6 lg:mt-0">
+                        <div className="flex flex-col alc-gap-md mt-6 lg:mt-0 border-l-4 border-violet-500 pl-5 sm:pl-6">
                             <div className="alc-card border border-violet-100 bg-violet-50/60">
                                 <h3 className="font-display alc-card-title font-semibold text-slate-800">
                                     {about.title}
@@ -297,61 +298,34 @@ export default function Home() {
                                     {about.description}
                                 </p>
                             </div>
-                            <div className="grid alc-gap-sm grid-cols-1 sm:grid-cols-2">
-                                <div className="alc-card border border-slate-100 bg-white shadow-sm">
-                                    <p className="font-display alc-body-sm font-semibold text-slate-800">
-                                        {about.valuesTitle}
-                                    </p>
-                                    <ul className="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2 alc-body-sm text-slate-600">
-                                        {about.values.map((value) => (
-                                            <li key={value}>- {value}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <div className="alc-card border border-slate-100 bg-white shadow-sm">
-                                    <p className="font-display alc-body-sm font-semibold text-slate-800">
-                                        {levels.title}
-                                    </p>
-                                    <ul className="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2 alc-body-sm text-slate-600">
-                                        {levels.levels.map((level) => (
-                                            <li key={level}>- {level}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </div>
-                            <div className="flex flex-col alc-gap-sm alc-card border border-slate-100 bg-white shadow-sm">
+                            <div className="alc-card border border-slate-100 bg-white shadow-sm">
                                 <p className="font-display alc-body-sm font-semibold text-slate-800">
-                                    {subj.title}
+                                    {about.valuesTitle}
                                 </p>
-                                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                                    {subj.list.map((subject) => (
-                                        <span
-                                            key={subject}
-                                            className="alc-pill bg-amber-50 alc-caption font-semibold text-amber-700"
-                                        >
-                                            {subject}
-                                        </span>
+                                <ul className="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2 alc-body-sm text-slate-600">
+                                    {about.values.map((value) => (
+                                        <li key={value}>- {value}</li>
                                     ))}
+                                </ul>
+                            </div>
+                            <div className="grid alc-gap-sm grid-cols-1 sm:grid-cols-2">
+                                <div className="alc-card border border-violet-100 bg-violet-50/40 shadow-sm">
+                                    <p className="font-display alc-body-sm font-semibold text-slate-800">
+                                        {vm.visionTitle}
+                                    </p>
+                                    <p className="mt-1.5 sm:mt-2 alc-body-sm text-slate-600">
+                                        {vm.vision}
+                                    </p>
                                 </div>
-                                <div className="mt-4 sm:mt-6 flex flex-col alc-gap-sm">
-                                    <div className="alc-panel bg-slate-50">
-                                        <p className="font-display alc-body-sm font-semibold text-slate-800">
-                                            {vm.visionTitle}
-                                        </p>
-                                        <p className="mt-1.5 sm:mt-2 alc-body-sm text-slate-600">
-                                            {vm.vision}
-                                        </p>
-                                    </div>
-                                    <div className="alc-panel bg-slate-50">
-                                        <p className="font-display alc-body-sm font-semibold text-slate-800">
-                                            {vm.missionTitle}
-                                        </p>
-                                        <ul className="mt-1.5 sm:mt-2 space-y-1.5 alc-body-sm text-slate-600">
-                                            {vm.missionList.map((item, index) => (
-                                                <li key={index}>- {item}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
+                                <div className="alc-card border border-violet-100 bg-violet-50/40 shadow-sm">
+                                    <p className="font-display alc-body-sm font-semibold text-slate-800">
+                                        {vm.missionTitle}
+                                    </p>
+                                    <ul className="mt-1.5 sm:mt-2 space-y-1.5 alc-body-sm text-slate-600">
+                                        {vm.missionList.map((item, index) => (
+                                            <li key={index}>- {item}</li>
+                                        ))}
+                                    </ul>
                                 </div>
                             </div>
                         </div>
@@ -359,8 +333,110 @@ export default function Home() {
                 </div>
             </section>
 
+            {/* Jenjang Pendidikan & Mata Pelajaran Section */}
+            <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-violet-50/30 alc-section">
+                {/* Decorative blobs */}
+                <div className="absolute -left-20 top-10 h-40 w-40 rounded-full bg-amber-200/30 blur-3xl" />
+                <div className="absolute -right-20 bottom-10 h-40 w-40 rounded-full bg-violet-200/30 blur-3xl" />
+
+                <div className="relative alc-container max-w-6xl">
+                    <SectionTitle
+                        eyebrow="Akademik"
+                        title={t.education.title}
+                        subtitle={t.education.subtitle}
+                        align="center"
+                    />
+                    <div className="mt-8 sm:mt-10 grid alc-gap-lg md:grid-cols-2">
+                        {/* Jenjang Pendidikan - Gold */}
+                        <motion.div
+                            initial={{ opacity: 0, x: -30 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true, amount: 0.3 }}
+                            transition={{ duration: 0.6 }}
+                            whileHover={{ y: -4 }}
+                            className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-amber-200/80 bg-gradient-to-br from-amber-50 via-amber-100/60 to-yellow-50 p-6 sm:p-8 shadow-lg transition-shadow hover:shadow-xl"
+                        >
+                            {/* Gold accent corner */}
+                            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-amber-300/20 blur-2xl" />
+                            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400" />
+
+                            <div className="relative flex items-center gap-3 mb-5 sm:mb-6">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400/20">
+                                    <svg viewBox="0 0 24 24" className="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                                        <path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5" />
+                                    </svg>
+                                </div>
+                                <p className="font-display alc-card-title font-bold text-amber-800">
+                                    {levels.title}
+                                </p>
+                            </div>
+                            <div className="relative grid gap-2.5 sm:gap-3">
+                                {levels.levels.map((level, index) => (
+                                    <motion.div
+                                        key={level}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        whileInView={{ opacity: 1, x: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: index * 0.08 }}
+                                        className="flex items-center gap-3 rounded-xl bg-white/70 px-4 py-2.5 shadow-sm border border-amber-100/60"
+                                    >
+                                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-400/20 text-xs font-bold text-amber-700">
+                                            {index + 1}
+                                        </span>
+                                        <span className="alc-body-sm font-medium text-amber-900/80">{level}</span>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </motion.div>
+
+                        {/* Mata Pelajaran - Ungu */}
+                        <motion.div
+                            initial={{ opacity: 0, x: 30 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true, amount: 0.3 }}
+                            transition={{ duration: 0.6, delay: 0.15 }}
+                            whileHover={{ y: -4 }}
+                            className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-violet-200/80 bg-gradient-to-br from-violet-50 via-violet-100/60 to-indigo-50 p-6 sm:p-8 shadow-lg transition-shadow hover:shadow-xl"
+                        >
+                            {/* Violet accent corner */}
+                            <div className="absolute -left-6 -top-6 h-24 w-24 rounded-full bg-violet-300/20 blur-2xl" />
+                            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-violet-400 via-indigo-400 to-violet-400" />
+
+                            <div className="relative flex items-center gap-3 mb-5 sm:mb-6">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-400/20">
+                                    <svg viewBox="0 0 24 24" className="h-5 w-5 text-violet-600" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                                        <path d="M8 7h6" />
+                                        <path d="M8 11h4" />
+                                    </svg>
+                                </div>
+                                <p className="font-display alc-card-title font-bold text-violet-800">
+                                    {subj.title}
+                                </p>
+                            </div>
+                            <div className="relative flex flex-wrap gap-2.5 sm:gap-3">
+                                {subj.list.map((subject, index) => (
+                                    <motion.span
+                                        key={subject}
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        whileInView={{ opacity: 1, scale: 1 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: index * 0.06 }}
+                                        whileHover={{ scale: 1.05 }}
+                                        className="rounded-xl bg-white/80 border border-violet-200/60 px-4 py-2 text-sm font-semibold text-violet-700 shadow-sm transition-colors hover:bg-violet-100/80 hover:text-violet-800"
+                                    >
+                                        {subject}
+                                    </motion.span>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
+
             {/* Program Section */}
-            <section id="program" className="bg-slate-50 alc-section">
+            <section id="program" className="bg-white alc-section">
                 <div className="alc-container max-w-6xl">
                     <SectionTitle
                         eyebrow="Program"
@@ -375,13 +451,20 @@ export default function Home() {
                         variants={stagger}
                         className="mt-8 sm:mt-10 grid alc-gap-md md:grid-cols-3"
                     >
-                        {packages.map((item) => (
+                        {packages.map((item) => {
+                            const isGold = item.id === 'reguler' || item.id === 'olimpiade';
+                            const borderColor = isGold ? 'border-amber-300' : 'border-violet-300';
+                            const accentBar = isGold
+                                ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400'
+                                : 'bg-gradient-to-r from-violet-400 via-indigo-400 to-violet-400';
+                            return (
                             <motion.div
                                 key={item.id}
                                 variants={fadeUp}
                                 whileHover={{ y: -6 }}
-                                className="alc-card border border-slate-100 bg-white shadow-sm transition hover:shadow-md"
+                                className={`relative overflow-hidden alc-card border-2 ${borderColor} bg-white shadow-sm transition hover:shadow-md`}
                             >
+                                <div className={`absolute top-0 left-0 h-1 w-full ${accentBar}`} />
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between alc-gap-sm">
                                     <h3 className="font-display alc-card-title font-semibold text-slate-800">
                                         {item.name}
@@ -408,7 +491,8 @@ export default function Home() {
                                     </p>
                                 </div>
                             </motion.div>
-                        ))}
+                            );
+                        })}
                     </motion.div>
                 </div>
             </section>
@@ -484,7 +568,7 @@ export default function Home() {
                                 <button
                                     type="button"
                                     onClick={() => handleBankSoalClick('offline')}
-                                    className="inline-flex w-full items-center justify-center alc-button bg-gradient-to-r from-violet-600 to-violet-700 alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:from-violet-700 hover:to-violet-800 min-h-[40px]"
+                                    className="inline-flex w-full items-center justify-center alc-button bg-violet-700 alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:bg-violet-800 min-h-[40px]"
                                 >
                                     {bank.viewDetail}
                                     <svg
@@ -532,7 +616,7 @@ export default function Home() {
                                 <button
                                     type="button"
                                     onClick={() => handleBankSoalClick('online')}
-                                    className="inline-flex w-full items-center justify-center alc-button bg-gradient-to-r from-amber-500 to-amber-600 alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:from-amber-600 hover:to-amber-700 min-h-[40px]"
+                                    className="inline-flex w-full items-center justify-center alc-button bg-amber-500 alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:bg-amber-600 min-h-[40px]"
                                 >
                                     {bank.viewDetail}
                                     <svg
@@ -603,7 +687,7 @@ export default function Home() {
                                 <button
                                     type="button"
                                     onClick={() => handleOlympiadClick('gratis')}
-                                    className="inline-flex w-full items-center justify-center alc-button bg-gradient-to-r from-emerald-500 to-emerald-600 alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:from-emerald-600 hover:to-emerald-700 min-h-[40px]"
+                                    className="inline-flex w-full items-center justify-center alc-button bg-violet-700 alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:bg-violet-800 min-h-[40px]"
                                 >
                                     {cta.viewOlympiad}
                                     <svg
@@ -653,7 +737,7 @@ export default function Home() {
                                 <button
                                     type="button"
                                     onClick={() => handleOlympiadClick('berbayar')}
-                                    className="inline-flex w-full items-center justify-center alc-button bg-gradient-to-r from-amber-500 to-amber-600 alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:from-amber-600 hover:to-amber-700 min-h-[40px]"
+                                    className="inline-flex w-full items-center justify-center alc-button bg-amber-500 alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:bg-amber-600 min-h-[40px]"
                                 >
                                     {cta.viewOlympiad}
                                     <svg
@@ -685,7 +769,7 @@ export default function Home() {
                     <div className="flex flex-col sm:flex-row flex-wrap alc-gap-sm">
                         <Link
                             href="/pendaftaran"
-                            className="inline-flex items-center justify-center alc-button bg-gradient-to-r from-violet-700 to-amber-400 alc-body-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:from-violet-800 hover:to-amber-500 min-h-[44px]"
+                            className="inline-flex items-center justify-center alc-button bg-violet-700 alc-body-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-violet-800 min-h-[44px]"
                         >
                             {cta.studentRegister}
                         </Link>

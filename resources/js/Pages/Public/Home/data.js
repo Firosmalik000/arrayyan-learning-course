@@ -290,6 +290,10 @@ export const sectionTitles = {
             title: 'Profil Lembaga',
             subtitle: 'Ar Rayyan Learning Course membangun lingkungan belajar yang aman, nyaman, dan penuh perhatian.',
         },
+        education: {
+            title: 'Jenjang Pendidikan & Mata Pelajaran',
+            subtitle: 'Layanan pendidikan untuk berbagai jenjang dengan beragam mata pelajaran.',
+        },
         program: {
             title: 'Program & Paket Belajar',
             subtitle: 'Paket belajar yang fleksibel untuk kebutuhan siswa dan keluarga.',
@@ -320,6 +324,10 @@ export const sectionTitles = {
         profile: {
             title: 'Institution Profile',
             subtitle: 'Ar Rayyan Learning Course builds a safe, comfortable, and caring learning environment.',
+        },
+        education: {
+            title: 'Education Levels & Subjects',
+            subtitle: 'Education services across various levels with a wide range of subjects.',
         },
         program: {
             title: 'Learning Programs & Packages',
