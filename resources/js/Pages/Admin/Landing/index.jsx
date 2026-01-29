@@ -1,201 +1,133 @@
-import { Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, useForm } from '@inertiajs/react';
+import { useMemo, useState } from 'react';
 
-// Mock data yang sesuai dengan Home.jsx
-const initialData = {
-    hero: {
-        eyebrow: 'Ar Rayyan Learning Course',
-        title: {
-            id: 'Membimbing dengan Hati, Mencetak Generasi Berprestasi',
-            en: 'Guiding with Heart, Shaping Achieving Generations',
-        },
-        description: {
-            id: 'Ar Rayyan Learning Course (ALC) hadir sebagai mitra belajar yang hangat, islami, dan profesional. Kami mendampingi anak-anak mencapai prestasi terbaik dengan metode yang terstruktur, menyenangkan, dan mudah dipahami orang tua.',
-            en: 'Ar Rayyan Learning Course (ALC) is a warm, Islamic, and professional learning partner. We help children achieve their best through structured, engaging lessons that parents can easily follow.',
-        },
-        ctaPrimary: { id: 'Daftar Sekarang', en: 'Enroll Now' },
-        ctaSecondary: { id: 'Lihat Program Belajar', en: 'Explore Programs' },
-        badges: [
-            { title: { id: '50+ Pengajar', en: '50+ Tutors' }, detail: { id: 'Berpengalaman', en: 'Experienced' } },
-            { title: { id: 'Belajar Islami', en: 'Islamic Values' }, detail: { id: 'Nilai dan karakter', en: 'Character first' } },
-            { title: { id: 'Fleksibel', en: 'Flexible' }, detail: { id: 'Offline / Online', en: 'Offline / Online' } },
-        ],
-    },
-    whyAlc: {
-        eyebrow: 'ALC',
-        title: { id: 'Kenapa Memilih ALC', en: 'Why Choose ALC' },
-        subtitle: {
-            id: 'Layanan belajar dengan sistem rapi, ramah anak, dan mudah dipahami orang tua.',
-            en: 'A well-structured learning system that supports students and parents.',
-        },
-        features: [
-            {
-                title: { id: 'Bank Soal Terstruktur', en: 'Structured Question Bank' },
-                description: { id: 'Latihan bertahap untuk memperkuat pemahaman dan evaluasi.', en: 'Step-by-step exercises to strengthen mastery and evaluation.' },
-                icon: 'book',
-            },
-            {
-                title: { id: 'Pengajar Berpengalaman', en: 'Experienced Teachers' },
-                description: { id: 'Pendampingan sabar, fokus pada kebutuhan belajar anak.', en: 'Patient guidance focused on each student learning needs.' },
-                icon: 'user',
-            },
-            {
-                title: { id: 'Ramah Anak & Orang Tua', en: 'Friendly for Families' },
-                description: { id: 'Komunikasi terbuka agar orang tua selalu terlibat.', en: 'Open communication so parents stay informed and involved.' },
-                icon: 'heart',
-            },
-        ],
-    },
-    profile: {
-        eyebrow: 'ALC',
-        title: { id: 'Profil Lembaga', en: 'Institution Profile' },
-        subtitle: {
-            id: 'ALC membangun lingkungan belajar yang aman, hangat, dan berorientasi prestasi.',
-            en: 'ALC builds a safe, caring, and achievement-oriented learning environment.',
-        },
-        aboutTitle: { id: 'Tentang Kami', en: 'About Us' },
-        aboutDescription: {
-            id: 'ALC adalah lembaga pendidikan yang memadukan nilai islami, pendekatan edukatif, dan kepedulian pada karakter anak.',
-            en: 'ALC combines Islamic values, educational methods, and deep care for every child.',
-        },
-        valuesTitle: { id: 'Nilai Utama', en: 'Core Values' },
-        values: [
-            { id: 'Edukatif', en: 'Educational' },
-            { id: 'Islami', en: 'Islamic' },
-            { id: 'Peduli anak', en: 'Child-focused' },
-        ],
-        levelsTitle: { id: 'Jenjang Pendidikan', en: 'Education Levels' },
-        levels: [
-            { id: 'Pra TK', en: 'Pre-K' },
-            { id: 'TK', en: 'Kindergarten' },
-            { id: 'SD / MI', en: 'Elementary' },
-            { id: 'SMP', en: 'Junior High' },
-            { id: 'SMA', en: 'Senior High' },
-        ],
-        visionTitle: { id: 'Visi', en: 'Vision' },
-        vision: {
-            id: 'Menjadi lembaga pendidikan terpercaya yang membentuk generasi berakhlak, cerdas, dan berdaya saing.',
-            en: 'To be a trusted education partner that shapes faithful, intelligent, and competitive generations.',
-        },
-        missionTitle: { id: 'Misi', en: 'Mission' },
-        mission: {
-            id: 'Memberikan pendampingan belajar berkualitas, mendekatkan anak dengan nilai islami, serta membangun komunikasi aktif dengan orang tua.',
-            en: 'Deliver quality learning guidance, bring children closer to Islamic values, and build strong communication with parents.',
-        },
-    },
-    program: {
-        eyebrow: 'Program',
-        title: { id: 'Program & Paket Belajar', en: 'Learning Programs & Packages' },
-        subtitle: {
-            id: 'Paket belajar yang fleksibel untuk kebutuhan siswa dan keluarga.',
-            en: 'Flexible learning packages tailored to every student.',
-        },
-        items: [
-            {
-                name: { id: 'Reguler', en: 'Regular' },
-                level: { id: 'Pra TK - SMA', en: 'Pre-K - Senior High' },
-                subjects: { id: 'Calistung, Matematika, Bahasa Inggris', en: 'Reading, Math, English' },
-                sessions: { id: '8 pertemuan / bulan', en: '8 sessions / month' },
-                mode: { id: 'Offline / Online', en: 'Offline / Online' },
-            },
-            {
-                name: { id: 'Intensif', en: 'Intensive' },
-                level: { id: 'SD - SMA', en: 'Elementary - Senior High' },
-                subjects: { id: 'Penguatan konsep + latihan soal', en: 'Concept reinforcement + practice' },
-                sessions: { id: '12 pertemuan / bulan', en: '12 sessions / month' },
-                mode: { id: 'Offline / Hybrid', en: 'Offline / Hybrid' },
-            },
-            {
-                name: { id: 'Privat / Semi Privat', en: 'Private / Semi Private' },
-                level: { id: 'TK - SMA', en: 'Kindergarten - Senior High' },
-                subjects: { id: 'Menyesuaikan kebutuhan siswa', en: 'Customized to student needs' },
-                sessions: { id: 'Fleksibel', en: 'Flexible' },
-                mode: { id: 'Offline / Online', en: 'Offline / Online' },
-            },
-            {
-                name: { id: 'Persiapan Ujian / Olimpiade', en: 'Exam / Olympiad Prep' },
-                level: { id: 'SD - SMA', en: 'Elementary - Senior High' },
-                subjects: { id: 'Try out, pembahasan, strategi', en: 'Try out, review, strategy' },
-                sessions: { id: 'Program khusus', en: 'Special program' },
-                mode: { id: 'Offline / Online', en: 'Offline / Online' },
-            },
-        ],
-    },
-    stats: {
-        items: [
-            { value: '50+', label: { id: 'Pengajar Aktif', en: 'Active Tutors' } },
-            { value: '500+', label: { id: 'Siswa Terbimbing', en: 'Students Guided' } },
-            { value: '30+', label: { id: 'Program Belajar', en: 'Learning Programs' } },
-            { value: '10+', label: { id: 'Tahun Berpengalaman', en: 'Years of Experience' } },
-        ],
-    },
-    olympiad: {
-        eyebrow: 'Prestasi',
-        title: { id: 'Info Olimpiade', en: 'Olympiad Info' },
-        subtitle: {
-            id: 'Pantau jadwal lomba dan persiapan prestasi siswa.',
-            en: 'Stay updated with competitions and schedules.',
-        },
-        items: [
-            {
-                name: { id: 'Olimpiade Sains Nasional', en: 'National Science Olympiad' },
-                level: { id: 'SD - SMA', en: 'Elementary - Senior High' },
-                schedule: { id: 'Februari - April', en: 'February - April' },
-                category: { id: 'Gratis', en: 'Free' },
-            },
-            {
-                name: { id: 'Matematika Islami Challenge', en: 'Islamic Math Challenge' },
-                level: { id: 'SD / SMP', en: 'Elementary / Junior High' },
-                schedule: { id: 'Mei - Juni', en: 'May - June' },
-                category: { id: 'Berbayar', en: 'Paid' },
-            },
-            {
-                name: { id: 'English Creative Olympiad', en: 'English Creative Olympiad' },
-                level: { id: 'SMP / SMA', en: 'Junior / Senior High' },
-                schedule: { id: 'Agustus', en: 'August' },
-                category: { id: 'Gratis', en: 'Free' },
-            },
-        ],
-    },
-    contact: {
-        eyebrow: 'Hubungi Kami',
-        title: { id: 'Kontak & Informasi', en: 'Contact & Information' },
-        subtitle: {
-            id: 'Hubungi kami untuk konsultasi program belajar terbaik.',
-            en: 'Reach us anytime for the best learning consultation.',
-        },
-        whatsapp: '+62 812-3456-7890',
-        instagram: '@alclearning',
-        email: 'info@alclearning.id',
-        address: { id: 'Jl. Pendidikan Islami No. 8, Bandung, Jawa Barat 40123', en: 'Jl. Pendidikan Islami No. 8, Bandung, West Java 40123' },
-        hours: {
-            weekday: { id: 'Senin - Jumat: 08:00 - 20:00', en: 'Mon - Fri: 08:00 - 20:00' },
-            weekend: { id: 'Sabtu: 08:00 - 16:00', en: 'Sat: 08:00 - 16:00' },
-        },
-    },
-};
+import { siteConfig, contactInfo, operatingHours, stats } from '@/data/content/site';
+import { packages as defaultPackages, olympiadHighlights as defaultOlympiadHighlights } from '@/data/content/programs';
+import {
+    heroContent,
+    featureCards,
+    aboutContent,
+    visionMission,
+    educationLevels,
+    subjects,
+    bankSoalContent,
+    bankSoalPasskey,
+    bankSoalCategories,
+    bankSoalItems,
+    sectionTitles,
+    ctaButtons,
+} from '@/Pages/Public/Home/data';
 
 const tabs = [
-    { id: 'hero', label: 'Hero', icon: '🏠' },
-    { id: 'why', label: 'Kenapa ALC', icon: '✨' },
-    { id: 'profile', label: 'Profil', icon: '🏫' },
-    { id: 'program', label: 'Program', icon: '📚' },
-    { id: 'stats', label: 'Statistik', icon: '📊' },
-    { id: 'olympiad', label: 'Olimpiade', icon: '🏆' },
-    { id: 'contact', label: 'Kontak', icon: '📞' },
+    { id: 'hero', label: 'Hero' },
+    { id: 'why', label: 'Why' },
+    { id: 'profile', label: 'Profile' },
+    { id: 'education', label: 'Education' },
+    { id: 'program', label: 'Program' },
+    { id: 'gallery', label: 'Gallery' },
+    { id: 'stats', label: 'Stats' },
+    { id: 'bank-soal', label: 'Bank Soal' },
+    { id: 'cta', label: 'CTA' },
+    { id: 'contact', label: 'Contact' },
 ];
 
 const iconOptions = [
-    { value: 'book', label: 'Buku' },
+    { value: 'book', label: 'Book' },
     { value: 'user', label: 'User' },
-    { value: 'heart', label: 'Hati' },
-    { value: 'trophy', label: 'Piala' },
-    { value: 'clock', label: 'Jam' },
-    { value: 'users', label: 'Grup' },
+    { value: 'heart', label: 'Heart' },
+    { value: 'chat', label: 'Chat' },
+    { value: 'list', label: 'List' },
+    { value: 'check', label: 'Check' },
+    { value: 'users', label: 'Users' },
+    { value: 'trophy', label: 'Trophy' },
+    { value: 'clock', label: 'Clock' },
+    { value: 'phone', label: 'Phone' },
+    { value: 'mail', label: 'Mail' },
+    { value: 'mapPin', label: 'Map Pin' },
+    { value: 'whatsapp', label: 'WhatsApp' },
+    { value: 'instagram', label: 'Instagram' },
+    { value: 'facebook', label: 'Facebook' },
+    { value: 'tiktok', label: 'TikTok' },
 ];
 
-const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100';
+const toneOptions = [
+    { value: 'violet', label: 'Violet' },
+    { value: 'amber', label: 'Amber' },
+    { value: 'rose', label: 'Rose' },
+    { value: 'slate', label: 'Slate' },
+    { value: 'green', label: 'Green' },
+    { value: 'blue', label: 'Blue' },
+];
 
+const inputClass =
+    'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100';
+
+const defaultContent = {
+    siteConfig,
+    contactInfo,
+    operatingHours,
+    stats,
+    heroContent,
+    featureCards,
+    aboutContent,
+    visionMission,
+    educationLevels,
+    subjects,
+    bankSoalContent,
+    bankSoalPasskey,
+    bankSoalCategories,
+    bankSoalItems,
+    sectionTitles,
+    ctaButtons,
+    packages: defaultPackages,
+    olympiadHighlights: defaultOlympiadHighlights,
+    gallery: {
+        items: [],
+    },
+    media: {
+        heroImage: { url: null, alt: { id: 'Siswa ALC', en: 'ALC student' } },
+        aboutImage: { url: null, alt: { id: 'Kelas ALC', en: 'ALC class' } },
+    },
+};
+
+const mergeContent = (base, override) => {
+    if (Array.isArray(base)) {
+        return Array.isArray(override) ? override : base;
+    }
+    if (base && typeof base === 'object') {
+        const result = { ...base };
+        if (override && typeof override === 'object') {
+            Object.keys(override).forEach((key) => {
+                if (override[key] === undefined || override[key] === null) {
+                    return;
+                }
+                result[key] = mergeContent(base[key], override[key]);
+            });
+        }
+        return result;
+    }
+    return override !== undefined ? override : base;
+};
+
+const deepClone = (value) => JSON.parse(JSON.stringify(value));
+
+const getAtPath = (obj, path) => {
+    if (!path) return obj;
+    return path.split('.').reduce((acc, key) => (acc ? acc[key] : undefined), obj);
+};
+
+const setAtPath = (obj, path, value) => {
+    const keys = path.split('.');
+    let current = obj;
+    for (let i = 0; i < keys.length - 1; i += 1) {
+        const key = keys[i];
+        if (current[key] === undefined) {
+            current[key] = {};
+        }
+        current = current[key];
+    }
+    current[keys[keys.length - 1]] = value;
+};
 function LanguageToggle({ value, onChange }) {
     return (
         <div className="inline-flex items-center rounded-full bg-slate-100 p-1">
@@ -204,14 +136,14 @@ function LanguageToggle({ value, onChange }) {
                 onClick={() => onChange('id')}
                 className={`rounded-full px-3 py-1 text-xs font-semibold transition ${value === 'id' ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
-                🇮🇩 ID
+                ID
             </button>
             <button
                 type="button"
                 onClick={() => onChange('en')}
                 className={`rounded-full px-3 py-1 text-xs font-semibold transition ${value === 'en' ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
-                🇬🇧 EN
+                EN
             </button>
         </div>
     );
@@ -226,26 +158,25 @@ function FieldLabel({ children, required }) {
     );
 }
 
-function BilingualField({ label, data, path, lang, onChange, textarea = false, rows = 3, required = false }) {
-    const value = data[lang] || '';
+function LocalizedField({ label, value, onChange, textarea = false, rows = 3, required = false, placeholder }) {
     return (
         <div>
             <FieldLabel required={required}>{label}</FieldLabel>
             {textarea ? (
                 <textarea
-                    value={value}
-                    onChange={(e) => onChange(`${path}.${lang}`, e.target.value)}
+                    value={value || ''}
+                    onChange={(e) => onChange(e.target.value)}
                     className={`${inputClass} resize-none`}
                     rows={rows}
-                    placeholder={`Masukkan ${label.toLowerCase()}...`}
+                    placeholder={placeholder}
                 />
             ) : (
                 <input
                     type="text"
-                    value={value}
-                    onChange={(e) => onChange(`${path}.${lang}`, e.target.value)}
+                    value={value || ''}
+                    onChange={(e) => onChange(e.target.value)}
                     className={inputClass}
-                    placeholder={`Masukkan ${label.toLowerCase()}...`}
+                    placeholder={placeholder}
                 />
             )}
         </div>
@@ -260,19 +191,12 @@ function Card({ children, className = '' }) {
     );
 }
 
-function CardHeader({ icon, title, subtitle, actions }) {
+function CardHeader({ title, subtitle, actions }) {
     return (
         <div className="mb-5 flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-                {icon && (
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-lg">
-                        {icon}
-                    </div>
-                )}
-                <div>
-                    <h3 className="font-semibold text-slate-800">{title}</h3>
-                    {subtitle && <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>}
-                </div>
+            <div>
+                <h3 className="font-semibold text-slate-800">{title}</h3>
+                {subtitle && <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>}
             </div>
             {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
@@ -307,7 +231,6 @@ function ItemCard({ children, onDelete, title }) {
         </div>
     );
 }
-
 function AddButton({ onClick, label }) {
     return (
         <button
@@ -323,62 +246,164 @@ function AddButton({ onClick, label }) {
     );
 }
 
-function SectionHeader({ data, path, lang, onChange, showEyebrow = true }) {
+function ImageUpload({ label, description, previewUrl, onChange, onClear }) {
     return (
-        <Card>
-            <CardHeader icon="📝" title="Judul Section" subtitle="Atur judul dan subtitle yang tampil di section ini" />
-            <div className="space-y-4">
-                {showEyebrow && (
-                    <div>
-                        <FieldLabel>Eyebrow (Label kecil di atas judul)</FieldLabel>
-                        <input
-                            type="text"
-                            value={data.eyebrow || ''}
-                            onChange={(e) => onChange(`${path}.eyebrow`, e.target.value)}
-                            className={inputClass}
-                            placeholder="contoh: ALC, Program, Prestasi..."
-                        />
-                    </div>
-                )}
-                <BilingualField label="Judul" data={data.title} path={`${path}.title`} lang={lang} onChange={onChange} required />
-                <BilingualField label="Subtitle" data={data.subtitle} path={`${path}.subtitle`} lang={lang} onChange={onChange} textarea rows={2} />
+        <div>
+            <FieldLabel>{label}</FieldLabel>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="h-24 w-24 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                    {previewUrl ? (
+                        <img src={previewUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+                            Preview
+                        </div>
+                    )}
+                </div>
+                <div className="flex-1 space-y-2">
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => onChange(e.target.files?.[0] || null)}
+                        className="block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-violet-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-violet-700 hover:file:bg-violet-100"
+                    />
+                    {description && <p className="text-xs text-slate-500">{description}</p>}
+                    {previewUrl && (
+                        <button
+                            type="button"
+                            onClick={onClear}
+                            className="text-xs font-medium text-rose-500 transition hover:text-rose-600"
+                        >
+                            Hapus gambar
+                        </button>
+                    )}
+                </div>
             </div>
-        </Card>
+        </div>
     );
 }
 
-export default function Landing() {
+function SelectInput({ label, value, onChange, options }) {
+    return (
+        <div>
+            <FieldLabel>{label}</FieldLabel>
+            <select
+                value={value || ''}
+                onChange={(e) => onChange(e.target.value)}
+                className={inputClass}
+            >
+                <option value="">Pilih {label}</option>
+                {options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
+            </select>
+        </div>
+    );
+}
+export default function Landing({ landingContent }) {
     const [activeTab, setActiveTab] = useState('hero');
-    const [data, setData] = useState(initialData);
     const [lang, setLang] = useState('id');
-    const [isSaving, setIsSaving] = useState(false);
 
-    const updateData = (path, value) => {
-        setData((prev) => {
-            const newData = JSON.parse(JSON.stringify(prev));
-            const keys = path.split('.');
-            let current = newData;
-            for (let i = 0; i < keys.length - 1; i++) {
-                current = current[keys[i]];
-            }
-            current[keys[keys.length - 1]] = value;
-            return newData;
+    const initialContent = useMemo(
+        () => mergeContent(deepClone(defaultContent), landingContent || {}),
+        [landingContent],
+    );
+
+    const { data, setData, put, processing, errors, recentlySuccessful } = useForm({
+        content: initialContent,
+        hero_image: null,
+        about_image: null,
+        gallery_images: [],
+        gallery_item_files: [],
+    });
+
+    const updateContentBatch = (mutate) => {
+        const content = deepClone(data.content);
+        mutate(content);
+        setData('content', content);
+    };
+
+    const updateContent = (path, value) => {
+        updateContentBatch((content) => {
+            setAtPath(content, path, value);
+        });
+    };
+
+    const addDualListItem = (idPath, enPath, idItem, enItem) => {
+        updateContentBatch((content) => {
+            const idList = getAtPath(content, idPath) || [];
+            const enList = getAtPath(content, enPath) || [];
+            setAtPath(content, idPath, [...idList, idItem]);
+            setAtPath(content, enPath, [...enList, enItem]);
+        });
+    };
+
+    const removeDualListItem = (idPath, enPath, index) => {
+        updateContentBatch((content) => {
+            const idList = getAtPath(content, idPath) || [];
+            const enList = getAtPath(content, enPath) || [];
+            setAtPath(content, idPath, idList.filter((_, i) => i !== index));
+            setAtPath(content, enPath, enList.filter((_, i) => i !== index));
+        });
+    };
+
+    const syncStatField = (index, key, value) => {
+        updateContentBatch((content) => {
+            setAtPath(content, `stats.id.${index}.${key}`, value);
+            setAtPath(content, `stats.en.${index}.${key}`, value);
+        });
+    };
+
+    const syncFeatureField = (index, key, value) => {
+        updateContentBatch((content) => {
+            setAtPath(content, `featureCards.id.${index}.${key}`, value);
+            setAtPath(content, `featureCards.en.${index}.${key}`, value);
         });
     };
 
     const handleSave = () => {
-        setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
-            alert('Data berhasil disimpan! (Mock)');
-        }, 1000);
+        put('/admin/landing', {
+            preserveScroll: true,
+            forceFormData: true,
+        });
     };
+
+    const updateGalleryFile = (index, file) => {
+        const files = [...(data.gallery_item_files || [])];
+        files[index] = file;
+        setData('gallery_item_files', files);
+        if (file) {
+            const previewUrl = URL.createObjectURL(file);
+            updateContent(`gallery.items.${index}.url`, previewUrl);
+        }
+    };
+
+    const updateHeroImage = (file) => {
+        setData('hero_image', file);
+        if (file) {
+            const previewUrl = URL.createObjectURL(file);
+            updateContent('media.heroImage.url', previewUrl);
+        }
+    };
+
+    const updateAboutImage = (file) => {
+        setData('about_image', file);
+        if (file) {
+            const previewUrl = URL.createObjectURL(file);
+            updateContent('media.aboutImage.url', previewUrl);
+        }
+    };
+
+    const content = data.content;
+    const heroPreview = content?.media?.heroImage?.url || content?.media?.heroImage?.path;
+    const aboutPreview = content?.media?.aboutImage?.url || content?.media?.aboutImage?.path;
 
     return (
         <>
             <Head title="Content Landing" />
             <div className="space-y-6">
-                {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-slate-800 sm:text-2xl">Content Landing</h1>
@@ -389,359 +414,1270 @@ export default function Landing() {
                         <button
                             type="button"
                             onClick={handleSave}
-                            disabled={isSaving}
+                            disabled={processing}
                             className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
                         >
-                            {isSaving ? (
-                                <>
-                                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                    </svg>
-                                    Menyimpan...
-                                </>
-                            ) : (
-                                <>
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    Simpan
-                                </>
-                            )}
+                            {processing ? 'Menyimpan...' : 'Simpan'}
                         </button>
                     </div>
                 </div>
 
-                {/* Language Indicator */}
-                <div className={`rounded-xl p-3 text-center text-sm font-medium ${lang === 'id' ? 'bg-violet-50 text-violet-700' : 'bg-amber-50 text-amber-700'}`}>
-                    {lang === 'id' ? '🇮🇩 Sedang mengedit konten Bahasa Indonesia' : '🇬🇧 Currently editing English content'}
+                <div className="rounded-xl bg-slate-50 p-3 text-center text-xs text-slate-500">
+                    {lang === 'id' ? 'Sedang mengedit konten Bahasa Indonesia' : 'Currently editing English content'}
                 </div>
 
-                {/* Tabs */}
-                <div className="flex gap-2 overflow-x-auto pb-2">
+                {Object.keys(errors).length > 0 && (
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-600">
+                        Ada input yang perlu diperiksa sebelum menyimpan.
+                    </div>
+                )}
+
+                {recentlySuccessful && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-600">
+                        Konten berhasil disimpan.
+                    </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
                             type="button"
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition ${
-                                activeTab === tab.id
-                                    ? 'bg-violet-600 text-white shadow-sm'
-                                    : 'bg-white text-slate-600 hover:bg-slate-50'
-                            }`}
+                            className={`rounded-full px-4 py-2 text-xs font-semibold transition ${activeTab === tab.id ? 'bg-violet-600 text-white' : 'bg-white text-slate-500 hover:text-slate-700'}`}
                         >
-                            <span>{tab.icon}</span>
-                            <span>{tab.label}</span>
+                            {tab.label}
                         </button>
                     ))}
                 </div>
 
-                {/* Hero Tab */}
                 {activeTab === 'hero' && (
                     <div className="space-y-5">
                         <Card>
-                            <CardHeader icon="🎯" title="Hero Utama" subtitle="Headline dan deskripsi utama di bagian atas landing page" />
-                            <div className="space-y-4">
+                            <CardHeader title="Site Info" subtitle="Nama situs dan tagline" />
+                            <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
-                                    <FieldLabel>Eyebrow</FieldLabel>
+                                    <FieldLabel required>Nama Site</FieldLabel>
                                     <input
                                         type="text"
-                                        value={data.hero.eyebrow}
-                                        onChange={(e) => updateData('hero.eyebrow', e.target.value)}
+                                        value={content.siteConfig.name || ''}
+                                        onChange={(e) => updateContent('siteConfig.name', e.target.value)}
                                         className={inputClass}
-                                        placeholder="contoh: Ar Rayyan Learning Course"
                                     />
                                 </div>
-                                <BilingualField label="Judul Utama" data={data.hero.title} path="hero.title" lang={lang} onChange={updateData} required />
-                                <BilingualField label="Deskripsi" data={data.hero.description} path="hero.description" lang={lang} onChange={updateData} textarea rows={4} />
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <BilingualField label="Tombol CTA Utama" data={data.hero.ctaPrimary} path="hero.ctaPrimary" lang={lang} onChange={updateData} />
-                                    <BilingualField label="Tombol CTA Sekunder" data={data.hero.ctaSecondary} path="hero.ctaSecondary" lang={lang} onChange={updateData} />
+                                <div>
+                                    <FieldLabel>Nama Singkat</FieldLabel>
+                                    <input
+                                        type="text"
+                                        value={content.siteConfig.shortName || ''}
+                                        onChange={(e) => updateContent('siteConfig.shortName', e.target.value)}
+                                        className={inputClass}
+                                    />
                                 </div>
+                                <LocalizedField
+                                    label="Tagline"
+                                    value={content.siteConfig.tagline?.[lang]}
+                                    onChange={(value) => updateContent(`siteConfig.tagline.${lang}`, value)}
+                                    textarea
+                                    rows={2}
+                                />
                             </div>
                         </Card>
 
                         <Card>
-                            <CardHeader icon="🏷️" title="Badges" subtitle="Label/badge yang tampil di bawah tombol CTA" />
-                            <div className="space-y-3">
-                                {data.hero.badges.map((badge, index) => (
-                                    <ItemCard key={index} title={badge.title[lang] || `Badge ${index + 1}`} onDelete={() => {}}>
-                                        <div className="grid gap-4 sm:grid-cols-2">
-                                            <BilingualField label="Judul Badge" data={badge.title} path={`hero.badges.${index}.title`} lang={lang} onChange={updateData} />
-                                            <BilingualField label="Detail" data={badge.detail} path={`hero.badges.${index}.detail`} lang={lang} onChange={updateData} />
-                                        </div>
-                                    </ItemCard>
-                                ))}
-                                <AddButton label="Tambah Badge" onClick={() => {}} />
-                            </div>
-                        </Card>
-                    </div>
-                )}
-
-                {/* Why ALC Tab */}
-                {activeTab === 'why' && (
-                    <div className="space-y-5">
-                        <SectionHeader data={data.whyAlc} path="whyAlc" lang={lang} onChange={updateData} />
-
-                        <Card>
-                            <CardHeader icon="⭐" title="Feature Cards" subtitle="Kartu fitur unggulan yang ditampilkan" />
-                            <div className="space-y-3">
-                                {data.whyAlc.features.map((feature, index) => (
-                                    <ItemCard key={index} title={feature.title[lang] || `Feature ${index + 1}`} onDelete={() => {}}>
-                                        <div className="space-y-4">
-                                            <BilingualField label="Judul" data={feature.title} path={`whyAlc.features.${index}.title`} lang={lang} onChange={updateData} required />
-                                            <BilingualField label="Deskripsi" data={feature.description} path={`whyAlc.features.${index}.description`} lang={lang} onChange={updateData} textarea rows={2} />
-                                            <div>
-                                                <FieldLabel>Icon</FieldLabel>
-                                                <select
-                                                    value={feature.icon}
-                                                    onChange={(e) => updateData(`whyAlc.features.${index}.icon`, e.target.value)}
-                                                    className={inputClass}
-                                                >
-                                                    {iconOptions.map((opt) => (
-                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </ItemCard>
-                                ))}
-                                <AddButton label="Tambah Feature" onClick={() => {}} />
-                            </div>
-                        </Card>
-                    </div>
-                )}
-
-                {/* Profile Tab */}
-                {activeTab === 'profile' && (
-                    <div className="space-y-5">
-                        <SectionHeader data={data.profile} path="profile" lang={lang} onChange={updateData} />
-
-                        <Card>
-                            <CardHeader icon="ℹ️" title="Tentang Kami" subtitle="Deskripsi singkat tentang ALC" />
+                            <CardHeader title="Hero Title & Deskripsi" subtitle="Judul dan deskripsi utama di hero" />
                             <div className="space-y-4">
-                                <BilingualField label="Judul" data={data.profile.aboutTitle} path="profile.aboutTitle" lang={lang} onChange={updateData} />
-                                <BilingualField label="Deskripsi" data={data.profile.aboutDescription} path="profile.aboutDescription" lang={lang} onChange={updateData} textarea rows={3} />
+                                <LocalizedField
+                                    label="Judul"
+                                    value={content.sectionTitles?.[lang]?.hero?.title}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.hero.title`, value)}
+                                    required
+                                />
+                                <LocalizedField
+                                    label="Deskripsi"
+                                    value={content.sectionTitles?.[lang]?.hero?.description}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.hero.description`, value)}
+                                    textarea
+                                    rows={3}
+                                />
+                            </div>
+                        </Card>
+
+                        <Card>
+                            <CardHeader title="CTA Hero" subtitle="Teks tombol di hero" />
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <LocalizedField
+                                    label="CTA Primary"
+                                    value={content.ctaButtons?.[lang]?.primary}
+                                    onChange={(value) => updateContent(`ctaButtons.${lang}.primary`, value)}
+                                />
+                                <LocalizedField
+                                    label="CTA Secondary"
+                                    value={content.ctaButtons?.[lang]?.secondary}
+                                    onChange={(value) => updateContent(`ctaButtons.${lang}.secondary`, value)}
+                                />
+                            </div>
+                        </Card>
+
+                        <Card>
+                            <CardHeader title="Hero Badges" subtitle="Badge kecil di bawah CTA" />
+                            <div className="space-y-3">
+                                {(content.heroContent.badges?.[lang] || []).map((badge, index) => (
+                                    <ItemCard
+                                        key={`${lang}-badge-${index}`}
+                                        title={badge.title || `Badge ${index + 1}`}
+                                        onDelete={() => removeDualListItem('heroContent.badges.id', 'heroContent.badges.en', index)}
+                                    >
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <LocalizedField
+                                                label="Judul"
+                                                value={badge.title}
+                                                onChange={(value) => updateContent(`heroContent.badges.${lang}.${index}.title`, value)}
+                                            />
+                                            <LocalizedField
+                                                label="Detail"
+                                                value={badge.detail}
+                                                onChange={(value) => updateContent(`heroContent.badges.${lang}.${index}.detail`, value)}
+                                            />
+                                        </div>
+                                    </ItemCard>
+                                ))}
+                                <AddButton
+                                    label="Tambah Badge"
+                                    onClick={() =>
+                                        addDualListItem(
+                                            'heroContent.badges.id',
+                                            'heroContent.badges.en',
+                                            { title: '', detail: '' },
+                                            { title: '', detail: '' },
+                                        )
+                                    }
+                                />
                             </div>
                         </Card>
 
                         <div className="grid gap-5 lg:grid-cols-2">
                             <Card>
-                                <CardHeader icon="💎" title="Nilai Utama" subtitle="Core values ALC" />
+                                <CardHeader title="Panel Kiri" subtitle="Panel info kecil kiri hero" />
                                 <div className="space-y-4">
-                                    <BilingualField label="Judul Section" data={data.profile.valuesTitle} path="profile.valuesTitle" lang={lang} onChange={updateData} />
-                                    <div className="space-y-2">
-                                        {data.profile.values.map((value, index) => (
-                                            <div key={index} className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={value[lang]}
-                                                    onChange={(e) => updateData(`profile.values.${index}.${lang}`, e.target.value)}
-                                                    className={inputClass}
-                                                    placeholder={`Nilai ${index + 1}`}
-                                                />
-                                                <button type="button" className="shrink-0 rounded-lg p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500">
-                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        ))}
-                                        <AddButton label="Tambah Nilai" onClick={() => {}} />
-                                    </div>
+                                    <LocalizedField
+                                        label="Judul"
+                                        value={content.heroContent.panels?.left?.[lang]?.title}
+                                        onChange={(value) => updateContent(`heroContent.panels.left.${lang}.title`, value)}
+                                    />
+                                    <LocalizedField
+                                        label="Subtitle"
+                                        value={content.heroContent.panels?.left?.[lang]?.subtitle}
+                                        onChange={(value) => updateContent(`heroContent.panels.left.${lang}.subtitle`, value)}
+                                    />
                                 </div>
                             </Card>
-
                             <Card>
-                                <CardHeader icon="🎓" title="Jenjang Pendidikan" subtitle="Level pendidikan yang dilayani" />
+                                <CardHeader title="Panel Kanan" subtitle="Panel info kecil kanan hero" />
                                 <div className="space-y-4">
-                                    <BilingualField label="Judul Section" data={data.profile.levelsTitle} path="profile.levelsTitle" lang={lang} onChange={updateData} />
-                                    <div className="space-y-2">
-                                        {data.profile.levels.map((level, index) => (
-                                            <div key={index} className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={level[lang]}
-                                                    onChange={(e) => updateData(`profile.levels.${index}.${lang}`, e.target.value)}
-                                                    className={inputClass}
-                                                    placeholder={`Jenjang ${index + 1}`}
-                                                />
-                                                <button type="button" className="shrink-0 rounded-lg p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500">
-                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        ))}
-                                        <AddButton label="Tambah Jenjang" onClick={() => {}} />
-                                    </div>
+                                    <LocalizedField
+                                        label="Judul"
+                                        value={content.heroContent.panels?.right?.[lang]?.title}
+                                        onChange={(value) => updateContent(`heroContent.panels.right.${lang}.title`, value)}
+                                    />
+                                    <LocalizedField
+                                        label="Subtitle"
+                                        value={content.heroContent.panels?.right?.[lang]?.subtitle}
+                                        onChange={(value) => updateContent(`heroContent.panels.right.${lang}.subtitle`, value)}
+                                    />
                                 </div>
                             </Card>
                         </div>
 
                         <Card>
-                            <CardHeader icon="🎯" title="Visi & Misi" subtitle="Visi dan misi lembaga" />
+                            <CardHeader title="Gambar Hero" subtitle="Upload foto utama di hero" />
                             <div className="space-y-4">
-                                <BilingualField label="Judul Visi" data={data.profile.visionTitle} path="profile.visionTitle" lang={lang} onChange={updateData} />
-                                <BilingualField label="Isi Visi" data={data.profile.vision} path="profile.vision" lang={lang} onChange={updateData} textarea rows={2} />
-                                <BilingualField label="Judul Misi" data={data.profile.missionTitle} path="profile.missionTitle" lang={lang} onChange={updateData} />
-                                <BilingualField label="Isi Misi" data={data.profile.mission} path="profile.mission" lang={lang} onChange={updateData} textarea rows={3} />
+                                <ImageUpload
+                                    label="Hero Image"
+                                    description="Rekomendasi ukuran 1200x1500px."
+                                    previewUrl={heroPreview}
+                                    onChange={updateHeroImage}
+                                    onClear={() => {
+                                        setData('hero_image', null);
+                                        updateContent('media.heroImage.path', null);
+                                        updateContent('media.heroImage.url', null);
+                                    }}
+                                />
+                                <LocalizedField
+                                    label="Alt Text"
+                                    value={content.media?.heroImage?.alt?.[lang]}
+                                    onChange={(value) => updateContent(`media.heroImage.alt.${lang}`, value)}
+                                />
                             </div>
                         </Card>
                     </div>
                 )}
 
-                {/* Program Tab */}
-                {activeTab === 'program' && (
+                {activeTab === 'why' && (
                     <div className="space-y-5">
-                        <SectionHeader data={data.program} path="program" lang={lang} onChange={updateData} />
+                        <Card>
+                            <CardHeader title="Judul Section" subtitle="Judul dan subtitle Kenapa Memilih ALC" />
+                            <div className="space-y-4">
+                                <LocalizedField
+                                    label="Eyebrow"
+                                    value={content.sectionTitles?.[lang]?.why?.eyebrow}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.why.eyebrow`, value)}
+                                />
+                                <LocalizedField
+                                    label="Judul"
+                                    value={content.sectionTitles?.[lang]?.why?.title}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.why.title`, value)}
+                                />
+                                <LocalizedField
+                                    label="Subtitle"
+                                    value={content.sectionTitles?.[lang]?.why?.subtitle}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.why.subtitle`, value)}
+                                    textarea
+                                    rows={2}
+                                />
+                            </div>
+                        </Card>
 
                         <Card>
-                            <CardHeader icon="📖" title="Daftar Program" subtitle="Program belajar yang ditawarkan" />
+                            <CardHeader title="Feature Cards" subtitle="Kartu fitur di section Why" />
                             <div className="space-y-3">
-                                {data.program.items.map((program, index) => (
-                                    <ItemCard key={index} title={program.name[lang] || `Program ${index + 1}`} onDelete={() => {}}>
+                                {(content.featureCards?.[lang] || []).map((feature, index) => (
+                                    <ItemCard
+                                        key={`${lang}-feature-${index}`}
+                                        title={feature.title || `Feature ${index + 1}`}
+                                        onDelete={() => removeDualListItem('featureCards.id', 'featureCards.en', index)}
+                                    >
                                         <div className="space-y-4">
-                                            <BilingualField label="Nama Program" data={program.name} path={`program.items.${index}.name`} lang={lang} onChange={updateData} required />
+                                            <LocalizedField
+                                                label="Judul"
+                                                value={feature.title}
+                                                onChange={(value) => updateContent(`featureCards.${lang}.${index}.title`, value)}
+                                            />
+                                            <LocalizedField
+                                                label="Deskripsi"
+                                                value={feature.description}
+                                                onChange={(value) => updateContent(`featureCards.${lang}.${index}.description`, value)}
+                                                textarea
+                                                rows={2}
+                                            />
                                             <div className="grid gap-4 sm:grid-cols-2">
-                                                <BilingualField label="Jenjang" data={program.level} path={`program.items.${index}.level`} lang={lang} onChange={updateData} />
-                                                <BilingualField label="Mode Belajar" data={program.mode} path={`program.items.${index}.mode`} lang={lang} onChange={updateData} />
-                                            </div>
-                                            <BilingualField label="Mata Pelajaran" data={program.subjects} path={`program.items.${index}.subjects`} lang={lang} onChange={updateData} />
-                                            <BilingualField label="Pertemuan" data={program.sessions} path={`program.items.${index}.sessions`} lang={lang} onChange={updateData} />
-                                        </div>
-                                    </ItemCard>
-                                ))}
-                                <AddButton label="Tambah Program" onClick={() => {}} />
-                            </div>
-                        </Card>
-                    </div>
-                )}
-
-                {/* Stats Tab */}
-                {activeTab === 'stats' && (
-                    <div className="space-y-5">
-                        <Card>
-                            <CardHeader icon="📈" title="Statistik" subtitle="Angka-angka pencapaian ALC yang ditampilkan" />
-                            <div className="space-y-3">
-                                {data.stats.items.map((stat, index) => (
-                                    <ItemCard key={index} title={`${stat.value} - ${stat.label[lang]}`} onDelete={() => {}}>
-                                        <div className="grid gap-4 sm:grid-cols-2">
-                                            <div>
-                                                <FieldLabel required>Angka/Nilai</FieldLabel>
-                                                <input
-                                                    type="text"
-                                                    value={stat.value}
-                                                    onChange={(e) => updateData(`stats.items.${index}.value`, e.target.value)}
-                                                    className={inputClass}
-                                                    placeholder="contoh: 50+, 100%, 10+"
+                                                <SelectInput
+                                                    label="Icon"
+                                                    value={feature.icon}
+                                                    onChange={(value) => syncFeatureField(index, 'icon', value)}
+                                                    options={iconOptions}
+                                                />
+                                                <SelectInput
+                                                    label="Tone"
+                                                    value={feature.tone}
+                                                    onChange={(value) => syncFeatureField(index, 'tone', value)}
+                                                    options={toneOptions}
                                                 />
                                             </div>
-                                            <BilingualField label="Label" data={stat.label} path={`stats.items.${index}.label`} lang={lang} onChange={updateData} required />
                                         </div>
                                     </ItemCard>
                                 ))}
-                                <AddButton label="Tambah Statistik" onClick={() => {}} />
+                                <AddButton
+                                    label="Tambah Feature"
+                                    onClick={() =>
+                                        addDualListItem(
+                                            'featureCards.id',
+                                            'featureCards.en',
+                                            { title: '', description: '', icon: 'book', tone: 'violet' },
+                                            { title: '', description: '', icon: 'book', tone: 'violet' },
+                                        )
+                                    }
+                                />
                             </div>
                         </Card>
                     </div>
                 )}
 
-                {/* Olympiad Tab */}
-                {activeTab === 'olympiad' && (
+                {activeTab === 'profile' && (
                     <div className="space-y-5">
-                        <SectionHeader data={data.olympiad} path="olympiad" lang={lang} onChange={updateData} />
+                        <Card>
+                            <CardHeader title="Judul Section" subtitle="Profil lembaga" />
+                            <div className="space-y-4">
+                                <LocalizedField
+                                    label="Eyebrow"
+                                    value={content.sectionTitles?.[lang]?.profile?.eyebrow}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.profile.eyebrow`, value)}
+                                />
+                                <LocalizedField
+                                    label="Judul"
+                                    value={content.sectionTitles?.[lang]?.profile?.title}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.profile.title`, value)}
+                                />
+                                <LocalizedField
+                                    label="Subtitle"
+                                    value={content.sectionTitles?.[lang]?.profile?.subtitle}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.profile.subtitle`, value)}
+                                    textarea
+                                    rows={2}
+                                />
+                            </div>
+                        </Card>
 
                         <Card>
-                            <CardHeader icon="🥇" title="Daftar Olimpiade" subtitle="Event olimpiade yang ditampilkan" />
-                            <div className="space-y-3">
-                                {data.olympiad.items.map((item, index) => (
-                                    <ItemCard key={index} title={item.name[lang] || `Olimpiade ${index + 1}`} onDelete={() => {}}>
-                                        <div className="space-y-4">
-                                            <BilingualField label="Nama Olimpiade" data={item.name} path={`olympiad.items.${index}.name`} lang={lang} onChange={updateData} required />
-                                            <div className="grid gap-4 sm:grid-cols-2">
-                                                <BilingualField label="Jenjang" data={item.level} path={`olympiad.items.${index}.level`} lang={lang} onChange={updateData} />
-                                                <BilingualField label="Jadwal" data={item.schedule} path={`olympiad.items.${index}.schedule`} lang={lang} onChange={updateData} />
-                                            </div>
-                                            <BilingualField label="Kategori" data={item.category} path={`olympiad.items.${index}.category`} lang={lang} onChange={updateData} />
+                            <CardHeader title="Tentang Kami" subtitle="Konten utama profil" />
+                            <div className="space-y-4">
+                                <LocalizedField
+                                    label="Judul"
+                                    value={content.aboutContent?.[lang]?.title}
+                                    onChange={(value) => updateContent(`aboutContent.${lang}.title`, value)}
+                                />
+                                <LocalizedField
+                                    label="Deskripsi"
+                                    value={content.aboutContent?.[lang]?.description}
+                                    onChange={(value) => updateContent(`aboutContent.${lang}.description`, value)}
+                                    textarea
+                                    rows={4}
+                                />
+                                <LocalizedField
+                                    label="Judul Nilai Utama"
+                                    value={content.aboutContent?.[lang]?.valuesTitle}
+                                    onChange={(value) => updateContent(`aboutContent.${lang}.valuesTitle`, value)}
+                                />
+                                <div className="space-y-2">
+                                    {(content.aboutContent?.[lang]?.values || []).map((value, index) => (
+                                        <div key={`${lang}-value-${index}`} className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={value || ''}
+                                                onChange={(e) => updateContent(`aboutContent.${lang}.values.${index}`, e.target.value)}
+                                                className={inputClass}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeDualListItem('aboutContent.id.values', 'aboutContent.en.values', index)}
+                                                className="shrink-0 rounded-lg p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+                                            >
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
                                         </div>
-                                    </ItemCard>
-                                ))}
-                                <AddButton label="Tambah Olimpiade" onClick={() => {}} />
+                                    ))}
+                                    <AddButton
+                                        label="Tambah Nilai"
+                                        onClick={() =>
+                                            addDualListItem('aboutContent.id.values', 'aboutContent.en.values', '', '')
+                                        }
+                                    />
+                                </div>
+                                <LocalizedField
+                                    label="Panel Title"
+                                    value={content.aboutContent?.[lang]?.panelTitle}
+                                    onChange={(value) => updateContent(`aboutContent.${lang}.panelTitle`, value)}
+                                />
+                                <LocalizedField
+                                    label="Panel Subtitle"
+                                    value={content.aboutContent?.[lang]?.panelSubtitle}
+                                    onChange={(value) => updateContent(`aboutContent.${lang}.panelSubtitle`, value)}
+                                />
+                            </div>
+                        </Card>
+
+                        <Card>
+                            <CardHeader title="Visi & Misi" subtitle="Konten visi dan misi" />
+                            <div className="space-y-4">
+                                <LocalizedField
+                                    label="Judul Visi"
+                                    value={content.visionMission?.[lang]?.visionTitle}
+                                    onChange={(value) => updateContent(`visionMission.${lang}.visionTitle`, value)}
+                                />
+                                <LocalizedField
+                                    label="Isi Visi"
+                                    value={content.visionMission?.[lang]?.vision}
+                                    onChange={(value) => updateContent(`visionMission.${lang}.vision`, value)}
+                                    textarea
+                                    rows={2}
+                                />
+                                <LocalizedField
+                                    label="Judul Misi"
+                                    value={content.visionMission?.[lang]?.missionTitle}
+                                    onChange={(value) => updateContent(`visionMission.${lang}.missionTitle`, value)}
+                                />
+                                <div className="space-y-2">
+                                    {(content.visionMission?.[lang]?.missionList || []).map((item, index) => (
+                                        <div key={`${lang}-mission-${index}`} className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={item || ''}
+                                                onChange={(e) => updateContent(`visionMission.${lang}.missionList.${index}`, e.target.value)}
+                                                className={inputClass}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeDualListItem('visionMission.id.missionList', 'visionMission.en.missionList', index)}
+                                                className="shrink-0 rounded-lg p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+                                            >
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <AddButton
+                                        label="Tambah Misi"
+                                        onClick={() =>
+                                            addDualListItem('visionMission.id.missionList', 'visionMission.en.missionList', '', '')
+                                        }
+                                    />
+                                </div>
+                            </div>
+                        </Card>
+
+                        <Card>
+                            <CardHeader title="Gambar Profil" subtitle="Foto di section profil" />
+                            <div className="space-y-4">
+                                <ImageUpload
+                                    label="Profile Image"
+                                    description="Rekomendasi ukuran 1200x1200px."
+                                    previewUrl={aboutPreview}
+                                    onChange={updateAboutImage}
+                                    onClear={() => {
+                                        setData('about_image', null);
+                                        updateContent('media.aboutImage.path', null);
+                                        updateContent('media.aboutImage.url', null);
+                                    }}
+                                />
+                                <LocalizedField
+                                    label="Alt Text"
+                                    value={content.media?.aboutImage?.alt?.[lang]}
+                                    onChange={(value) => updateContent(`media.aboutImage.alt.${lang}`, value)}
+                                />
                             </div>
                         </Card>
                     </div>
                 )}
 
-                {/* Contact Tab */}
-                {activeTab === 'contact' && (
+                {activeTab === 'education' && (
                     <div className="space-y-5">
-                        <SectionHeader data={data.contact} path="contact" lang={lang} onChange={updateData} />
+                        <Card>
+                            <CardHeader title="Judul Section" subtitle="Jenjang Pendidikan & Mata Pelajaran" />
+                            <div className="space-y-4">
+                                <LocalizedField
+                                    label="Eyebrow"
+                                    value={content.sectionTitles?.[lang]?.education?.eyebrow}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.education.eyebrow`, value)}
+                                />
+                                <LocalizedField
+                                    label="Judul"
+                                    value={content.sectionTitles?.[lang]?.education?.title}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.education.title`, value)}
+                                />
+                                <LocalizedField
+                                    label="Subtitle"
+                                    value={content.sectionTitles?.[lang]?.education?.subtitle}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.education.subtitle`, value)}
+                                    textarea
+                                    rows={2}
+                                />
+                            </div>
+                        </Card>
 
                         <div className="grid gap-5 lg:grid-cols-2">
                             <Card>
-                                <CardHeader icon="📱" title="Sosial Media" subtitle="Link kontak sosial media ALC" />
+                                <CardHeader title="Jenjang Pendidikan" subtitle="List jenjang pendidikan" />
                                 <div className="space-y-4">
-                                    <div>
-                                        <FieldLabel>WhatsApp</FieldLabel>
-                                        <div className="flex gap-2">
-                                            <span className="flex items-center rounded-l-xl bg-green-50 px-3 text-green-600">
-                                                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                                                </svg>
-                                            </span>
-                                            <input
-                                                type="text"
-                                                value={data.contact.whatsapp}
-                                                onChange={(e) => updateData('contact.whatsapp', e.target.value)}
-                                                className={`${inputClass} rounded-l-none`}
-                                                placeholder="+62 xxx-xxxx-xxxx"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <FieldLabel>Instagram</FieldLabel>
-                                        <div className="flex gap-2">
-                                            <span className="flex items-center rounded-l-xl bg-pink-50 px-3 text-pink-600">
-                                                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                                                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                                                </svg>
-                                            </span>
-                                            <input
-                                                type="text"
-                                                value={data.contact.instagram}
-                                                onChange={(e) => updateData('contact.instagram', e.target.value)}
-                                                className={`${inputClass} rounded-l-none`}
-                                                placeholder="@username"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <FieldLabel>Email</FieldLabel>
-                                        <div className="flex gap-2">
-                                            <span className="flex items-center rounded-l-xl bg-violet-50 px-3 text-violet-600">
-                                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16v12H4zM4 7l8 6 8-6" />
-                                                </svg>
-                                            </span>
-                                            <input
-                                                type="email"
-                                                value={data.contact.email}
-                                                onChange={(e) => updateData('contact.email', e.target.value)}
-                                                className={`${inputClass} rounded-l-none`}
-                                                placeholder="email@domain.com"
-                                            />
-                                        </div>
+                                    <LocalizedField
+                                        label="Judul"
+                                        value={content.educationLevels?.[lang]?.title}
+                                        onChange={(value) => updateContent(`educationLevels.${lang}.title`, value)}
+                                    />
+                                    <div className="space-y-2">
+                                        {(content.educationLevels?.[lang]?.levels || []).map((level, index) => (
+                                            <div key={`${lang}-level-${index}`} className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={level || ''}
+                                                    onChange={(e) => updateContent(`educationLevels.${lang}.levels.${index}`, e.target.value)}
+                                                    className={inputClass}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeDualListItem('educationLevels.id.levels', 'educationLevels.en.levels', index)}
+                                                    className="shrink-0 rounded-lg p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+                                                >
+                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <AddButton
+                                            label="Tambah Jenjang"
+                                            onClick={() =>
+                                                addDualListItem('educationLevels.id.levels', 'educationLevels.en.levels', '', '')
+                                            }
+                                        />
                                     </div>
                                 </div>
                             </Card>
 
                             <Card>
-                                <CardHeader icon="🏢" title="Alamat & Jam Operasional" subtitle="Lokasi dan waktu layanan" />
+                                <CardHeader title="Mata Pelajaran" subtitle="List mata pelajaran" />
                                 <div className="space-y-4">
-                                    <BilingualField label="Alamat Lengkap" data={data.contact.address} path="contact.address" lang={lang} onChange={updateData} textarea rows={2} />
-                                    <BilingualField label="Jam Kerja (Senin - Jumat)" data={data.contact.hours.weekday} path="contact.hours.weekday" lang={lang} onChange={updateData} />
-                                    <BilingualField label="Jam Kerja (Sabtu)" data={data.contact.hours.weekend} path="contact.hours.weekend" lang={lang} onChange={updateData} />
+                                    <LocalizedField
+                                        label="Judul"
+                                        value={content.subjects?.[lang]?.title}
+                                        onChange={(value) => updateContent(`subjects.${lang}.title`, value)}
+                                    />
+                                    <div className="space-y-2">
+                                        {(content.subjects?.[lang]?.list || []).map((subject, index) => (
+                                            <div key={`${lang}-subject-${index}`} className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={subject || ''}
+                                                    onChange={(e) => updateContent(`subjects.${lang}.list.${index}`, e.target.value)}
+                                                    className={inputClass}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeDualListItem('subjects.id.list', 'subjects.en.list', index)}
+                                                    className="shrink-0 rounded-lg p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+                                                >
+                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <AddButton
+                                            label="Tambah Mata Pelajaran"
+                                            onClick={() =>
+                                                addDualListItem('subjects.id.list', 'subjects.en.list', '', '')
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'program' && (
+                    <div className="space-y-5">
+                        <Card>
+                            <CardHeader title="Judul Section" subtitle="Program & Paket Belajar" />
+                            <div className="space-y-4">
+                                <LocalizedField
+                                    label="Eyebrow"
+                                    value={content.sectionTitles?.[lang]?.program?.eyebrow}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.program.eyebrow`, value)}
+                                />
+                                <LocalizedField
+                                    label="Judul"
+                                    value={content.sectionTitles?.[lang]?.program?.title}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.program.title`, value)}
+                                />
+                                <LocalizedField
+                                    label="Subtitle"
+                                    value={content.sectionTitles?.[lang]?.program?.subtitle}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.program.subtitle`, value)}
+                                    textarea
+                                    rows={2}
+                                />
+                            </div>
+                        </Card>
+
+                        <Card>
+                            <CardHeader title="Paket Belajar" subtitle="Daftar paket belajar" />
+                            <div className="space-y-3">
+                                {(content.packages || []).map((pkg, index) => (
+                                    <ItemCard
+                                        key={`package-${index}`}
+                                        title={pkg.name?.[lang] || pkg.id || `Paket ${index + 1}`}
+                                        onDelete={() => updateContent('packages', content.packages.filter((_, i) => i !== index))}
+                                    >
+                                        <div className="space-y-4">
+                                            <div>
+                                                <FieldLabel required>ID Paket</FieldLabel>
+                                                <input
+                                                    type="text"
+                                                    value={pkg.id || ''}
+                                                    onChange={(e) => updateContent(`packages.${index}.id`, e.target.value)}
+                                                    className={inputClass}
+                                                    placeholder="contoh: reguler"
+                                                />
+                                            </div>
+                                            <LocalizedField
+                                                label="Nama Paket"
+                                                value={pkg.name?.[lang]}
+                                                onChange={(value) => updateContent(`packages.${index}.name.${lang}`, value)}
+                                            />
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <LocalizedField
+                                                    label="Jenjang"
+                                                    value={pkg.level?.[lang]}
+                                                    onChange={(value) => updateContent(`packages.${index}.level.${lang}`, value)}
+                                                />
+                                                <LocalizedField
+                                                    label="Mode"
+                                                    value={pkg.mode?.[lang]}
+                                                    onChange={(value) => updateContent(`packages.${index}.mode.${lang}`, value)}
+                                                />
+                                            </div>
+                                            <LocalizedField
+                                                label="Pertemuan"
+                                                value={pkg.sessions?.[lang]}
+                                                onChange={(value) => updateContent(`packages.${index}.sessions.${lang}`, value)}
+                                            />
+                                            <LocalizedField
+                                                label="Deskripsi"
+                                                value={pkg.description?.[lang]}
+                                                onChange={(value) => updateContent(`packages.${index}.description.${lang}`, value)}
+                                                textarea
+                                                rows={3}
+                                            />
+                                            <div>
+                                                <FieldLabel>Highlights</FieldLabel>
+                                                <div className="space-y-2">
+                                                    {(pkg.highlights?.[lang] || []).map((highlight, hIndex) => (
+                                                        <div key={`highlight-${index}-${hIndex}`} className="flex gap-2">
+                                                            <input
+                                                                type="text"
+                                                                value={highlight || ''}
+                                                                onChange={(e) => updateContent(`packages.${index}.highlights.${lang}.${hIndex}`, e.target.value)}
+                                                                className={inputClass}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    removeDualListItem(
+                                                                        `packages.${index}.highlights.id`,
+                                                                        `packages.${index}.highlights.en`,
+                                                                        hIndex,
+                                                                    )
+                                                                }
+                                                                className="shrink-0 rounded-lg p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+                                                            >
+                                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    <AddButton
+                                                        label="Tambah Highlight"
+                                                        onClick={() =>
+                                                            addDualListItem(
+                                                                `packages.${index}.highlights.id`,
+                                                                `packages.${index}.highlights.en`,
+                                                                '',
+                                                                '',
+                                                            )
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </ItemCard>
+                                ))}
+                                <AddButton
+                                    label="Tambah Paket"
+                                    onClick={() =>
+                                        updateContent('packages', [
+                                            ...(content.packages || []),
+                                            {
+                                                id: '',
+                                                name: { id: '', en: '' },
+                                                level: { id: '', en: '' },
+                                                sessions: { id: '', en: '' },
+                                                mode: { id: '', en: '' },
+                                                description: { id: '', en: '' },
+                                                highlights: { id: [''], en: [''] },
+                                            },
+                                        ])
+                                    }
+                                />
+                            </div>
+                        </Card>
+                    </div>
+                )}
+
+                {activeTab === 'gallery' && (
+                    <div className="space-y-5">
+                        <Card>
+                            <CardHeader title="Judul Section Galeri" subtitle="Judul dan subtitle galeri" />
+                            <div className="space-y-4">
+                                <LocalizedField
+                                    label="Eyebrow"
+                                    value={content.sectionTitles?.[lang]?.gallery?.eyebrow}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.gallery.eyebrow`, value)}
+                                />
+                                <LocalizedField
+                                    label="Judul"
+                                    value={content.sectionTitles?.[lang]?.gallery?.title}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.gallery.title`, value)}
+                                />
+                                <LocalizedField
+                                    label="Subtitle"
+                                    value={content.sectionTitles?.[lang]?.gallery?.subtitle}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.gallery.subtitle`, value)}
+                                    textarea
+                                    rows={2}
+                                />
+                            </div>
+                        </Card>
+
+                        <Card>
+                            <CardHeader title="Foto Galeri" subtitle="Upload dan kelola foto galeri" />
+                            <div className="space-y-4">
+                                <div className="space-y-3">
+                                    {(content.gallery?.items || []).map((item, index) => (
+                                        <div
+                                            key={`gallery-${index}`}
+                                            className="rounded-xl border border-slate-200 bg-white p-4"
+                                        >
+                                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                                                <div className="h-24 w-32 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                                                    {(item.url || item.path || item.src) ? (
+                                                        <img
+                                                            src={item.url || item.path || item.src}
+                                                            alt=""
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+                                                            Preview
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 space-y-3">
+                                                    <div>
+                                                        <FieldLabel>Foto</FieldLabel>
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={(e) => updateGalleryFile(index, e.target.files?.[0] || null)}
+                                                            className="block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-violet-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-violet-700 hover:file:bg-violet-100"
+                                                        />
+                                                    </div>
+                                                    <LocalizedField
+                                                        label="Alt Text"
+                                                        value={item.alt?.[lang]}
+                                                        onChange={(value) => updateContent(`gallery.items.${index}.alt.${lang}`, value)}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            updateContent(
+                                                                'gallery.items',
+                                                                content.gallery.items.filter((_, i) => i !== index),
+                                                            )
+                                                        }
+                                                        className="text-xs font-semibold text-rose-500 transition hover:text-rose-600"
+                                                    >
+                                                        Hapus Foto
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <AddButton
+                                        label="Tambah Foto"
+                                        onClick={() =>
+                                            updateContent('gallery.items', [
+                                                ...(content.gallery?.items || []),
+                                                { path: null, alt: { id: '', en: '' } },
+                                            ])
+                                        }
+                                    />
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+                )}
+
+                {activeTab === 'stats' && (
+                    <div className="space-y-5">
+                        <Card>
+                            <CardHeader title="Statistik" subtitle="Angka-angka pencapaian" />
+                            <div className="space-y-3">
+                                {(content.stats?.[lang] || []).map((stat, index) => (
+                                    <ItemCard
+                                        key={`${lang}-stat-${index}`}
+                                        title={`${stat.value || '-'} - ${stat.label || ''}`}
+                                        onDelete={() => removeDualListItem('stats.id', 'stats.en', index)}
+                                    >
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <FieldLabel>Nilai</FieldLabel>
+                                                <input
+                                                    type="text"
+                                                    value={stat.value || ''}
+                                                    onChange={(e) => syncStatField(index, 'value', e.target.value)}
+                                                    className={inputClass}
+                                                />
+                                            </div>
+                                            <LocalizedField
+                                                label="Label"
+                                                value={stat.label}
+                                                onChange={(value) => updateContent(`stats.${lang}.${index}.label`, value)}
+                                            />
+                                            <SelectInput
+                                                label="Icon"
+                                                value={stat.icon}
+                                                onChange={(value) => syncStatField(index, 'icon', value)}
+                                                options={iconOptions}
+                                            />
+                                            <SelectInput
+                                                label="Tone"
+                                                value={stat.tone}
+                                                onChange={(value) => syncStatField(index, 'tone', value)}
+                                                options={toneOptions}
+                                            />
+                                        </div>
+                                    </ItemCard>
+                                ))}
+                                <AddButton
+                                    label="Tambah Statistik"
+                                    onClick={() =>
+                                        addDualListItem(
+                                            'stats.id',
+                                            'stats.en',
+                                            { value: '', label: '', icon: 'users', tone: 'violet' },
+                                            { value: '', label: '', icon: 'users', tone: 'violet' },
+                                        )
+                                    }
+                                />
+                            </div>
+                        </Card>
+                    </div>
+                )}
+
+                {activeTab === 'bank-soal' && (
+                    <div className="space-y-5">
+                        <Card>
+                            <CardHeader title="Bank Soal" subtitle="Konten utama bank soal" />
+                            <div className="space-y-4">
+                                <LocalizedField
+                                    label="Eyebrow"
+                                    value={content.bankSoalContent?.[lang]?.eyebrow}
+                                    onChange={(value) => updateContent(`bankSoalContent.${lang}.eyebrow`, value)}
+                                />
+                                <LocalizedField
+                                    label="Judul"
+                                    value={content.bankSoalContent?.[lang]?.title}
+                                    onChange={(value) => updateContent(`bankSoalContent.${lang}.title`, value)}
+                                />
+                                <LocalizedField
+                                    label="Subtitle"
+                                    value={content.bankSoalContent?.[lang]?.subtitle}
+                                    onChange={(value) => updateContent(`bankSoalContent.${lang}.subtitle`, value)}
+                                    textarea
+                                    rows={2}
+                                />
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <LocalizedField
+                                        label="Offline Title"
+                                        value={content.bankSoalContent?.[lang]?.offline?.title}
+                                        onChange={(value) => updateContent(`bankSoalContent.${lang}.offline.title`, value)}
+                                    />
+                                    <LocalizedField
+                                        label="Offline Description"
+                                        value={content.bankSoalContent?.[lang]?.offline?.description}
+                                        onChange={(value) => updateContent(`bankSoalContent.${lang}.offline.description`, value)}
+                                        textarea
+                                        rows={2}
+                                    />
+                                    <LocalizedField
+                                        label="Online Title"
+                                        value={content.bankSoalContent?.[lang]?.online?.title}
+                                        onChange={(value) => updateContent(`bankSoalContent.${lang}.online.title`, value)}
+                                    />
+                                    <LocalizedField
+                                        label="Online Description"
+                                        value={content.bankSoalContent?.[lang]?.online?.description}
+                                        onChange={(value) => updateContent(`bankSoalContent.${lang}.online.description`, value)}
+                                        textarea
+                                        rows={2}
+                                    />
+                                </div>
+                                <div className="grid gap-4 sm:grid-cols-3">
+                                    <LocalizedField
+                                        label="Teks Lihat Detail"
+                                        value={content.bankSoalContent?.[lang]?.viewDetail}
+                                        onChange={(value) => updateContent(`bankSoalContent.${lang}.viewDetail`, value)}
+                                    />
+                                    <LocalizedField
+                                        label="Teks Filter All"
+                                        value={content.bankSoalContent?.[lang]?.filterAll}
+                                        onChange={(value) => updateContent(`bankSoalContent.${lang}.filterAll`, value)}
+                                    />
+                                    <LocalizedField
+                                        label="Label Jumlah Soal"
+                                        value={content.bankSoalContent?.[lang]?.questionCount}
+                                        onChange={(value) => updateContent(`bankSoalContent.${lang}.questionCount`, value)}
+                                    />
+                                </div>
+                                <div>
+                                    <FieldLabel>Passkey Bank Soal</FieldLabel>
+                                    <input
+                                        type="text"
+                                        value={content.bankSoalPasskey || ''}
+                                        onChange={(e) => updateContent('bankSoalPasskey', e.target.value)}
+                                        className={inputClass}
+                                    />
+                                </div>
+                            </div>
+                        </Card>
+
+                        <Card>
+                            <CardHeader title="Kategori Bank Soal" subtitle="Kategori filter" />
+                            <div className="space-y-2">
+                                {(content.bankSoalCategories?.[lang] || []).map((category, index) => (
+                                    <div key={`${lang}-category-${index}`} className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={category || ''}
+                                            onChange={(e) => updateContent(`bankSoalCategories.${lang}.${index}`, e.target.value)}
+                                            className={inputClass}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeDualListItem('bankSoalCategories.id', 'bankSoalCategories.en', index)}
+                                            className="shrink-0 rounded-lg p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                                <AddButton
+                                    label="Tambah Kategori"
+                                    onClick={() => addDualListItem('bankSoalCategories.id', 'bankSoalCategories.en', '', '')}
+                                />
+                            </div>
+                        </Card>
+
+                        <Card>
+                            <CardHeader title="Item Bank Soal" subtitle="Daftar item bank soal" />
+                            <div className="space-y-3">
+                                {(content.bankSoalItems || []).map((item, index) => (
+                                    <ItemCard
+                                        key={`bank-soal-${index}`}
+                                        title={item.name?.[lang] || item.slug || `Item ${index + 1}`}
+                                        onDelete={() => updateContent('bankSoalItems', content.bankSoalItems.filter((_, i) => i !== index))}
+                                    >
+                                        <div className="space-y-4">
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div>
+                                                    <FieldLabel>ID</FieldLabel>
+                                                    <input
+                                                        type="number"
+                                                        value={item.id || ''}
+                                                        onChange={(e) => updateContent(`bankSoalItems.${index}.id`, Number(e.target.value))}
+                                                        className={inputClass}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <FieldLabel>Slug</FieldLabel>
+                                                    <input
+                                                        type="text"
+                                                        value={item.slug || ''}
+                                                        onChange={(e) => updateContent(`bankSoalItems.${index}.slug`, e.target.value)}
+                                                        className={inputClass}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <LocalizedField
+                                                label="Nama"
+                                                value={item.name?.[lang]}
+                                                onChange={(value) => updateContent(`bankSoalItems.${index}.name.${lang}`, value)}
+                                            />
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <LocalizedField
+                                                    label="Kategori"
+                                                    value={item.category?.[lang]}
+                                                    onChange={(value) => updateContent(`bankSoalItems.${index}.category.${lang}`, value)}
+                                                />
+                                                <LocalizedField
+                                                    label="Jenjang"
+                                                    value={item.level?.[lang]}
+                                                    onChange={(value) => updateContent(`bankSoalItems.${index}.level.${lang}`, value)}
+                                                />
+                                            </div>
+                                            <div className="grid gap-4 sm:grid-cols-3">
+                                                <div>
+                                                    <FieldLabel>Format</FieldLabel>
+                                                    <input
+                                                        type="text"
+                                                        value={item.format || ''}
+                                                        onChange={(e) => updateContent(`bankSoalItems.${index}.format`, e.target.value)}
+                                                        className={inputClass}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <FieldLabel>Jumlah Soal</FieldLabel>
+                                                    <input
+                                                        type="number"
+                                                        value={item.questions || ''}
+                                                        onChange={(e) => updateContent(`bankSoalItems.${index}.questions`, Number(e.target.value))}
+                                                        className={inputClass}
+                                                    />
+                                                </div>
+                                                <SelectInput
+                                                    label="Tone"
+                                                    value={item.tone}
+                                                    onChange={(value) => updateContent(`bankSoalItems.${index}.tone`, value)}
+                                                    options={toneOptions}
+                                                />
+                                            </div>
+                                            <LocalizedField
+                                                label="Deskripsi"
+                                                value={item.description?.[lang]}
+                                                onChange={(value) => updateContent(`bankSoalItems.${index}.description.${lang}`, value)}
+                                                textarea
+                                                rows={2}
+                                            />
+                                        </div>
+                                    </ItemCard>
+                                ))}
+                                <AddButton
+                                    label="Tambah Item"
+                                    onClick={() =>
+                                        updateContent('bankSoalItems', [
+                                            ...(content.bankSoalItems || []),
+                                            {
+                                                id: (content.bankSoalItems || []).length + 1,
+                                                slug: '',
+                                                name: { id: '', en: '' },
+                                                category: { id: '', en: '' },
+                                                level: { id: '', en: '' },
+                                                format: '',
+                                                questions: 0,
+                                                description: { id: '', en: '' },
+                                                tone: 'violet',
+                                            },
+                                        ])
+                                    }
+                                />
+                            </div>
+                        </Card>
+                    </div>
+                )}
+
+                {activeTab === 'cta' && (
+                    <div className="space-y-5">
+                        <Card>
+                            <CardHeader title="Judul Section Olimpiade" subtitle="Judul dan subtitle section Olimpiade" />
+                            <div className="space-y-4">
+                                <LocalizedField
+                                    label="Eyebrow"
+                                    value={content.sectionTitles?.[lang]?.olympiad?.eyebrow}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.olympiad.eyebrow`, value)}
+                                />
+                                <LocalizedField
+                                    label="Judul"
+                                    value={content.sectionTitles?.[lang]?.olympiad?.title}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.olympiad.title`, value)}
+                                />
+                                <LocalizedField
+                                    label="Subtitle"
+                                    value={content.sectionTitles?.[lang]?.olympiad?.subtitle}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.olympiad.subtitle`, value)}
+                                    textarea
+                                    rows={2}
+                                />
+                            </div>
+                        </Card>
+
+                        <Card>
+                            <CardHeader title="Judul Section Pendaftaran" subtitle="Judul dan subtitle CTA pendaftaran" />
+                            <div className="space-y-4">
+                                <LocalizedField
+                                    label="Eyebrow"
+                                    value={content.sectionTitles?.[lang]?.register?.eyebrow}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.register.eyebrow`, value)}
+                                />
+                                <LocalizedField
+                                    label="Judul"
+                                    value={content.sectionTitles?.[lang]?.register?.title}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.register.title`, value)}
+                                />
+                                <LocalizedField
+                                    label="Subtitle"
+                                    value={content.sectionTitles?.[lang]?.register?.subtitle}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.register.subtitle`, value)}
+                                    textarea
+                                    rows={2}
+                                />
+                            </div>
+                        </Card>
+
+                        <Card>
+                            <CardHeader title="CTA Buttons" subtitle="Teks tombol CTA lain" />
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <LocalizedField
+                                    label="CTA Pendaftaran Murid"
+                                    value={content.ctaButtons?.[lang]?.studentRegister}
+                                    onChange={(value) => updateContent(`ctaButtons.${lang}.studentRegister`, value)}
+                                />
+                                <LocalizedField
+                                    label="CTA Pendaftaran Pengajar"
+                                    value={content.ctaButtons?.[lang]?.teacherRegister}
+                                    onChange={(value) => updateContent(`ctaButtons.${lang}.teacherRegister`, value)}
+                                />
+                                <LocalizedField
+                                    label="CTA Lihat Peta"
+                                    value={content.ctaButtons?.[lang]?.viewMap}
+                                    onChange={(value) => updateContent(`ctaButtons.${lang}.viewMap`, value)}
+                                />
+                                <LocalizedField
+                                    label="CTA Detail Olimpiade"
+                                    value={content.ctaButtons?.[lang]?.viewOlympiad}
+                                    onChange={(value) => updateContent(`ctaButtons.${lang}.viewOlympiad`, value)}
+                                />
+                            </div>
+                        </Card>
+                    </div>
+                )}
+
+                {activeTab === 'contact' && (
+                    <div className="space-y-5">
+                        <Card>
+                            <CardHeader title="Judul Section Kontak" subtitle="Judul dan subtitle kontak" />
+                            <div className="space-y-4">
+                                <LocalizedField
+                                    label="Eyebrow"
+                                    value={content.sectionTitles?.[lang]?.contact?.eyebrow}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.contact.eyebrow`, value)}
+                                />
+                                <LocalizedField
+                                    label="Judul"
+                                    value={content.sectionTitles?.[lang]?.contact?.title}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.contact.title`, value)}
+                                />
+                                <LocalizedField
+                                    label="Subtitle"
+                                    value={content.sectionTitles?.[lang]?.contact?.subtitle}
+                                    onChange={(value) => updateContent(`sectionTitles.${lang}.contact.subtitle`, value)}
+                                    textarea
+                                    rows={2}
+                                />
+                            </div>
+                        </Card>
+
+                        <div className="grid gap-5 lg:grid-cols-2">
+                            <Card>
+                                <CardHeader title="Sosial Media" subtitle="Kontak dan social link" />
+                                <div className="space-y-3">
+                                    {(content.contactInfo.socials || []).map((social, index) => (
+                                        <ItemCard
+                                            key={social.key || `social-${index}`}
+                                            title={social.label?.[lang] || social.key || `Sosial ${index + 1}`}
+                                            onDelete={() =>
+                                                updateContent(
+                                                    'contactInfo.socials',
+                                                    content.contactInfo.socials.filter((_, i) => i !== index),
+                                                )
+                                            }
+                                        >
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <FieldLabel>Key</FieldLabel>
+                                                    <input
+                                                        type="text"
+                                                        value={social.key || ''}
+                                                        onChange={(e) => updateContent(`contactInfo.socials.${index}.key`, e.target.value)}
+                                                        className={inputClass}
+                                                        placeholder="contoh: facebook"
+                                                    />
+                                                </div>
+                                                <LocalizedField
+                                                    label="Label"
+                                                    value={social.label?.[lang]}
+                                                    onChange={(value) => updateContent(`contactInfo.socials.${index}.label.${lang}`, value)}
+                                                />
+                                                <div className="grid gap-4 sm:grid-cols-2">
+                                                    <div>
+                                                        <FieldLabel>Value</FieldLabel>
+                                                        <input
+                                                            type="text"
+                                                            value={social.value || ''}
+                                                            onChange={(e) => updateContent(`contactInfo.socials.${index}.value`, e.target.value)}
+                                                            className={inputClass}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <FieldLabel>Link</FieldLabel>
+                                                        <input
+                                                            type="text"
+                                                            value={social.link || ''}
+                                                            onChange={(e) => updateContent(`contactInfo.socials.${index}.link`, e.target.value)}
+                                                            className={inputClass}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid gap-4 sm:grid-cols-2">
+                                                    <SelectInput
+                                                        label="Icon"
+                                                        value={social.icon}
+                                                        onChange={(value) => updateContent(`contactInfo.socials.${index}.icon`, value)}
+                                                        options={iconOptions}
+                                                    />
+                                                    <SelectInput
+                                                        label="Tone"
+                                                        value={social.tone}
+                                                        onChange={(value) => updateContent(`contactInfo.socials.${index}.tone`, value)}
+                                                        options={toneOptions}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </ItemCard>
+                                    ))}
+                                    <AddButton
+                                        label="Tambah Sosial"
+                                        onClick={() =>
+                                            updateContent('contactInfo.socials', [
+                                                ...(content.contactInfo.socials || []),
+                                                {
+                                                    key: '',
+                                                    label: { id: '', en: '' },
+                                                    value: '',
+                                                    link: '',
+                                                    icon: 'phone',
+                                                    tone: 'slate',
+                                                },
+                                            ])
+                                        }
+                                    />
+                                </div>
+                            </Card>
+
+                            <Card>
+                                <CardHeader title="Alamat & Jam Operasional" subtitle="Alamat dan jam layanan" />
+                                <div className="space-y-4">
+                                    <LocalizedField
+                                        label="Alamat"
+                                        value={content.contactInfo.address?.[lang]}
+                                        onChange={(value) => updateContent(`contactInfo.address.${lang}`, value)}
+                                        textarea
+                                        rows={2}
+                                    />
+                                    <div>
+                                        <FieldLabel>Map Link</FieldLabel>
+                                        <input
+                                            type="text"
+                                            value={content.contactInfo.address?.mapLink || ''}
+                                            onChange={(e) => updateContent('contactInfo.address.mapLink', e.target.value)}
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                    <LocalizedField
+                                        label="Jam Kerja (Weekday)"
+                                        value={content.operatingHours?.[lang]?.weekday}
+                                        onChange={(value) => updateContent(`operatingHours.${lang}.weekday`, value)}
+                                    />
+                                    <LocalizedField
+                                        label="Jam Kerja (Weekend)"
+                                        value={content.operatingHours?.[lang]?.weekend}
+                                        onChange={(value) => updateContent(`operatingHours.${lang}.weekend`, value)}
+                                    />
                                 </div>
                             </Card>
                         </div>
