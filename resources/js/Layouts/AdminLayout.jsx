@@ -1,44 +1,70 @@
 import { Link, usePage, router } from '@inertiajs/react';
 import { useState, useRef, useEffect } from 'react';
 
-const menu = [
-    { href: '/admin', label: 'Dashboard', icon: 'dashboard' },
+const getMenu = (pendingCounts, allowedMenus) => {
+    const isAllowed = (menuId) => !allowedMenus || allowedMenus.includes(menuId);
+
+    const menu = [
+        { href: '/admin', label: 'Dashboard', icon: 'dashboard', menuId: 'dashboard' },
     {
         label: 'Content',
         icon: 'layout',
         children: [
-            { href: '/admin/landing', label: 'Landing Page', icon: 'layout' },
+            { href: '/admin/landing', label: 'Landing Page', icon: 'layout', menuId: 'landing' },
         ],
     },
     {
         label: 'Master Data',
         icon: 'database',
         children: [
-            { href: '/admin/program', label: 'Program', icon: 'book' },
-            { href: '/admin/bank-soal', label: 'Bank Soal', icon: 'layers' },
-            { href: '/admin/olimpiade', label: 'Olimpiade', icon: 'trophy' },
+            { href: '/admin/program', label: 'Program', icon: 'book', menuId: 'program' },
+            { href: '/admin/bank-soal', label: 'Bank Soal', icon: 'layers', menuId: 'bank-soal' },
+            { href: '/admin/olimpiade', label: 'Olimpiade', icon: 'trophy', menuId: 'olimpiade' },
             {
-                href: '/admin/pendaftaran',
-                label: 'Pendaftaran',
+                href: '/admin/pendaftaran/pelajar',
+                label: 'Pendaftaran Pelajar',
                 icon: 'users',
-                badge: '7',
+                menuId: 'pendaftaran',
+                badge: pendingCounts?.student > 0 ? String(pendingCounts.student) : null,
             },
-            { href: '/admin/pengajar', label: 'Pengajar', icon: 'user' },
+            {
+                href: '/admin/pendaftaran/pengajar',
+                label: 'Pendaftaran Pengajar',
+                icon: 'user',
+                menuId: 'pendaftaran',
+                badge: pendingCounts?.teacher > 0 ? String(pendingCounts.teacher) : null,
+            },
+            { href: '/admin/pelajar', label: 'Pelajar', icon: 'users', menuId: 'pelajar' },
+            { href: '/admin/pengajar', label: 'Pengajar', icon: 'user', menuId: 'pengajar' },
         ],
     },
     {
         label: 'Administrator',
         icon: 'shield',
         children: [
-            { href: '/admin/akses-menu', label: 'Akses Menu', icon: 'key' },
-            { href: '/admin/roles', label: 'Role', icon: 'badge' },
-            { href: '/admin/users', label: 'User', icon: 'users' },
+            { href: '/admin/akses-menu', label: 'Akses Menu', icon: 'key', menuId: 'akses-menu' },
+            { href: '/admin/roles', label: 'Role', icon: 'badge', menuId: 'roles' },
+            { href: '/admin/users', label: 'User', icon: 'users', menuId: 'users' },
         ],
     },
-    { href: '/admin/pengaturan', label: 'Pengaturan', icon: 'settings' },
-];
+        { href: '/admin/pengaturan', label: 'Pengaturan', icon: 'settings', menuId: 'pengaturan' },
+    ];
 
-const flatMenu = menu.flatMap((item) =>
+    return menu.flatMap((item) => {
+        if (!item.children) {
+            return isAllowed(item.menuId) ? [item] : [];
+        }
+
+        const children = item.children.filter((child) => isAllowed(child.menuId));
+        if (children.length === 0) {
+            return [];
+        }
+
+        return [{ ...item, children }];
+    });
+};
+
+const getFlatMenu = (menu) => menu.flatMap((item) =>
     item.children ? item.children : [item]
 );
 
@@ -376,11 +402,22 @@ const icons = {
 export default function AdminLayout({ children }) {
     const { url, props } = usePage();
     const appLogo = props.appLogo;
+    const pendingRegistrationCount = props.pendingRegistrationCount || 0;
+    const pendingRegistrationCounts = props.pendingRegistrationCounts ?? {
+        total: pendingRegistrationCount,
+        student: pendingRegistrationCount,
+        teacher: 0,
+    };
+    const allowedMenus = props.allowedMenus ?? null;
+    const impersonation = props.impersonation ?? { active: false };
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const profileRef = useRef(null);
 
     const user = props.auth?.user || { name: 'Admin ALC', email: 'admin@alclearning.id' };
+
+    const menu = getMenu(pendingRegistrationCounts, allowedMenus);
+    const flatMenu = getFlatMenu(menu);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -395,6 +432,10 @@ export default function AdminLayout({ children }) {
 
     const handleLogout = () => {
         router.post('/logout');
+    };
+
+    const handleStopImpersonate = () => {
+        router.post('/admin/impersonate/stop');
     };
 
     return (
@@ -528,6 +569,32 @@ export default function AdminLayout({ children }) {
                 <div className="flex flex-1 flex-col">
                     {/* Header / Appbar */}
                     <header className="sticky top-0 z-30 border-b border-slate-200/50 bg-white/80 backdrop-blur-xl">
+                        {impersonation.active && (
+                            <div className="border-b border-amber-100 bg-amber-50/80 text-[11px] text-amber-800 sm:text-xs">
+                                <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 sm:px-6 lg:px-8">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-800">
+                                            Mode Impersonate
+                                        </span>
+                                        <span className="text-amber-700">
+                                            Masuk sebagai <span className="font-semibold">{user.name}</span>
+                                            {impersonation.impersonator?.name && (
+                                                <span className="text-amber-600">
+                                                    {' '}({impersonation.impersonator.name})
+                                                </span>
+                                            )}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleStopImpersonate}
+                                        className="rounded-full bg-amber-600 px-3 py-1 text-[11px] font-semibold text-white shadow-sm transition hover:bg-amber-700 sm:text-xs"
+                                    >
+                                        Keluar Impersonate
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         <div className="flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
                             {/* Left: Mobile menu + Title */}
                             <div className="flex items-center gap-4">

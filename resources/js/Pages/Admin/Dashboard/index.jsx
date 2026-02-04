@@ -1,121 +1,4 @@
-import { Head } from '@inertiajs/react';
-
-const stats = [
-    {
-        label: 'Program aktif',
-        value: '6',
-        meta: '+2 program baru bulan ini',
-        tone: 'violet',
-    },
-    {
-        label: 'Pendaftar baru',
-        value: '24',
-        meta: '8 butuh follow up',
-        tone: 'amber',
-    },
-    {
-        label: 'Konten terjadwal',
-        value: '4',
-        meta: '2 konten butuh review',
-        tone: 'rose',
-    },
-    {
-        label: 'Olimpiade berjalan',
-        value: '3',
-        meta: '1 event ditutup',
-        tone: 'emerald',
-    },
-];
-
-const contentSections = [
-    {
-        title: 'Hero Beranda',
-        owner: 'Tim Konten',
-        status: 'Aktif',
-        note: 'CTA utama: Daftar Sekarang',
-    },
-    {
-        title: 'Program & Paket',
-        owner: 'Admin Program',
-        status: 'Review',
-        note: '3 paket perlu update harga',
-    },
-    {
-        title: 'Bank Soal Unggulan',
-        owner: 'Koordinator Akademik',
-        status: 'Draft',
-        note: 'Tambahkan modul try out',
-    },
-    {
-        title: 'Info Olimpiade',
-        owner: 'Admin Event',
-        status: 'Terjadwal',
-        note: 'Update jadwal Agustus',
-    },
-];
-
-const agenda = [
-    {
-        title: 'Review konten program SD',
-        time: '09:00 - 10:00',
-        team: 'Program',
-    },
-    {
-        title: 'Publikasi olimpiade baru',
-        time: '11:30 - 12:00',
-        team: 'Event',
-    },
-    {
-        title: 'Follow up 4 pendaftar',
-        time: '14:00 - 15:30',
-        team: 'Admin',
-    },
-];
-
-const registrations = [
-    {
-        name: 'Rafi Ahmad',
-        type: 'Murid',
-        program: 'Reguler SD',
-        status: 'Kontak Ulang',
-    },
-    {
-        name: 'Salsa Nur',
-        type: 'Pengajar',
-        program: 'Matematika',
-        status: 'Seleksi',
-    },
-    {
-        name: 'Nadia Azzahra',
-        type: 'Murid',
-        program: 'Privat SMP',
-        status: 'Baru',
-    },
-    {
-        name: 'Fahri Hakim',
-        type: 'Murid',
-        program: 'Persiapan Olimpiade',
-        status: 'Terjadwal',
-    },
-];
-
-const activities = [
-    {
-        title: 'Update hero beranda',
-        detail: 'CTA diganti menjadi Konsultasi Cepat',
-        time: '20 menit lalu',
-    },
-    {
-        title: 'Tambah modul bank soal',
-        detail: 'Paket matematika SD level 2',
-        time: '2 jam lalu',
-    },
-    {
-        title: 'Rekap pendaftaran',
-        detail: 'Total 8 pendaftar baru',
-        time: 'Kemarin',
-    },
-];
+import { Head, usePage } from '@inertiajs/react';
 
 const toneStyles = {
     violet: 'bg-violet-50 text-violet-700',
@@ -124,21 +7,73 @@ const toneStyles = {
     emerald: 'bg-emerald-50 text-emerald-700',
 };
 
+const cardStyles = {
+    violet: 'border-violet-100 bg-gradient-to-br from-violet-50/80 via-white to-white',
+    amber: 'border-amber-100 bg-gradient-to-br from-amber-50/80 via-white to-white',
+    rose: 'border-rose-100 bg-gradient-to-br from-rose-50/80 via-white to-white',
+    emerald: 'border-emerald-100 bg-gradient-to-br from-emerald-50/80 via-white to-white',
+};
+
 const statusStyles = {
     Aktif: 'bg-emerald-50 text-emerald-700',
+    Pending: 'bg-amber-50 text-amber-700',
     Draft: 'bg-amber-50 text-amber-700',
-    Review: 'bg-rose-50 text-rose-700',
-    Terjadwal: 'bg-violet-50 text-violet-700',
-    Baru: 'bg-amber-50 text-amber-700',
-    Seleksi: 'bg-violet-50 text-violet-700',
-    'Kontak Ulang': 'bg-rose-50 text-rose-700',
+    Nonaktif: 'bg-slate-100 text-slate-600',
 };
 
 export default function Dashboard() {
+    const {
+        stats = [],
+        contentSections = [],
+        agenda = [],
+        registrations = [],
+        activities = [],
+        registrationChart,
+        allowedActions = {},
+    } = usePage().props;
+    const chartData = registrationChart ?? {
+        labels: ['Pending', 'Disetujui', 'Ditolak'],
+        students: [0, 0, 0],
+        teachers: [0, 0, 0],
+    };
+    const totalStudents = chartData.students.reduce(
+        (total, value) => total + value,
+        0
+    );
+    const totalTeachers = chartData.teachers.reduce(
+        (total, value) => total + value,
+        0
+    );
+    const totalRegistrations = totalStudents + totalTeachers;
+    const chartTotals = chartData.labels.map((_, index) => {
+        return (chartData.students[index] ?? 0) + (chartData.teachers[index] ?? 0);
+    });
+    const chartMax = Math.max(...chartTotals, 1);
+    const chartRows = chartData.labels.map((label, index) => {
+        const students = chartData.students[index] ?? 0;
+        const teachers = chartData.teachers[index] ?? 0;
+        const total = students + teachers;
+        const totalWidth = (total / chartMax) * 100;
+        const studentWidth = total ? (students / total) * 100 : 0;
+        const teacherWidth = total ? (teachers / total) * 100 : 0;
+
+        return {
+            label,
+            students,
+            teachers,
+            total,
+            totalWidth,
+            studentWidth,
+            teacherWidth,
+        };
+    });
+
+    const canExport = (allowedActions.dashboard ?? []).includes('export');
+
     return (
         <>
             <Head title="Dashboard Admin" />
-            <div className="space-y-6 sm:space-y-8">
+            <div className="space-y-6 rounded-3xl bg-gradient-to-br from-violet-50/40 via-white to-amber-50/40 p-4 shadow-sm sm:space-y-8 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
                     <div className="min-w-0 flex-1">
                         <h2 className="text-xl font-semibold text-slate-800 sm:text-2xl">
@@ -156,12 +91,14 @@ export default function Dashboard() {
                         >
                             Preview Website
                         </button>
-                        <button
-                            type="button"
-                            className="rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:from-violet-800 hover:to-amber-500 sm:px-4 sm:py-2"
-                        >
-                            Export Laporan
-                        </button>
+                        {canExport && (
+                            <button
+                                type="button"
+                                className="rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:from-violet-800 hover:to-amber-500 sm:px-4 sm:py-2"
+                            >
+                                Export Laporan
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -169,7 +106,9 @@ export default function Dashboard() {
                     {stats.map((item) => (
                         <div
                             key={item.label}
-                            className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm sm:rounded-3xl sm:p-5"
+                            className={`rounded-2xl border p-3 shadow-sm sm:rounded-3xl sm:p-5 ${
+                                cardStyles[item.tone] ?? cardStyles.violet
+                            }`}
                         >
                             <div
                                 className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold sm:px-3 sm:py-1 sm:text-xs ${
@@ -187,6 +126,75 @@ export default function Dashboard() {
                             </p>
                         </div>
                     ))}
+                </div>
+
+                <div className="relative rounded-2xl border border-violet-100/80 bg-gradient-to-br from-white via-white to-violet-50/60 p-4 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.6)] sm:rounded-3xl sm:p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-800">
+                                Grafik Pendaftaran
+                            </p>
+                            <p className="mt-1 hidden text-xs text-slate-500 sm:block">
+                                Perbandingan status pendaftar murid dan pengajar.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold sm:text-xs">
+                            <span className="rounded-full bg-white/80 px-3 py-1 text-slate-600 shadow-sm">
+                                Total {totalRegistrations}
+                            </span>
+                            <span className="rounded-full bg-violet-50 px-3 py-1 text-violet-600 shadow-sm">
+                                Murid {totalStudents}
+                            </span>
+                            <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-600 shadow-sm">
+                                Pengajar {totalTeachers}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="mt-4 grid gap-4 sm:mt-5">
+                        {chartRows.map((row) => (
+                            <div
+                                key={row.label}
+                                className="rounded-2xl border border-white/80 bg-white/90 p-4 shadow-[0_16px_30px_-28px_rgba(15,23,42,0.6)]"
+                            >
+                                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-slate-700">
+                                            {row.label}
+                                        </span>
+                                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
+                                            {row.total} total
+                                        </span>
+                                    </div>
+                                    <span className="text-slate-500">
+                                        {row.students} murid - {row.teachers} pengajar
+                                    </span>
+                                </div>
+                                <div className="mt-3">
+                                    <div className="h-3 w-full rounded-full bg-slate-100/80">
+                                        <div
+                                            className="h-full rounded-full bg-slate-200"
+                                            style={{ width: `${row.totalWidth}%` }}
+                                        >
+                                            <div className="flex h-full w-full overflow-hidden rounded-full">
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-violet-500 to-violet-400"
+                                                    style={{ width: `${row.studentWidth}%` }}
+                                                />
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-amber-500 to-rose-400"
+                                                    style={{ width: `${row.teacherWidth}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
+                                        <span>{row.students} murid</span>
+                                        <span>{row.teachers} pengajar</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1.2fr_0.8fr]">
@@ -208,29 +216,35 @@ export default function Dashboard() {
                             </button>
                         </div>
                         <div className="mt-4 space-y-2 sm:mt-5 sm:space-y-3">
-                            {contentSections.map((item) => (
-                                <div
-                                    key={item.title}
-                                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3"
-                                >
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-semibold text-slate-800">
-                                            {item.title}
-                                        </p>
-                                        <p className="truncate text-[10px] text-slate-500 sm:text-xs">
-                                            {item.owner} - {item.note}
-                                        </p>
-                                    </div>
-                                    <span
-                                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold sm:px-3 sm:py-1 sm:text-xs ${
-                                            statusStyles[item.status] ??
-                                            statusStyles.Aktif
-                                        }`}
+                            {contentSections.length > 0 ? (
+                                contentSections.map((item) => (
+                                    <div
+                                        key={item.title}
+                                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3"
                                     >
-                                        {item.status}
-                                    </span>
-                                </div>
-                            ))}
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-semibold text-slate-800">
+                                                {item.title}
+                                            </p>
+                                            <p className="truncate text-[10px] text-slate-500 sm:text-xs">
+                                                {item.owner} - {item.note}
+                                            </p>
+                                        </div>
+                                        <span
+                                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold sm:px-3 sm:py-1 sm:text-xs ${
+                                                statusStyles[item.status] ??
+                                                statusStyles.Aktif
+                                            }`}
+                                        >
+                                            {item.status}
+                                        </span>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-500 sm:px-4 sm:text-sm">
+                                    Belum ada data konten yang tersedia.
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -244,22 +258,28 @@ export default function Dashboard() {
                             </p>
                         </div>
                         <div className="mt-4 space-y-3 sm:mt-5 sm:space-y-4">
-                            {agenda.map((item) => (
-                                <div
-                                    key={item.title}
-                                    className="rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm sm:rounded-2xl sm:px-4 sm:py-3"
-                                >
-                                    <p className="text-sm font-semibold text-slate-800">
-                                        {item.title}
-                                    </p>
-                                    <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 sm:mt-2 sm:text-xs">
-                                        <span>{item.time}</span>
-                                        <span className="rounded-full bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600 sm:px-2 sm:py-1">
-                                            {item.team}
-                                        </span>
+                            {agenda.length > 0 ? (
+                                agenda.map((item) => (
+                                    <div
+                                        key={item.title}
+                                        className="rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm sm:rounded-2xl sm:px-4 sm:py-3"
+                                    >
+                                        <p className="text-sm font-semibold text-slate-800">
+                                            {item.title}
+                                        </p>
+                                        <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 sm:mt-2 sm:text-xs">
+                                            <span>{item.time}</span>
+                                            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600 sm:px-2 sm:py-1">
+                                                {item.team}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))
+                            ) : (
+                                <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-500 sm:px-4 sm:text-sm">
+                                    Belum ada agenda yang dijadwalkan.
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -297,7 +317,7 @@ export default function Dashboard() {
                                 <tbody>
                                     {registrations.map((item) => (
                                         <tr
-                                            key={item.name}
+                                            key={item.id}
                                             className="border-t border-slate-100"
                                         >
                                             <td className="whitespace-nowrap py-2 pr-3 font-semibold text-slate-800 sm:py-3">
@@ -321,6 +341,16 @@ export default function Dashboard() {
                                             </td>
                                         </tr>
                                     ))}
+                                    {registrations.length === 0 && (
+                                        <tr className="border-t border-slate-100">
+                                            <td
+                                                colSpan={4}
+                                                className="py-6 text-center text-xs text-slate-500 sm:text-sm"
+                                            >
+                                                Belum ada pendaftaran pending.
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -336,22 +366,28 @@ export default function Dashboard() {
                             </p>
                         </div>
                         <div className="mt-4 space-y-3 sm:mt-5 sm:space-y-4">
-                            {activities.map((item) => (
-                                <div
-                                    key={item.title}
-                                    className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2 sm:rounded-2xl sm:px-4 sm:py-3"
-                                >
-                                    <p className="text-sm font-semibold text-slate-800">
-                                        {item.title}
-                                    </p>
-                                    <p className="mt-1 text-[10px] text-slate-500 sm:text-xs">
-                                        {item.detail}
-                                    </p>
-                                    <p className="mt-1 text-[10px] font-semibold text-violet-600 sm:mt-2 sm:text-xs">
-                                        {item.time}
-                                    </p>
-                                </div>
-                            ))}
+                            {activities.length > 0 ? (
+                                activities.map((item) => (
+                                    <div
+                                        key={item.title}
+                                        className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2 sm:rounded-2xl sm:px-4 sm:py-3"
+                                    >
+                                        <p className="text-sm font-semibold text-slate-800">
+                                            {item.title}
+                                        </p>
+                                        <p className="mt-1 text-[10px] text-slate-500 sm:text-xs">
+                                            {item.detail}
+                                        </p>
+                                        <p className="mt-1 text-[10px] font-semibold text-violet-600 sm:mt-2 sm:text-xs">
+                                            {item.time}
+                                        </p>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-500 sm:px-4 sm:text-sm">
+                                    Belum ada aktivitas terbaru.
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>

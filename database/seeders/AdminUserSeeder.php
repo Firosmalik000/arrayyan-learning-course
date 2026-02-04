@@ -15,7 +15,7 @@ class AdminUserSeeder extends Seeder
     {
         $seedUsers = [
             [
-                'name' => 'Super Admin',
+                'name' => 'Administrator',
                 'email' => env('SUPER_ADMIN_EMAIL', 'superadmin@alclearning.id'),
                 'password' => env('SUPER_ADMIN_PASSWORD', 'superadmin123'),
             ],

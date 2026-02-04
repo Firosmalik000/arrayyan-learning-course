@@ -4,13 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Olympiad extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
+        'slug',
         'level',
         'schedule',
         'selection_system',
@@ -20,8 +22,12 @@ class Olympiad extends Model
         'is_active',
     ];
 
-    protected $casts = [
-        'fee' => 'decimal:2',
-        'is_active' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'fee' => 'decimal:2',
+            'is_active' => 'boolean',
+            'schedule' => 'date',
+        ];
+    }
 }

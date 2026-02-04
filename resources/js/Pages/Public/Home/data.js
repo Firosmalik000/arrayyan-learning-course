@@ -147,6 +147,19 @@ export const subjects = {
     },
 };
 
+export const programContent = {
+    id: {
+        fallbackDescription: 'Informasi program belajar.',
+        levelLabel: 'Jenjang',
+        sessionsLabel: 'Pertemuan',
+    },
+    en: {
+        fallbackDescription: 'Learning program information.',
+        levelLabel: 'Level',
+        sessionsLabel: 'Sessions',
+    },
+};
+
 export const bankSoalContent = {
     id: {
         eyebrow: 'Fitur Unggulan',
@@ -185,9 +198,56 @@ export const bankSoalContent = {
 // Single passkey for accessing all Bank Soal (for subscribers)
 export const bankSoalPasskey = 'ALCBANKSOAL2024';
 
-export const bankSoalCategories = {
-    id: ['Matematika', 'Bahasa Inggris', 'IPA', 'Try Out', 'Olimpiade'],
-    en: ['Mathematics', 'English', 'Science', 'Try Out', 'Olympiad'],
+export const bankSoalPageContent = {
+    id: {
+        title: 'Bank Soal',
+        description: 'Koleksi lengkap soal latihan untuk semua jenjang pendidikan',
+        searchPlaceholder: 'Cari soal...',
+        noResults: 'Tidak ada soal yang ditemukan',
+        backToHome: 'Kembali ke Beranda',
+        formatAll: 'Semua Format',
+        categoryAll: 'Semua Kategori',
+    },
+    en: {
+        title: 'Question Bank',
+        description: 'Complete collection of practice questions for all education levels',
+        searchPlaceholder: 'Search questions...',
+        noResults: 'No questions found',
+        backToHome: 'Back to Home',
+        formatAll: 'All Formats',
+        categoryAll: 'All Categories',
+    },
+};
+
+export const olympiadContent = {
+    id: {
+        free: {
+            badge: 'Gratis',
+            title: 'Olimpiade Gratis',
+            description:
+                'Program persiapan olimpiade nasional dan internasional tanpa biaya pendaftaran.',
+        },
+        paid: {
+            badge: 'Berbayar',
+            title: 'Olimpiade Premium',
+            description:
+                'Program kompetisi eksklusif dengan mentoring intensif dan materi persiapan yang komprehensif.',
+        },
+    },
+    en: {
+        free: {
+            badge: 'Free',
+            title: 'Free Olympiad',
+            description:
+                'National and international olympiad preparation programs without registration fees.',
+        },
+        paid: {
+            badge: 'Paid',
+            title: 'Premium Olympiad',
+            description:
+                'Exclusive competition programs with intensive mentoring and comprehensive preparation materials.',
+        },
+    },
 };
 
 export const bankSoalItems = [

@@ -1,23 +1,20 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import { useState } from 'react';
 
-const initialModules = [
-    { id: 1, name: 'Matematika SD - Paket 1', level: 'SD', format: 'Offline', questions: 120, status: 'Publik' },
-    { id: 2, name: 'Bahasa Inggris SMP - Paket 2', level: 'SMP', format: 'Online', questions: 90, status: 'Review' },
-    { id: 3, name: 'Try Out Olimpiade IPA', level: 'SMA', format: 'Online', questions: 75, status: 'Draft' },
-    { id: 4, name: 'Calistung Pra TK', level: 'Pra TK', format: 'Offline', questions: 50, status: 'Publik' },
-    { id: 5, name: 'IPA SD - Paket 1', level: 'SD', format: 'Hybrid', questions: 100, status: 'Publik' },
-];
+const normalizeModule = (item, index) => ({
+    id: item?.id ?? index + 1,
+    name: item?.name?.id ?? item?.name ?? '',
+    category: item?.category?.id ?? item?.category ?? '',
+    level: item?.level?.id ?? item?.level ?? '',
+    format: item?.format ?? '',
+    questions: item?.questions ?? 0,
+    slug: item?.slug ?? '',
+    description: item?.description?.id ?? item?.description ?? '',
+    tone: item?.tone ?? 'violet',
+});
 
-const statusStyles = {
-    Publik: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    Draft: 'bg-amber-50 text-amber-700 border-amber-200',
-    Review: 'bg-rose-50 text-rose-700 border-rose-200',
-};
-
-const statusOptions = ['Publik', 'Draft', 'Review'];
-const levelOptions = ['Pra TK', 'TK', 'SD', 'SMP', 'SMA'];
-const formatOptions = ['Offline', 'Online', 'Hybrid'];
+const fallbackLevelOptions = ['Pra TK', 'TK', 'SD', 'SMP', 'SMA'];
+const fallbackFormatOptions = ['Offline', 'Online', 'Hybrid'];
 
 // Icons
 const icons = {
@@ -135,10 +132,12 @@ function FormTextarea({ label, value, onChange, placeholder, rows = 3 }) {
 }
 
 export default function BankSoal() {
-    const [modules, setModules] = useState(initialModules);
+    const { bankSoalItems: bankSoalData = [], flash, allowedActions = {} } = usePage().props;
+    const modules = bankSoalData.map((item, index) => normalizeModule(item, index));
     const [search, setSearch] = useState('');
     const [filterLevel, setFilterLevel] = useState('');
-    const [filterStatus, setFilterStatus] = useState('');
+    const [filterCategory, setFilterCategory] = useState('');
+    const [filterFormat, setFilterFormat] = useState('');
 
     // Modal states
     const [showModal, setShowModal] = useState(false);
@@ -148,32 +147,61 @@ export default function BankSoal() {
 
     // Form state
     const [form, setForm] = useState({
-        name: '', level: '', format: '', questions: '', status: 'Draft', description: ''
+        name: '',
+        category: '',
+        level: '',
+        format: '',
+        questions: '',
+        slug: '',
+        description: '',
     });
 
     // Filtered modules
-    const filteredModules = modules.filter(m => {
-        const matchSearch = m.name.toLowerCase().includes(search.toLowerCase());
+    const filteredModules = modules.filter((m) => {
+        const matchSearch =
+            m.name.toLowerCase().includes(search.toLowerCase()) ||
+            m.category.toLowerCase().includes(search.toLowerCase());
         const matchLevel = !filterLevel || m.level === filterLevel;
-        const matchStatus = !filterStatus || m.status === filterStatus;
-        return matchSearch && matchLevel && matchStatus;
+        const matchCategory = !filterCategory || m.category === filterCategory;
+        const matchFormat = !filterFormat || m.format === filterFormat;
+        return matchSearch && matchLevel && matchCategory && matchFormat;
     });
 
     // Stats
     const stats = [
         { label: 'Total Modul', value: modules.length, color: 'violet' },
         { label: 'Total Soal', value: modules.reduce((a, b) => a + b.questions, 0), color: 'emerald' },
-        { label: 'Publik', value: modules.filter(m => m.status === 'Publik').length, color: 'amber' },
+        { label: 'Kategori', value: new Set(modules.map((m) => m.category).filter(Boolean)).size, color: 'amber' },
     ];
+
+    const levelOptions = Array.from(new Set(modules.map((m) => m.level).filter(Boolean)));
+    const categoryOptions = Array.from(new Set(modules.map((m) => m.category).filter(Boolean)));
+    const formatOptions = Array.from(new Set(modules.map((m) => m.format).filter(Boolean)));
+
+    const resolvedLevelOptions = levelOptions.length > 0 ? levelOptions : fallbackLevelOptions;
+    const resolvedFormatOptions = formatOptions.length > 0 ? formatOptions : fallbackFormatOptions;
+
+    const can = (action) => (allowedActions['bank-soal'] ?? []).includes(action);
+    const canCreate = can('create');
+    const canEdit = can('edit');
+    const canDelete = can('delete');
 
     // Handlers
     const openModal = (item = null) => {
         if (item) {
             setEditing(item);
-            setForm({ ...item, questions: item.questions.toString() });
+            setForm({
+                name: item.name,
+                category: item.category,
+                level: item.level,
+                format: item.format,
+                questions: item.questions.toString(),
+                slug: item.slug,
+                description: item.description,
+            });
         } else {
             setEditing(null);
-            setForm({ name: '', level: '', format: '', questions: '', status: 'Draft', description: '' });
+            setForm({ name: '', category: '', level: '', format: '', questions: '', slug: '', description: '' });
         }
         setShowModal(true);
     };
@@ -181,11 +209,16 @@ export default function BankSoal() {
     const saveForm = () => {
         const data = { ...form, questions: parseInt(form.questions) || 0 };
         if (editing) {
-            setModules(modules.map(m => m.id === editing.id ? { ...data, id: editing.id } : m));
+            router.put(`/admin/bank-soal/${editing.id}`, data, {
+                preserveScroll: true,
+                onSuccess: () => setShowModal(false),
+            });
         } else {
-            setModules([...modules, { ...data, id: Date.now() }]);
+            router.post('/admin/bank-soal', data, {
+                preserveScroll: true,
+                onSuccess: () => setShowModal(false),
+            });
         }
-        setShowModal(false);
     };
 
     const openDeleteModal = (item) => {
@@ -194,8 +227,10 @@ export default function BankSoal() {
     };
 
     const confirmDelete = () => {
-        setModules(modules.filter(m => m.id !== deleteTarget.id));
-        setShowDeleteModal(false);
+        router.delete(`/admin/bank-soal/${deleteTarget.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setShowDeleteModal(false),
+        });
     };
 
     return (
@@ -203,6 +238,13 @@ export default function BankSoal() {
             <Head title="Bank Soal" />
 
             <div className="space-y-6">
+                {/* Flash */}
+                {flash?.success && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                        {flash.success}
+                    </div>
+                )}
+
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -211,14 +253,16 @@ export default function BankSoal() {
                             Kelola modul latihan dan soal untuk siswa
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => openModal()}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
-                    >
-                        {icons.plus}
-                        Tambah Modul
-                    </button>
+                    {canCreate && (
+                        <button
+                            type="button"
+                            onClick={() => openModal()}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
+                        >
+                            {icons.plus}
+                            Tambah Modul
+                        </button>
+                    )}
                 </div>
 
                 {/* Stats */}
@@ -252,15 +296,29 @@ export default function BankSoal() {
                                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400"
                             >
                                 <option value="">Semua Jenjang</option>
-                                {levelOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                {resolvedLevelOptions.map((opt) => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                ))}
                             </select>
                             <select
-                                value={filterStatus}
-                                onChange={(e) => setFilterStatus(e.target.value)}
+                                value={filterCategory}
+                                onChange={(e) => setFilterCategory(e.target.value)}
                                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400"
                             >
-                                <option value="">Semua Status</option>
-                                {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                <option value="">Semua Kategori</option>
+                                {categoryOptions.map((opt) => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={filterFormat}
+                                onChange={(e) => setFilterFormat(e.target.value)}
+                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400"
+                            >
+                                <option value="">Semua Format</option>
+                                {resolvedFormatOptions.map((opt) => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -271,10 +329,11 @@ export default function BankSoal() {
                             <thead>
                                 <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
                                     <th className="px-5 py-3 font-medium">Nama Modul</th>
+                                    <th className="px-5 py-3 font-medium">Kategori</th>
                                     <th className="px-5 py-3 font-medium">Jenjang</th>
                                     <th className="px-5 py-3 font-medium">Format</th>
                                     <th className="px-5 py-3 font-medium">Jumlah Soal</th>
-                                    <th className="px-5 py-3 font-medium">Status</th>
+                                    <th className="px-5 py-3 font-medium">Slug</th>
                                     <th className="px-5 py-3 font-medium text-right">Aksi</th>
                                 </tr>
                             </thead>
@@ -289,39 +348,40 @@ export default function BankSoal() {
                                                 <span className="font-medium text-slate-800">{item.name}</span>
                                             </div>
                                         </td>
-                                        <td className="px-5 py-4 text-slate-600">{item.level}</td>
-                                        <td className="px-5 py-4 text-slate-600">{item.format}</td>
+                                        <td className="px-5 py-4 text-slate-600">{item.category || '-'}</td>
+                                        <td className="px-5 py-4 text-slate-600">{item.level || '-'}</td>
+                                        <td className="px-5 py-4 text-slate-600">{item.format || '-'}</td>
                                         <td className="px-5 py-4 text-slate-600">{item.questions} soal</td>
-                                        <td className="px-5 py-4">
-                                            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[item.status]}`}>
-                                                {item.status}
-                                            </span>
-                                        </td>
+                                        <td className="px-5 py-4 text-slate-500">{item.slug || '-'}</td>
                                         <td className="px-5 py-4">
                                             <div className="flex justify-end gap-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openModal(item)}
-                                                    className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600"
-                                                    title="Edit"
-                                                >
-                                                    {icons.edit}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openDeleteModal(item)}
-                                                    className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
-                                                    title="Hapus"
-                                                >
-                                                    {icons.trash}
-                                                </button>
+                                                {canEdit && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openModal(item)}
+                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600"
+                                                        title="Edit"
+                                                    >
+                                                        {icons.edit}
+                                                    </button>
+                                                )}
+                                                {canDelete && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openDeleteModal(item)}
+                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
+                                                        title="Hapus"
+                                                    >
+                                                        {icons.trash}
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
                                 ))}
                                 {filteredModules.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
+                                        <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
                                             Tidak ada modul yang ditemukan
                                         </td>
                                     </tr>
@@ -342,13 +402,50 @@ export default function BankSoal() {
                         placeholder="contoh: Matematika SD - Paket 1"
                         required
                     />
-                    <div className="grid gap-4 sm:grid-cols-3">
-                        <FormSelect label="Jenjang" value={form.level} onChange={(v) => setForm({ ...form, level: v })} options={levelOptions} required />
-                        <FormSelect label="Format" value={form.format} onChange={(v) => setForm({ ...form, format: v })} options={formatOptions} required />
-                        <FormInput label="Jumlah Soal" type="number" value={form.questions} onChange={(v) => setForm({ ...form, questions: v })} placeholder="100" />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormInput
+                            label="Kategori"
+                            value={form.category}
+                            onChange={(v) => setForm({ ...form, category: v })}
+                            placeholder="contoh: Matematika"
+                            required
+                        />
+                        <FormSelect
+                            label="Jenjang"
+                            value={form.level}
+                            onChange={(v) => setForm({ ...form, level: v })}
+                            options={resolvedLevelOptions}
+                            required
+                        />
                     </div>
-                    <FormTextarea label="Deskripsi" value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Deskripsi modul..." />
-                    <FormSelect label="Status" value={form.status} onChange={(v) => setForm({ ...form, status: v })} options={statusOptions} />
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        <FormSelect
+                            label="Format"
+                            value={form.format}
+                            onChange={(v) => setForm({ ...form, format: v })}
+                            options={resolvedFormatOptions}
+                            required
+                        />
+                        <FormInput
+                            label="Jumlah Soal"
+                            type="number"
+                            value={form.questions}
+                            onChange={(v) => setForm({ ...form, questions: v })}
+                            placeholder="100"
+                        />
+                        <FormInput
+                            label="Slug"
+                            value={form.slug}
+                            onChange={(v) => setForm({ ...form, slug: v })}
+                            placeholder="contoh: matematika-sd-paket-1"
+                        />
+                    </div>
+                    <FormTextarea
+                        label="Deskripsi"
+                        value={form.description}
+                        onChange={(v) => setForm({ ...form, description: v })}
+                        placeholder="Deskripsi modul..."
+                    />
                     <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
                         <button type="button" onClick={() => setShowModal(false)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
                             Batal

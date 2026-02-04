@@ -1,37 +1,27 @@
-import { Head } from '@inertiajs/react';
-import { useState } from 'react';
-
-const initialRegistrations = [
-    { id: 1, name: 'Rafi Ahmad', type: 'Murid', level: 'SD', program: 'Reguler', contact: '0812-1234-8899', status: 'Kontak Ulang', date: '2026-01-20' },
-    { id: 2, name: 'Nadia Azzahra', type: 'Murid', level: 'SMP', program: 'Privat', contact: '0813-2211-8811', status: 'Baru', date: '2026-01-22' },
-    { id: 3, name: 'Salsa Nur', type: 'Pengajar', level: 'SMA', program: 'Matematika', contact: '0812-8888-1020', status: 'Seleksi', date: '2026-01-21' },
-    { id: 4, name: 'Fahri Hakim', type: 'Murid', level: 'SMA', program: 'Olimpiade', contact: '0813-5555-3141', status: 'Terjadwal', date: '2026-01-19' },
-    { id: 5, name: 'Aisyah Putri', type: 'Murid', level: 'SD', program: 'Intensif', contact: '0815-9999-1234', status: 'Selesai', date: '2026-01-18' },
-];
-
-const statusStyles = {
-    Baru: 'bg-amber-50 text-amber-700 border-amber-200',
-    Seleksi: 'bg-violet-50 text-violet-700 border-violet-200',
-    Terjadwal: 'bg-blue-50 text-blue-700 border-blue-200',
-    'Kontak Ulang': 'bg-rose-50 text-rose-700 border-rose-200',
-    Selesai: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-};
-
-const statusOptions = ['Baru', 'Kontak Ulang', 'Seleksi', 'Terjadwal', 'Selesai'];
-const typeOptions = ['Murid', 'Pengajar'];
-const levelOptions = ['Pra TK', 'TK', 'SD', 'SMP', 'SMA'];
-const programOptions = ['Reguler', 'Intensif', 'Privat', 'Olimpiade', 'Matematika', 'B. Inggris', 'IPA'];
+import { Head, usePage, router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
 // Icons
 const icons = {
-    plus: (
+    search: (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
         </svg>
     ),
-    edit: (
+    eye: (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+    ),
+    check: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+    ),
+    x: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
     ),
     trash: (
@@ -49,29 +39,26 @@ const icons = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
         </svg>
     ),
-    search: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-        </svg>
-    ),
-    eye: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-    ),
-    download: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-        </svg>
-    ),
 };
 
-// Modal Component
+const statusBadge = (status) => {
+    const map = {
+        pending: 'border-amber-200 bg-amber-50 text-amber-700',
+        approved: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        rejected: 'border-red-200 bg-red-50 text-red-700',
+    };
+    const labelMap = { pending: 'Pending', approved: 'Disetujui', rejected: 'Ditolak' };
+    return (
+        <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${map[status] || map.pending}`}>
+            {labelMap[status] || 'Pending'}
+        </span>
+    );
+};
+
+// Modal
 function Modal({ isOpen, onClose, title, children, size = 'md' }) {
     if (!isOpen) return null;
     const sizeClasses = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl' };
-
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex min-h-screen items-center justify-center p-4">
@@ -90,136 +77,92 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }) {
     );
 }
 
-// Form Components
-function FormInput({ label, type = 'text', value, onChange, placeholder, required }) {
-    return (
-        <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                {label} {required && <span className="text-red-500">*</span>}
-            </label>
-            <input
-                type={type}
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={placeholder}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                required={required}
-            />
-        </div>
-    );
-}
-
-function FormSelect({ label, value, onChange, options, required }) {
-    return (
-        <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                {label} {required && <span className="text-red-500">*</span>}
-            </label>
-            <select
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                required={required}
-            >
-                <option value="">Pilih {label}</option>
-                {options.map((opt) => (<option key={opt} value={opt}>{opt}</option>))}
-            </select>
-        </div>
-    );
-}
-
-function FormTextarea({ label, value, onChange, placeholder, rows = 3 }) {
-    return (
-        <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">{label}</label>
-            <textarea
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={placeholder}
-                rows={rows}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-            />
-        </div>
-    );
-}
-
 export default function Registrations() {
-    const [registrations, setRegistrations] = useState(initialRegistrations);
-    const [search, setSearch] = useState('');
-    const [filterStatus, setFilterStatus] = useState('');
-    const [filterType, setFilterType] = useState('');
+    const {
+        studentRegistrations = [],
+        teacherRegistrations = [],
+        flash,
+        initialTab = 'student',
+        allowedActions = {},
+    } = usePage().props;
+    const [activeTab, setActiveTab] = useState(initialTab);
+    const [studentSearch, setStudentSearch] = useState('');
+    const [teacherSearch, setTeacherSearch] = useState('');
+    const [filterLevel, setFilterLevel] = useState('');
+    const [filterStatus, setFilterStatus] = useState('pending');
+    const [teacherFilterStatus, setTeacherFilterStatus] = useState('pending');
 
-    // Modal states
-    const [showModal, setShowModal] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [showDetailModal, setShowDetailModal] = useState(false);
-    const [editing, setEditing] = useState(null);
-    const [deleteTarget, setDeleteTarget] = useState(null);
-    const [detailTarget, setDetailTarget] = useState(null);
+    useEffect(() => {
+        setActiveTab(initialTab);
+    }, [initialTab]);
 
-    // Form state
-    const [form, setForm] = useState({
-        name: '', type: '', level: '', program: '', contact: '', status: 'Baru', notes: ''
-    });
+    // Detail modal
+    const [detailModal, setDetailModal] = useState(null);
+    // Delete modal
+    const [deleteModal, setDeleteModal] = useState(null);
 
-    // Filtered data
-    const filteredData = registrations.filter(r => {
-        const matchSearch = r.name.toLowerCase().includes(search.toLowerCase());
+    const can = (action) => (allowedActions.pendaftaran ?? []).includes(action);
+    const canView = can('view');
+    const canApprove = can('approve');
+    const canReject = can('reject');
+    const canDelete = can('delete');
+
+    // Student filtering
+    const filteredStudents = studentRegistrations.filter((r) => {
+        const name = r.student_name || '';
+        const matchSearch = name.toLowerCase().includes(studentSearch.toLowerCase());
+        const matchLevel = !filterLevel || r.level === filterLevel;
         const matchStatus = !filterStatus || r.status === filterStatus;
-        const matchType = !filterType || r.type === filterType;
-        return matchSearch && matchStatus && matchType;
+        return matchSearch && matchLevel && matchStatus;
     });
+
+    // Teacher filtering
+    const filteredTeachers = teacherRegistrations.filter((t) => {
+        const name = t.name || '';
+        const matchSearch = name.toLowerCase().includes(teacherSearch.toLowerCase());
+        const matchStatus = !teacherFilterStatus || t.status === teacherFilterStatus;
+        return matchSearch && matchStatus;
+    });
+
+    const levelOptions = [...new Set(studentRegistrations.map((r) => r.level).filter(Boolean))];
 
     // Stats
-    const stats = [
-        { label: 'Baru', value: registrations.filter(r => r.status === 'Baru').length, color: 'amber' },
-        { label: 'Kontak Ulang', value: registrations.filter(r => r.status === 'Kontak Ulang').length, color: 'rose' },
-        { label: 'Terjadwal', value: registrations.filter(r => r.status === 'Terjadwal').length, color: 'blue' },
-        { label: 'Selesai', value: registrations.filter(r => r.status === 'Selesai').length, color: 'emerald' },
+    const studentStats = [
+        { label: 'Total', value: studentRegistrations.length, color: 'bg-violet-50 text-violet-700 border-violet-200' },
+        { label: 'Pending', value: studentRegistrations.filter((r) => r.status === 'pending').length, color: 'bg-amber-50 text-amber-700 border-amber-200' },
+        { label: 'Disetujui', value: studentRegistrations.filter((r) => r.status === 'approved').length, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+        { label: 'Ditolak', value: studentRegistrations.filter((r) => r.status === 'rejected').length, color: 'bg-red-50 text-red-700 border-red-200' },
     ];
 
-    const colorClasses = {
-        amber: 'bg-amber-50 text-amber-700 border-amber-200',
-        rose: 'bg-rose-50 text-rose-700 border-rose-200',
-        blue: 'bg-blue-50 text-blue-700 border-blue-200',
-        emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    const teacherStats = [
+        { label: 'Total', value: teacherRegistrations.length, color: 'bg-violet-50 text-violet-700 border-violet-200' },
+        { label: 'Pending', value: teacherRegistrations.filter((t) => t.status === 'pending').length, color: 'bg-amber-50 text-amber-700 border-amber-200' },
+        { label: 'Disetujui', value: teacherRegistrations.filter((t) => t.status === 'approved').length, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+        { label: 'Ditolak', value: teacherRegistrations.filter((t) => t.status === 'rejected').length, color: 'bg-red-50 text-red-700 border-red-200' },
+    ];
+
+    const typeSlug = { student: 'murid', teacher: 'pengajar' };
+
+    const handleApprove = (type, id) => {
+        router.post(`/admin/pendaftaran/${typeSlug[type]}/${id}/approve`, {}, { preserveScroll: true });
     };
 
-    // Handlers
-    const openModal = (item = null) => {
-        if (item) {
-            setEditing(item);
-            setForm({ ...item });
-        } else {
-            setEditing(null);
-            setForm({ name: '', type: '', level: '', program: '', contact: '', status: 'Baru', notes: '' });
-        }
-        setShowModal(true);
+    const handleReject = (type, id) => {
+        router.post(`/admin/pendaftaran/${typeSlug[type]}/${id}/reject`, {}, { preserveScroll: true });
     };
 
-    const saveForm = () => {
-        if (editing) {
-            setRegistrations(registrations.map(r => r.id === editing.id ? { ...form, id: editing.id, date: editing.date } : r));
-        } else {
-            setRegistrations([...registrations, { ...form, id: Date.now(), date: new Date().toISOString().split('T')[0] }]);
-        }
-        setShowModal(false);
+    const handleDelete = () => {
+        if (!deleteModal) return;
+        router.delete(`/admin/pendaftaran/${typeSlug[deleteModal.type]}/${deleteModal.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setDeleteModal(null),
+        });
     };
 
-    const openDeleteModal = (item) => {
-        setDeleteTarget(item);
-        setShowDeleteModal(true);
-    };
-
-    const confirmDelete = () => {
-        setRegistrations(registrations.filter(r => r.id !== deleteTarget.id));
-        setShowDeleteModal(false);
-    };
-
-    const openDetailModal = (item) => {
-        setDetailTarget(item);
-        setShowDetailModal(true);
-    };
+    const tabs = [
+        { key: 'student', label: 'Pendaftaran Murid', count: studentRegistrations.length },
+        { key: 'teacher', label: 'Pendaftaran Pengajar', count: teacherRegistrations.length },
+    ];
 
     return (
         <>
@@ -227,222 +170,343 @@ export default function Registrations() {
 
             <div className="space-y-6">
                 {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-800">Pendaftaran</h1>
-                        <p className="mt-1 text-sm text-slate-600">
-                            Monitoring pendaftaran murid dan pengajar
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            type="button"
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-                        >
-                            {icons.download}
-                            Export
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => openModal()}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
-                        >
-                            {icons.plus}
-                            Tambah Manual
-                        </button>
-                    </div>
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-800">Pendaftaran</h1>
+                    <p className="mt-1 text-sm text-slate-600">Kelola pendaftaran murid dan pengajar yang masuk</p>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    {stats.map((stat) => (
-                        <div key={stat.label} className={`rounded-2xl border p-4 ${colorClasses[stat.color]}`}>
-                            <p className="text-sm font-medium">{stat.label}</p>
-                            <p className="mt-1 text-2xl font-bold">{stat.value}</p>
-                        </div>
+                {flash?.success && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                        {flash.success}
+                    </div>
+                )}
+
+                {/* Tabs */}
+                <div className="flex rounded-xl border border-slate-200 bg-white p-1">
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.key}
+                            type="button"
+                            onClick={() => setActiveTab(tab.key)}
+                            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
+                                activeTab === tab.key
+                                    ? 'bg-gradient-to-r from-violet-600 to-violet-700 text-white shadow'
+                                    : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                        >
+                            {tab.label}
+                            <span className={`ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs ${
+                                activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                                {tab.count}
+                            </span>
+                        </button>
                     ))}
                 </div>
 
-                {/* Table */}
-                <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
-                    {/* Filters */}
-                    <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="relative flex-1 sm:max-w-xs">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icons.search}</span>
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Cari nama..."
-                                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                            />
+                {/* Student Tab */}
+                {activeTab === 'student' && (
+                    <div className="space-y-4">
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                            {studentStats.map((stat) => (
+                                <div key={stat.label} className={`rounded-2xl border p-4 ${stat.color}`}>
+                                    <p className="text-sm font-medium">{stat.label}</p>
+                                    <p className="mt-1 text-2xl font-bold">{stat.value}</p>
+                                </div>
+                            ))}
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                            <select
-                                value={filterType}
-                                onChange={(e) => setFilterType(e.target.value)}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none"
-                            >
-                                <option value="">Semua Tipe</option>
-                                {typeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                            </select>
-                            <select
-                                value={filterStatus}
-                                onChange={(e) => setFilterStatus(e.target.value)}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none"
-                            >
-                                <option value="">Semua Status</option>
-                                {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                            </select>
-                        </div>
-                    </div>
 
-                    {/* Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
-                                    <th className="px-5 py-3 font-medium">Nama</th>
-                                    <th className="px-5 py-3 font-medium">Tipe</th>
-                                    <th className="px-5 py-3 font-medium">Jenjang</th>
-                                    <th className="px-5 py-3 font-medium">Program</th>
-                                    <th className="px-5 py-3 font-medium">Kontak</th>
-                                    <th className="px-5 py-3 font-medium">Status</th>
-                                    <th className="px-5 py-3 font-medium text-right">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {filteredData.map((item) => (
-                                    <tr key={item.id} className="transition hover:bg-slate-50">
-                                        <td className="px-5 py-4 font-medium text-slate-800">{item.name}</td>
-                                        <td className="px-5 py-4">
-                                            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${item.type === 'Murid' ? 'bg-blue-50 text-blue-700' : 'bg-violet-50 text-violet-700'}`}>
-                                                {item.type}
-                                            </span>
-                                        </td>
-                                        <td className="px-5 py-4 text-slate-600">{item.level}</td>
-                                        <td className="px-5 py-4 text-slate-600">{item.program}</td>
-                                        <td className="px-5 py-4 text-slate-600">{item.contact}</td>
-                                        <td className="px-5 py-4">
-                                            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[item.status]}`}>
-                                                {item.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <div className="flex justify-end gap-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openDetailModal(item)}
-                                                    className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                                                    title="Lihat Detail"
-                                                >
-                                                    {icons.eye}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openModal(item)}
-                                                    className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600"
-                                                    title="Edit"
-                                                >
-                                                    {icons.edit}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openDeleteModal(item)}
-                                                    className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
-                                                    title="Hapus"
-                                                >
-                                                    {icons.trash}
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredData.length === 0 && (
-                                    <tr>
-                                        <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
-                                            Tidak ada data yang ditemukan
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                        {/* Table */}
+                        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
+                            <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="relative flex-1 sm:max-w-xs">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icons.search}</span>
+                                    <input
+                                        type="text"
+                                        value={studentSearch}
+                                        onChange={(e) => setStudentSearch(e.target.value)}
+                                        placeholder="Cari nama..."
+                                        className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                                    />
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <select value={filterLevel} onChange={(e) => setFilterLevel(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
+                                        <option value="">Semua Jenjang</option>
+                                        {levelOptions.map((opt) => (<option key={opt} value={opt}>{opt}</option>))}
+                                    </select>
+                                    <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
+                                        <option value="">Semua Status</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="approved">Disetujui</option>
+                                        <option value="rejected">Ditolak</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead>
+                                        <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                            <th className="px-5 py-3 font-medium">Nama</th>
+                                            <th className="px-5 py-3 font-medium">Jenjang</th>
+                                            <th className="px-5 py-3 font-medium">Program</th>
+                                            <th className="px-5 py-3 font-medium">Kontak</th>
+                                            <th className="px-5 py-3 font-medium">Status</th>
+                                            <th className="px-5 py-3 font-medium">Tanggal</th>
+                                            <th className="px-5 py-3 font-medium">Ditolak Pada</th>
+                                            <th className="px-5 py-3 font-medium">Ditolak Oleh</th>
+                                            <th className="px-5 py-3 font-medium text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {filteredStudents.map((item) => (
+                                            <tr key={item.id} className="transition hover:bg-slate-50">
+                                                <td className="px-5 py-4 font-medium text-slate-800">{item.student_name}</td>
+                                                <td className="px-5 py-4 text-slate-600">{item.level}</td>
+                                                <td className="px-5 py-4 text-slate-600">{item.program}</td>
+                                                <td className="px-5 py-4 text-slate-600">{item.parent_contact}</td>
+                                                <td className="px-5 py-4">{statusBadge(item.status)}</td>
+                                                <td className="px-5 py-4 text-slate-600">
+                                                    {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
+                                                </td>
+                                                <td className="px-5 py-4 text-slate-600">
+                                                    {item.rejected_at ? new Date(item.rejected_at).toLocaleDateString('id-ID') : '-'}
+                                                </td>
+                                                <td className="px-5 py-4 text-slate-600">
+                                                    {item.rejected_by_name || item.rejected_by || '-'}
+                                                </td>
+                                                <td className="px-5 py-4">
+                                                    <div className="flex justify-end gap-1">
+                                                        {canView && (
+                                                            <button type="button" onClick={() => setDetailModal({ type: 'student', data: item })} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" title="Detail">
+                                                                {icons.eye}
+                                                            </button>
+                                                        )}
+                                                        {item.status === 'pending' && canApprove && (
+                                                            <button type="button" onClick={() => handleApprove('student', item.id)} className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-100 hover:text-emerald-600" title="Setujui">
+                                                                {icons.check}
+                                                            </button>
+                                                        )}
+                                                        {item.status === 'pending' && canReject && (
+                                                            <button type="button" onClick={() => handleReject('student', item.id)} className="rounded-lg p-2 text-slate-400 transition hover:bg-amber-100 hover:text-amber-600" title="Tolak">
+                                                                {icons.x}
+                                                            </button>
+                                                        )}
+                                                        {canDelete && (
+                                                            <button type="button" onClick={() => setDeleteModal({ type: 'student', id: item.id, name: item.student_name })} className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600" title="Hapus">
+                                                                {icons.trash}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {filteredStudents.length === 0 && (
+                                            <tr><td colSpan={9} className="px-5 py-12 text-center text-slate-500">Tidak ada data yang ditemukan</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                )}
+
+                {/* Teacher Tab */}
+                {activeTab === 'teacher' && (
+                    <div className="space-y-4">
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                            {teacherStats.map((stat) => (
+                                <div key={stat.label} className={`rounded-2xl border p-4 ${stat.color}`}>
+                                    <p className="text-sm font-medium">{stat.label}</p>
+                                    <p className="mt-1 text-2xl font-bold">{stat.value}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Table */}
+                        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
+                            <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="relative flex-1 sm:max-w-xs">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icons.search}</span>
+                                    <input
+                                        type="text"
+                                        value={teacherSearch}
+                                        onChange={(e) => setTeacherSearch(e.target.value)}
+                                        placeholder="Cari nama..."
+                                        className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                                    />
+                                </div>
+                                <select value={teacherFilterStatus} onChange={(e) => setTeacherFilterStatus(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
+                                    <option value="">Semua Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="approved">Disetujui</option>
+                                    <option value="rejected">Ditolak</option>
+                                </select>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead>
+                                        <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                            <th className="px-5 py-3 font-medium">Nama</th>
+                                            <th className="px-5 py-3 font-medium">Pendidikan</th>
+                                            <th className="px-5 py-3 font-medium">Mata Pelajaran</th>
+                                            <th className="px-5 py-3 font-medium">Kontak</th>
+                                            <th className="px-5 py-3 font-medium">CV</th>
+                                            <th className="px-5 py-3 font-medium">Status</th>
+                                            <th className="px-5 py-3 font-medium">Tanggal</th>
+                                            <th className="px-5 py-3 font-medium">Ditolak Pada</th>
+                                            <th className="px-5 py-3 font-medium">Ditolak Oleh</th>
+                                            <th className="px-5 py-3 font-medium text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {filteredTeachers.map((item) => (
+                                            <tr key={item.id} className="transition hover:bg-slate-50">
+                                                <td className="px-5 py-4 font-medium text-slate-800">{item.name}</td>
+                                                <td className="px-5 py-4 text-slate-600">{item.education}</td>
+                                                <td className="px-5 py-4 text-slate-600">{item.subjects}</td>
+                                                <td className="px-5 py-4 text-slate-600">{item.contact}</td>
+                                                <td className="px-5 py-4">
+                                                    {item.cv_url ? (
+                                                        <a href={item.cv_url} target="_blank" rel="noreferrer" className="text-violet-600 underline hover:text-violet-800">Lihat</a>
+                                                    ) : <span className="text-slate-400">-</span>}
+                                                </td>
+                                                <td className="px-5 py-4">{statusBadge(item.status)}</td>
+                                                <td className="px-5 py-4 text-slate-600">
+                                                    {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
+                                                </td>
+                                                <td className="px-5 py-4 text-slate-600">
+                                                    {item.rejected_at ? new Date(item.rejected_at).toLocaleDateString('id-ID') : '-'}
+                                                </td>
+                                                <td className="px-5 py-4 text-slate-600">
+                                                    {item.rejected_by_name || item.rejected_by || '-'}
+                                                </td>
+                                                <td className="px-5 py-4">
+                                                    <div className="flex justify-end gap-1">
+                                                        {canView && (
+                                                            <button type="button" onClick={() => setDetailModal({ type: 'teacher', data: item })} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" title="Detail">
+                                                                {icons.eye}
+                                                            </button>
+                                                        )}
+                                                        {item.status === 'pending' && canApprove && (
+                                                            <button type="button" onClick={() => handleApprove('teacher', item.id)} className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-100 hover:text-emerald-600" title="Setujui">
+                                                                {icons.check}
+                                                            </button>
+                                                        )}
+                                                        {item.status === 'pending' && canReject && (
+                                                            <button type="button" onClick={() => handleReject('teacher', item.id)} className="rounded-lg p-2 text-slate-400 transition hover:bg-amber-100 hover:text-amber-600" title="Tolak">
+                                                                {icons.x}
+                                                            </button>
+                                                        )}
+                                                        {canDelete && (
+                                                            <button type="button" onClick={() => setDeleteModal({ type: 'teacher', id: item.id, name: item.name })} className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600" title="Hapus">
+                                                                {icons.trash}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {filteredTeachers.length === 0 && (
+                                            <tr><td colSpan={10} className="px-5 py-12 text-center text-slate-500">Tidak ada data yang ditemukan</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Form Modal */}
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Pendaftaran' : 'Tambah Pendaftaran'} size="lg">
-                <form onSubmit={(e) => { e.preventDefault(); saveForm(); }} className="space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormInput label="Nama Lengkap" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="Nama lengkap" required />
-                        <FormSelect label="Tipe" value={form.type} onChange={(v) => setForm({ ...form, type: v })} options={typeOptions} required />
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormSelect label="Jenjang" value={form.level} onChange={(v) => setForm({ ...form, level: v })} options={levelOptions} required />
-                        <FormSelect label="Program" value={form.program} onChange={(v) => setForm({ ...form, program: v })} options={programOptions} required />
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormInput label="Kontak (HP/WA)" value={form.contact} onChange={(v) => setForm({ ...form, contact: v })} placeholder="08xx-xxxx-xxxx" required />
-                        <FormSelect label="Status" value={form.status} onChange={(v) => setForm({ ...form, status: v })} options={statusOptions} />
-                    </div>
-                    <FormTextarea label="Catatan" value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} placeholder="Catatan tambahan..." />
-                    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
-                        <button type="button" onClick={() => setShowModal(false)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
-                            Batal
-                        </button>
-                        <button type="submit" className="rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800">
-                            {editing ? 'Simpan Perubahan' : 'Tambah Pendaftaran'}
-                        </button>
-                    </div>
-                </form>
-            </Modal>
-
             {/* Detail Modal */}
-            <Modal isOpen={showDetailModal} onClose={() => setShowDetailModal(false)} title="Detail Pendaftaran">
-                {detailTarget && (
+            <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title={detailModal?.type === 'student' ? 'Detail Pendaftaran Murid' : 'Detail Pendaftaran Pengajar'}>
+                {detailModal && (
                     <div className="space-y-4">
                         <div className="rounded-xl bg-slate-50 p-4">
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <div><p className="text-xs text-slate-500">Nama</p><p className="font-medium text-slate-800">{detailTarget.name}</p></div>
-                                <div><p className="text-xs text-slate-500">Tipe</p><p className="font-medium text-slate-800">{detailTarget.type}</p></div>
-                                <div><p className="text-xs text-slate-500">Jenjang</p><p className="font-medium text-slate-800">{detailTarget.level}</p></div>
-                                <div><p className="text-xs text-slate-500">Program</p><p className="font-medium text-slate-800">{detailTarget.program}</p></div>
-                                <div><p className="text-xs text-slate-500">Kontak</p><p className="font-medium text-slate-800">{detailTarget.contact}</p></div>
-                                <div><p className="text-xs text-slate-500">Tanggal Daftar</p><p className="font-medium text-slate-800">{detailTarget.date}</p></div>
+                                {detailModal.type === 'student' ? (
+                                    <>
+                                        <div><p className="text-xs text-slate-500">Nama</p><p className="font-medium text-slate-800">{detailModal.data.student_name}</p></div>
+                                        <div><p className="text-xs text-slate-500">Jenjang</p><p className="font-medium text-slate-800">{detailModal.data.level || '-'}</p></div>
+                                        <div><p className="text-xs text-slate-500">Alamat</p><p className="font-medium text-slate-800">{detailModal.data.address || '-'}</p></div>
+                                        <div><p className="text-xs text-slate-500">Sekolah</p><p className="font-medium text-slate-800">{detailModal.data.school_name || '-'}</p></div>
+                                        <div><p className="text-xs text-slate-500">Program</p><p className="font-medium text-slate-800">{detailModal.data.program || '-'}</p></div>
+                                        <div><p className="text-xs text-slate-500">Paket</p><p className="font-medium text-slate-800">{detailModal.data.package || '-'}</p></div>
+                                        <div><p className="text-xs text-slate-500">Mata Pelajaran</p><p className="font-medium text-slate-800">{detailModal.data.subjects || '-'}</p></div>
+                                        <div><p className="text-xs text-slate-500">Mode</p><p className="font-medium text-slate-800">{detailModal.data.preferred_mode || '-'}</p></div>
+                                        <div><p className="text-xs text-slate-500">Kontak Orang Tua</p><p className="font-medium text-slate-800">{detailModal.data.parent_contact || '-'}</p></div>
+                                        <div><p className="text-xs text-slate-500">Status</p>{statusBadge(detailModal.data.status)}</div>
+                                        <div><p className="text-xs text-slate-500">Tanggal Daftar</p><p className="font-medium text-slate-800">{detailModal.data.created_at ? new Date(detailModal.data.created_at).toLocaleDateString('id-ID') : '-'}</p></div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div><p className="text-xs text-slate-500">Nama</p><p className="font-medium text-slate-800">{detailModal.data.name}</p></div>
+                                        <div><p className="text-xs text-slate-500">Pendidikan</p><p className="font-medium text-slate-800">{detailModal.data.education || '-'}</p></div>
+                                        <div><p className="text-xs text-slate-500">Alamat</p><p className="font-medium text-slate-800">{detailModal.data.address || '-'}</p></div>
+                                        <div><p className="text-xs text-slate-500">Mata Pelajaran</p><p className="font-medium text-slate-800">{detailModal.data.subjects || '-'}</p></div>
+                                        <div><p className="text-xs text-slate-500">Pengalaman</p><p className="font-medium text-slate-800">{detailModal.data.experience || '-'}</p></div>
+                                        <div><p className="text-xs text-slate-500">Kontak</p><p className="font-medium text-slate-800">{detailModal.data.contact || '-'}</p></div>
+                                        <div>
+                                            <p className="text-xs text-slate-500">CV</p>
+                                            {detailModal.data.cv_url ? (
+                                                <a href={detailModal.data.cv_url} target="_blank" rel="noreferrer" className="font-medium text-violet-600 underline">Lihat CV</a>
+                                            ) : <p className="font-medium text-slate-800">-</p>}
+                                        </div>
+                                        <div><p className="text-xs text-slate-500">Status</p>{statusBadge(detailModal.data.status)}</div>
+                                        <div><p className="text-xs text-slate-500">Tanggal Daftar</p><p className="font-medium text-slate-800">{detailModal.data.created_at ? new Date(detailModal.data.created_at).toLocaleDateString('id-ID') : '-'}</p></div>
+                                    </>
+                                )}
                             </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm text-slate-500">Status:</span>
-                            <span className={`rounded-full border px-3 py-1 text-sm font-medium ${statusStyles[detailTarget.status]}`}>
-                                {detailTarget.status}
-                            </span>
-                        </div>
-                        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-                            <button type="button" onClick={() => { setShowDetailModal(false); openModal(detailTarget); }} className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-100">
-                                {icons.edit} Edit
-                            </button>
-                        </div>
+                        {detailModal.data.notes && (
+                            <div className="rounded-xl border border-slate-100 bg-white p-4 text-sm text-slate-600">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Catatan</p>
+                                <p className="mt-2">{detailModal.data.notes}</p>
+                            </div>
+                        )}
+                        {detailModal.data.status === 'pending' && (canApprove || canReject) && (
+                            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+                                {canReject && (
+                                    <button
+                                        type="button"
+                                        onClick={() => { handleReject(detailModal.type, detailModal.data.id); setDetailModal(null); }}
+                                        className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100"
+                                    >
+                                        {icons.x} Tolak
+                                    </button>
+                                )}
+                                {canApprove && (
+                                    <button
+                                        type="button"
+                                        onClick={() => { handleApprove(detailModal.type, detailModal.data.id); setDetailModal(null); }}
+                                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                                    >
+                                        {icons.check} Setujui
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </Modal>
 
             {/* Delete Modal */}
-            <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Konfirmasi Hapus" size="sm">
+            <Modal isOpen={!!deleteModal} onClose={() => setDeleteModal(null)} title="Konfirmasi Hapus" size="sm">
                 <div className="text-center">
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-500">
                         {icons.warning}
                     </div>
                     <p className="text-slate-600">
-                        Apakah Anda yakin ingin menghapus <span className="font-semibold text-slate-800">{deleteTarget?.name}</span>?
+                        Apakah Anda yakin ingin menghapus <span className="font-semibold text-slate-800">{deleteModal?.name}</span>?
                     </p>
                     <p className="mt-1 text-sm text-slate-500">Tindakan ini tidak dapat dibatalkan.</p>
                 </div>
                 <div className="mt-6 flex justify-center gap-3">
-                    <button type="button" onClick={() => setShowDeleteModal(false)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
+                    <button type="button" onClick={() => setDeleteModal(null)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
                         Batal
                     </button>
-                    <button type="button" onClick={confirmDelete} className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700">
+                    <button type="button" onClick={handleDelete} className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700">
                         Ya, Hapus
                     </button>
                 </div>

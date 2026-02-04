@@ -1,84 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
-import { useState } from 'react';
-
-const roles = [
-    {
-        id: 'super-admin',
-        name: 'Super Admin',
-        description: 'Akses penuh ke seluruh modul dan pengaturan.',
-        tag: 'Full Access',
-        tone: 'violet',
-    },
-    {
-        id: 'admin-konten',
-        name: 'Admin Konten',
-        description: 'Kelola konten publik dan pendaftaran.',
-        tag: 'Content',
-        tone: 'amber',
-    },
-    {
-        id: 'editor',
-        name: 'Editor',
-        description: 'Edit copy dan jadwal konten.',
-        tag: 'Limited',
-        tone: 'rose',
-    },
-];
-
-const permissions = [
-    { key: 'view', label: 'View' },
-    { key: 'create', label: 'Create' },
-    { key: 'edit', label: 'Edit' },
-    { key: 'delete', label: 'Delete' },
-    { key: 'approve', label: 'Approve' },
-    { key: 'reject', label: 'Reject' },
-    { key: 'export', label: 'Export' },
-    { key: 'import', label: 'Import' },
-];
-
-const menuSections = [
-    {
-        title: 'Core',
-        description: 'Navigasi utama admin.',
-        items: [
-            { id: 'dashboard', label: 'Dashboard', description: 'Ringkasan data admin.' },
-        ],
-    },
-    {
-        title: 'Content',
-        description: 'Konten publik dan landing.',
-        items: [
-            { id: 'landing', label: 'Landing Page', description: 'Hero, copy, dan CTA.' },
-        ],
-    },
-    {
-        title: 'Master Data',
-        description: 'Pengelolaan data akademik.',
-        items: [
-            { id: 'program', label: 'Program', description: 'Data program belajar.' },
-            { id: 'bank-soal', label: 'Bank Soal', description: 'Soal dan arsip.' },
-            { id: 'olimpiade', label: 'Olimpiade', description: 'Event dan jadwal.' },
-            { id: 'pendaftaran', label: 'Pendaftaran', description: 'Pendaftar masuk.' },
-            { id: 'pengajar', label: 'Pengajar', description: 'Data pengajar.' },
-        ],
-    },
-    {
-        title: 'Administrator',
-        description: 'Manajemen role dan akses.',
-        items: [
-            { id: 'akses-menu', label: 'Akses Menu', description: 'Pengaturan akses role.' },
-            { id: 'roles', label: 'Role', description: 'Kelompok role admin.' },
-            { id: 'users', label: 'User', description: 'Akun administrator.' },
-        ],
-    },
-    {
-        title: 'System',
-        description: 'Pengaturan dan konfigurasi.',
-        items: [
-            { id: 'pengaturan', label: 'Pengaturan', description: 'Konfigurasi aplikasi.' },
-        ],
-    },
-];
+import { Head, Link, usePage, router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
 const toneStyles = {
     violet: 'bg-violet-50 text-violet-700',
@@ -86,37 +7,15 @@ const toneStyles = {
     rose: 'bg-rose-50 text-rose-700',
 };
 
-const permissionKeys = permissions.map((permission) => permission.key);
-const menuIds = menuSections.flatMap((section) =>
-    section.items.map((item) => item.id)
-);
-
-const buildFullAccessMap = () =>
-    Object.fromEntries(menuIds.map((id) => [id, [...permissionKeys]]));
-
-const initialRoleAccess = {
-    'super-admin': buildFullAccessMap(),
-    'admin-konten': {
-        dashboard: ['view'],
-        landing: ['view', 'create', 'edit', 'delete', 'export', 'import'],
-        program: ['view', 'create', 'edit', 'delete'],
-        'bank-soal': ['view', 'create', 'edit', 'delete', 'export', 'import'],
-        olimpiade: ['view', 'create', 'edit', 'delete', 'approve', 'reject'],
-        pendaftaran: ['view', 'approve', 'reject', 'export'],
-        pengajar: ['view', 'create', 'edit', 'delete'],
-    },
-    editor: {
-        dashboard: ['view'],
-        landing: ['view', 'edit'],
-        program: ['view'],
-        'bank-soal': ['view', 'edit'],
-        olimpiade: ['view'],
-        pendaftaran: ['view'],
-        pengajar: ['view'],
-    },
-};
-
 export default function AccessMenu() {
+    const {
+        roles = [],
+        permissions = [],
+        menuSections = [],
+        roleAccess: initialRoleAccess = {},
+        flash,
+        allowedActions = {},
+    } = usePage().props;
     const [activeRoleId, setActiveRoleId] = useState(roles[0]?.id ?? '');
     const [roleAccess, setRoleAccess] = useState(initialRoleAccess);
 
@@ -125,6 +24,8 @@ export default function AccessMenu() {
 
     const getMenuAccess = (menuId) =>
         roleAccess[activeRoleId]?.[menuId] ?? [];
+
+    const permissionKeys = permissions.map((permission) => permission.key);
 
     const isFullAccess = (menuId) =>
         permissionKeys.every((key) => getMenuAccess(menuId).includes(key));
@@ -169,6 +70,43 @@ export default function AccessMenu() {
         );
     };
 
+    const canEdit = (allowedActions['akses-menu'] ?? []).includes('edit');
+    const canView = (allowedActions['akses-menu'] ?? []).includes('view');
+
+    const handleSave = () => {
+        if (!activeRoleId) {
+            return;
+        }
+
+        router.put(
+            '/admin/akses-menu',
+            {
+                role_id: activeRoleId,
+                access: roleAccess[activeRoleId] ?? {},
+            },
+            { preserveScroll: true }
+        );
+    };
+
+    const handleReset = () => {
+        if (!activeRoleId) {
+            return;
+        }
+
+        setRoleAccess((prev) => ({
+            ...prev,
+            [activeRoleId]: initialRoleAccess[activeRoleId] ?? {},
+        }));
+    };
+
+    useEffect(() => {
+        setActiveRoleId(roles[0]?.id ?? '');
+    }, [roles]);
+
+    useEffect(() => {
+        setRoleAccess(initialRoleAccess);
+    }, [initialRoleAccess]);
+
     return (
         <>
             <Head title="Akses Menu Admin" />
@@ -184,13 +122,22 @@ export default function AccessMenu() {
                             import.
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        className="shrink-0 rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:from-violet-800 hover:to-amber-500 sm:px-4 sm:py-2"
-                    >
-                        Simpan Akses
-                    </button>
+                    {canEdit && (
+                        <button
+                            type="button"
+                            onClick={handleSave}
+                            className="shrink-0 rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:from-violet-800 hover:to-amber-500 sm:px-4 sm:py-2"
+                        >
+                            Simpan Akses
+                        </button>
+                    )}
                 </div>
+
+                {flash?.success && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                        {flash.success}
+                    </div>
+                )}
 
                 <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1fr_1.4fr]">
                     <div className="space-y-3 sm:space-y-4">
@@ -198,12 +145,14 @@ export default function AccessMenu() {
                             <p className="text-sm font-semibold text-slate-800">
                                 Role Administrator
                             </p>
-                            <Link
-                                href="/admin/roles"
-                                className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-violet-200 hover:text-violet-700 sm:px-4 sm:py-1.5 sm:text-xs"
-                            >
-                                Kelola Role
-                            </Link>
+                            {canView && (
+                                <Link
+                                    href="/admin/roles"
+                                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-violet-200 hover:text-violet-700 sm:px-4 sm:py-1.5 sm:text-xs"
+                                >
+                                    Kelola Role
+                                </Link>
+                            )}
                         </div>
                         {roles.map((role) => {
                             const isActive = role.id === activeRoleId;
@@ -252,12 +201,15 @@ export default function AccessMenu() {
                                     Pilih menu dan action yang tersedia.
                                 </p>
                             </div>
-                            <button
-                                type="button"
-                                className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-violet-200 hover:text-violet-700 sm:px-3 sm:py-1 sm:text-xs"
-                            >
-                                Reset
-                            </button>
+                            {canEdit && (
+                                <button
+                                    type="button"
+                                    onClick={handleReset}
+                                    className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-violet-200 hover:text-violet-700 sm:px-3 sm:py-1 sm:text-xs"
+                                >
+                                    Reset
+                                </button>
+                            )}
                         </div>
 
                         <div className="mt-4 space-y-4">
@@ -305,6 +257,7 @@ export default function AccessMenu() {
                                                                 checked={
                                                                     isMenuFullAccess
                                                                 }
+                                                                disabled={!canEdit}
                                                                 onChange={() =>
                                                                     handleToggleFullAccess(
                                                                         item.id
@@ -332,6 +285,7 @@ export default function AccessMenu() {
                                                                         ).includes(
                                                                             permission.key
                                                                         )}
+                                                                        disabled={!canEdit}
                                                                         onChange={() =>
                                                                             handleTogglePermission(
                                                                                 item.id,

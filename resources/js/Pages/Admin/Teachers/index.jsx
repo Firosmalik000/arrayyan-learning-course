@@ -1,23 +1,6 @@
-import { Head } from '@inertiajs/react';
-import { useState } from 'react';
-
-const initialTeachers = [
-    { id: 1, name: 'Ustadzah Hana', subject: 'Matematika SD', status: 'Aktif', load: 12, availability: 'Senin - Rabu', phone: '0812-1111-2222', email: 'hana@alc.id' },
-    { id: 2, name: 'Ustadz Farhan', subject: 'Bahasa Inggris SMP', status: 'Training', load: 6, availability: 'Kamis - Jumat', phone: '0813-2222-3333', email: 'farhan@alc.id' },
-    { id: 3, name: 'Ustadzah Laila', subject: 'IPA & Olimpiade', status: 'Aktif', load: 8, availability: 'Sabtu - Minggu', phone: '0814-3333-4444', email: 'laila@alc.id' },
-    { id: 4, name: 'Ustadz Rafi', subject: 'Matematika SMA', status: 'Onboarding', load: 4, availability: 'Selasa - Kamis', phone: '0815-4444-5555', email: 'rafi@alc.id' },
-];
-
-const statusStyles = {
-    Aktif: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    Training: 'bg-amber-50 text-amber-700 border-amber-200',
-    Onboarding: 'bg-violet-50 text-violet-700 border-violet-200',
-    Nonaktif: 'bg-slate-100 text-slate-600 border-slate-200',
-};
-
-const statusOptions = ['Aktif', 'Training', 'Onboarding', 'Nonaktif'];
-const subjectOptions = ['Matematika SD', 'Matematika SMP', 'Matematika SMA', 'Bahasa Inggris SD', 'Bahasa Inggris SMP', 'Bahasa Inggris SMA', 'IPA SD', 'IPA SMP', 'IPA SMA', 'IPA & Olimpiade', 'Calistung'];
-const availabilityOptions = ['Senin - Rabu', 'Rabu - Jumat', 'Kamis - Jumat', 'Sabtu - Minggu', 'Selasa - Kamis', 'Fleksibel'];
+import { Head, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+const fallbackEducationOptions = ['SMA', 'D3', 'S1', 'S2'];
 
 // Icons
 const icons = {
@@ -72,6 +55,18 @@ const icons = {
         </svg>
     ),
 };
+
+const statusBadge = (isActive) => (
+    <span
+        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+            isActive
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-slate-200 bg-slate-100 text-slate-600'
+        }`}
+    >
+        {isActive ? 'Aktif' : 'Nonaktif'}
+    </span>
+);
 
 // Modal Component
 function Modal({ isOpen, onClose, title, children, size = 'md' }) {
@@ -135,9 +130,25 @@ function FormSelect({ label, value, onChange, options, required }) {
 }
 
 export default function Teachers() {
-    const [teachers, setTeachers] = useState(initialTeachers);
+    const { teacherRegistrations: registrationsData = [], allowedActions = {} } = usePage().props;
+    const normalizedTeachers = registrationsData.map((item) => ({
+        id: item.id,
+        name: item.name ?? '',
+        address: item.address ?? '',
+        education: item.education ?? '',
+        subjects: item.subjects ?? '',
+        experience: item.experience ?? '',
+        contact: item.contact ?? '',
+        cv_url: item.cv_url ?? null,
+        notes: item.notes ?? '',
+        is_active: item.is_active ?? true,
+        created_at: item.created_at ?? null,
+    }));
+    const [teachers, setTeachers] = useState(normalizedTeachers);
     const [search, setSearch] = useState('');
-    const [filterStatus, setFilterStatus] = useState('');
+    const [filterEducation, setFilterEducation] = useState('');
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     // Modal states
     const [showModal, setShowModal] = useState(false);
@@ -145,41 +156,99 @@ export default function Teachers() {
     const [editing, setEditing] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
 
+    const can = (action) => (allowedActions.pengajar ?? []).includes(action);
+    const canCreate = can('create');
+    const canEdit = can('edit');
+    const canDelete = can('delete');
+
     // Form state
     const [form, setForm] = useState({
-        name: '', subject: '', status: 'Onboarding', load: '', availability: '', phone: '', email: ''
+        name: '',
+        address: '',
+        education: '',
+        subjects: '',
+        experience: '',
+        contact: '',
+        cv_url: '',
+        notes: '',
+        is_active: true,
     });
 
     // Filtered data
-    const filteredData = teachers.filter(t => {
-        const matchSearch = t.name.toLowerCase().includes(search.toLowerCase()) || t.subject.toLowerCase().includes(search.toLowerCase());
-        const matchStatus = !filterStatus || t.status === filterStatus;
-        return matchSearch && matchStatus;
+    const filteredData = teachers.filter((t) => {
+        const matchSearch =
+            t.name.toLowerCase().includes(search.toLowerCase()) ||
+            t.subjects.toLowerCase().includes(search.toLowerCase());
+        const matchEducation = !filterEducation || t.education === filterEducation;
+        return matchSearch && matchEducation;
     });
+
+    const sortedData = [...filteredData].sort((a, b) => {
+        const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return bTime - aTime;
+    });
+
+    const totalPages = Math.max(1, Math.ceil(sortedData.length / pageSize));
+
+    useEffect(() => {
+        setPage(1);
+    }, [search, filterEducation, pageSize]);
+
+    useEffect(() => {
+        setPage((current) => Math.min(Math.max(current, 1), totalPages));
+    }, [totalPages]);
+
+    const startIndex = sortedData.length === 0 ? 0 : (page - 1) * pageSize + 1;
+    const endIndex = Math.min(sortedData.length, page * pageSize);
+    const paginatedData = sortedData.slice((page - 1) * pageSize, page * pageSize);
 
     // Stats
     const stats = [
-        { label: 'Total Pengajar', value: teachers.length },
-        { label: 'Aktif', value: teachers.filter(t => t.status === 'Aktif').length },
-        { label: 'Total Kelas', value: teachers.reduce((a, b) => a + b.load, 0) },
+        { label: 'Total Pelamar', value: teachers.length },
+        { label: 'Ada CV', value: teachers.filter((t) => t.cv_url).length },
+        { label: 'Berpengalaman', value: teachers.filter((t) => t.experience).length },
     ];
+
+    const educationOptions = Array.from(new Set(teachers.map((t) => t.education).filter(Boolean)));
+    const resolvedEducationOptions = educationOptions.length > 0 ? educationOptions : fallbackEducationOptions;
 
     // Handlers
     const openModal = (item = null) => {
         if (item) {
             setEditing(item);
-            setForm({ ...item, load: item.load.toString() });
+            setForm({
+                name: item.name,
+                address: item.address,
+                education: item.education,
+                subjects: item.subjects,
+                experience: item.experience,
+                contact: item.contact,
+                cv_url: item.cv_url,
+                notes: item.notes,
+                is_active: item.is_active ?? true,
+            });
         } else {
             setEditing(null);
-            setForm({ name: '', subject: '', status: 'Onboarding', load: '', availability: '', phone: '', email: '' });
+            setForm({
+                name: '',
+                address: '',
+                education: '',
+                subjects: '',
+                experience: '',
+                contact: '',
+                cv_url: '',
+                notes: '',
+                is_active: true,
+            });
         }
         setShowModal(true);
     };
 
     const saveForm = () => {
-        const data = { ...form, load: parseInt(form.load) || 0 };
+        const data = { ...form, is_active: form.is_active ?? true };
         if (editing) {
-            setTeachers(teachers.map(t => t.id === editing.id ? { ...data, id: editing.id } : t));
+            setTeachers(teachers.map((t) => (t.id === editing.id ? { ...data, id: editing.id } : t)));
         } else {
             setTeachers([...teachers, { ...data, id: Date.now() }]);
         }
@@ -206,17 +275,19 @@ export default function Teachers() {
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800">Pengajar</h1>
                         <p className="mt-1 text-sm text-slate-600">
-                            Kelola data pengajar dan jadwal mengajar
+                            Kelola data pendaftaran pengajar yang masuk
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => openModal()}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
-                    >
-                        {icons.plus}
-                        Tambah Pengajar
-                    </button>
+                    {canCreate && (
+                        <button
+                            type="button"
+                            onClick={() => openModal()}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
+                        >
+                            {icons.plus}
+                            Tambah Pengajar
+                        </button>
+                    )}
                 </div>
 
                 {/* Stats */}
@@ -237,82 +308,175 @@ export default function Teachers() {
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Cari pengajar..."
+                            placeholder="Cari pelamar..."
                             className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                         />
                     </div>
                     <select
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value)}
+                        value={filterEducation}
+                        onChange={(e) => setFilterEducation(e.target.value)}
                         className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 outline-none"
                     >
-                        <option value="">Semua Status</option>
-                        {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        <option value="">Semua Pendidikan</option>
+                        {resolvedEducationOptions.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                        ))}
                     </select>
                 </div>
 
-                {/* Teacher Cards */}
-                <div className="grid gap-4 sm:grid-cols-2">
-                    {filteredData.map((teacher) => (
-                        <div key={teacher.id} className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
-                            <div className="flex items-start gap-4">
-                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 text-white">
-                                    {icons.user}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div>
-                                            <h3 className="font-semibold text-slate-800">{teacher.name}</h3>
-                                            <p className="mt-0.5 text-sm text-slate-500">{teacher.subject}</p>
-                                        </div>
-                                        <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[teacher.status]}`}>
-                                            {teacher.status}
-                                        </span>
-                                    </div>
-                                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
-                                        <span className="inline-flex items-center gap-1.5">
-                                            {icons.calendar}
-                                            {teacher.availability}
-                                        </span>
-                                        <span className="inline-flex items-center gap-1.5">
-                                            <span className="font-medium text-violet-600">{teacher.load}</span> kelas
-                                        </span>
-                                    </div>
-                                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                                        <span className="inline-flex items-center gap-1">
-                                            {icons.phone}
-                                            {teacher.phone}
-                                        </span>
-                                        <span className="inline-flex items-center gap-1">
-                                            {icons.mail}
-                                            {teacher.email}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4 opacity-0 transition group-hover:opacity-100">
-                                <button
-                                    type="button"
-                                    onClick={() => openModal(teacher)}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-violet-100 hover:text-violet-700"
-                                >
-                                    {icons.edit} Edit
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => openDeleteModal(teacher)}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-red-100 hover:text-red-700"
-                                >
-                                    {icons.trash} Hapus
-                                </button>
-                            </div>
+                {/* Data Table */}
+                <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4 sm:px-5">
+                        <div>
+                            <h2 className="text-sm font-semibold text-slate-800">Daftar Pengajar</h2>
+                            <p className="mt-1 text-xs text-slate-500">
+                                Menampilkan {startIndex}-{endIndex} dari {sortedData.length} data
+                            </p>
                         </div>
-                    ))}
-                    {filteredData.length === 0 && (
-                        <div className="col-span-full rounded-2xl border border-slate-100 bg-white p-12 text-center text-slate-500">
-                            Tidak ada pengajar yang ditemukan
+                        <div className="flex items-center gap-2">
+                            <label className="text-xs font-medium text-slate-500" htmlFor="teacher-page-size">
+                                Baris
+                            </label>
+                            <select
+                                id="teacher-page-size"
+                                value={pageSize}
+                                onChange={(e) => setPageSize(Number(e.target.value))}
+                                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-600 outline-none"
+                            >
+                                {[5, 10, 20, 50].map((size) => (
+                                    <option key={size} value={size}>
+                                        {size}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
-                    )}
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full text-left text-sm">
+                            <thead>
+                                <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                    <th className="px-5 py-3 font-medium">Nama</th>
+                                    <th className="px-5 py-3 font-medium">Pendidikan</th>
+                                    <th className="px-5 py-3 font-medium">Mata Pelajaran</th>
+                                    <th className="px-5 py-3 font-medium">Kontak</th>
+                                    <th className="px-5 py-3 font-medium">Alamat</th>
+                                    <th className="px-5 py-3 font-medium">Status</th>
+                                    <th className="px-5 py-3 font-medium">CV</th>
+                                    <th className="px-5 py-3 font-medium">Tanggal</th>
+                                    <th className="px-5 py-3 font-medium text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {paginatedData.map((teacher) => (
+                                    <tr key={teacher.id} className="transition hover:bg-slate-50">
+                                        <td className="px-5 py-4 font-medium text-slate-800">
+                                            {teacher.name}
+                                        </td>
+                                        <td className="px-5 py-4 text-slate-600">
+                                            {teacher.education || '-'}
+                                        </td>
+                                        <td className="px-5 py-4 text-slate-600">
+                                            {teacher.subjects || '-'}
+                                        </td>
+                                        <td className="px-5 py-4 text-slate-600">
+                                            {teacher.contact || '-'}
+                                        </td>
+                                        <td className="px-5 py-4 text-slate-600">
+                                            {teacher.address || '-'}
+                                        </td>
+                                        <td className="px-5 py-4">{statusBadge(teacher.is_active)}</td>
+                                        <td className="px-5 py-4">
+                                            {teacher.cv_url ? (
+                                                <a
+                                                    href={teacher.cv_url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-xs font-medium text-violet-600 underline hover:text-violet-800"
+                                                >
+                                                    Lihat
+                                                </a>
+                                            ) : (
+                                                <span className="text-slate-400">-</span>
+                                            )}
+                                        </td>
+                                        <td className="px-5 py-4 text-slate-600">
+                                            {teacher.created_at
+                                                ? new Date(teacher.created_at).toLocaleDateString('id-ID')
+                                                : '-'}
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="flex justify-end gap-1">
+                                                {canEdit && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openModal(teacher)}
+                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600"
+                                                        title="Edit"
+                                                    >
+                                                        {icons.edit}
+                                                    </button>
+                                                )}
+                                                {canDelete && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openDeleteModal(teacher)}
+                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
+                                                        title="Hapus"
+                                                    >
+                                                        {icons.trash}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {paginatedData.length === 0 && (
+                                    <tr>
+                                        <td colSpan={9} className="px-5 py-12 text-center text-slate-500">
+                                            Tidak ada data pengajar yang ditemukan
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 p-4">
+                        <p className="text-xs text-slate-500">
+                            Menampilkan {startIndex}-{endIndex} dari {sortedData.length} data
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setPage((current) => Math.max(current - 1, 1))}
+                                disabled={page === 1}
+                                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:border-violet-200 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                Prev
+                            </button>
+                            {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+                                <button
+                                    key={pageNumber}
+                                    type="button"
+                                    onClick={() => setPage(pageNumber)}
+                                    className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                                        pageNumber === page
+                                            ? 'bg-violet-600 text-white shadow-sm'
+                                            : 'border border-slate-200 text-slate-600 hover:border-violet-200 hover:text-violet-700'
+                                    }`}
+                                >
+                                    {pageNumber}
+                                </button>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() => setPage((current) => Math.min(current + 1, totalPages))}
+                                disabled={page === totalPages}
+                                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:border-violet-200 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -321,17 +485,18 @@ export default function Teachers() {
                 <form onSubmit={(e) => { e.preventDefault(); saveForm(); }} className="space-y-4">
                     <FormInput label="Nama Lengkap" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="contoh: Ustadzah Hana" required />
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <FormSelect label="Mata Pelajaran" value={form.subject} onChange={(v) => setForm({ ...form, subject: v })} options={subjectOptions} required />
-                        <FormSelect label="Status" value={form.status} onChange={(v) => setForm({ ...form, status: v })} options={statusOptions} />
+                        <FormInput label="Alamat" value={form.address} onChange={(v) => setForm({ ...form, address: v })} placeholder="Alamat lengkap" />
+                        <FormSelect label="Pendidikan Terakhir" value={form.education} onChange={(v) => setForm({ ...form, education: v })} options={resolvedEducationOptions} />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <FormInput label="Jumlah Kelas" type="number" value={form.load} onChange={(v) => setForm({ ...form, load: v })} placeholder="0" />
-                        <FormSelect label="Ketersediaan" value={form.availability} onChange={(v) => setForm({ ...form, availability: v })} options={availabilityOptions} />
+                        <FormInput label="Mata Pelajaran" value={form.subjects} onChange={(v) => setForm({ ...form, subjects: v })} placeholder="contoh: Matematika, IPA" />
+                        <FormInput label="Pengalaman" value={form.experience} onChange={(v) => setForm({ ...form, experience: v })} placeholder="contoh: 2 tahun" />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <FormInput label="No. HP/WA" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} placeholder="08xx-xxxx-xxxx" />
-                        <FormInput label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} placeholder="email@alc.id" />
+                        <FormInput label="No. HP/WA" value={form.contact} onChange={(v) => setForm({ ...form, contact: v })} placeholder="08xx-xxxx-xxxx" />
+                        <FormInput label="Link CV" value={form.cv_url} onChange={(v) => setForm({ ...form, cv_url: v })} placeholder="https://..." />
                     </div>
+                    <FormInput label="Catatan" value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} placeholder="Catatan tambahan..." />
                     <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
                         <button type="button" onClick={() => setShowModal(false)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
                             Batal

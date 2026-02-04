@@ -8,7 +8,27 @@
       "Bash(php artisan:*)",
       "Bash(C:laragonbinphpphp-8.3.14-Win32-vs16-x64php.exe C:laragonwwwarrayyanartisan make:migration add_new_fields_to_registrations_tables)",
       "Bash(\"C:/laragon/bin/php/php-8.1.10-Win32-vs16-x64/php.exe\" \"C:/laragon/www/arrayyan/artisan\" make:migration add_new_fields_to_registrations_tables)",
-      "Bash(npx vite build:*)"
+      "Bash(npx vite build:*)",
+      "Bash(where:*)",
+      "Bash(C:UsersXBOSS.configherdbinphp.bat artisan make:factory StudentRegistrationFactory --model=StudentRegistration --no-interaction)",
+      "Bash(cmd /c \"php artisan make:factory StudentRegistrationFactory --model=StudentRegistration --no-interaction\")",
+      "Bash(cmd /c \"php artisan make:factory TeacherRegistrationFactory --model=TeacherRegistration --no-interaction && php artisan make:test RegistrationTest --pest --no-interaction\")",
+      "Bash(cmd /c \"dir tests\\\\*.php /b\")",
+      "Bash(cmd /c \"dir /s /b tests\\\\*.php\")",
+      "Bash(cmd /c \"php artisan test --compact tests/Feature/RegistrationTest.php\")",
+      "Bash(cmd /c \"php artisan test --compact tests\\\\Feature\\\\RegistrationTest.php\")",
+      "Bash(cmd /c \"php artisan test --filter=RegistrationTest 2>&1\")",
+      "Bash(cmd /c \"php artisan test --filter=RegistrationTest 2>&1 > C:\\\\laragon\\\\www\\\\arrayyan\\\\test-output.txt\")",
+      "Bash(cmd /c \"php artisan test --filter=RegistrationTest > test-output.txt 2>&1 && type test-output.txt\")",
+      "Bash(cmd /c \"php artisan test --filter=RegistrationTest > test-output.txt 2>&1\")",
+      "Bash(cmd /c \"php artisan test --filter=RegistrationTest\")",
+      "Bash(cmd.exe /c \"php artisan test --filter=RegistrationTest\")",
+      "Bash(cmd.exe /c \"C:\\\\Users\\\\XBOSS\\\\.config\\\\herd\\\\bin\\\\php.bat artisan test --filter=RegistrationTest\")",
+      "Bash(powershell -Command \"php artisan test --filter=RegistrationTest\")",
+      "Bash(powershell -Command \"cd C:\\\\laragon\\\\www\\\\arrayyan; npm run build\")",
+      "Bash(ls -la \"C:\\\\laragon\\\\www\\\\arrayyan\\\\resources\\\\js\\\\Pages\\\\Admin\\\\Students\"\" 2>&1 || echo \"Students directory check complete \")",
+      "Bash(powershell -Command:*)",
+      "Bash(vendor/bin/pint:*)"
     ]
   }
 }

@@ -1,81 +1,23 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
-const initialPrograms = [
-    {
-        id: 1,
-        name: 'Reguler',
-        level: 'Pra TK - SMA',
-        focus: 'Calistung, Matematika, Bahasa Inggris',
-        sessions: '8x pertemuan / bulan',
-        mode: 'Offline / Online',
-        status: 'Aktif',
-    },
-    {
-        id: 2,
-        name: 'Intensif',
-        level: 'SD - SMA',
-        focus: 'Penguatan konsep + latihan soal',
-        sessions: '12x pertemuan / bulan',
-        mode: 'Offline / Hybrid',
-        status: 'Aktif',
-    },
-    {
-        id: 3,
-        name: 'Privat / Semi Privat',
-        level: 'TK - SMA',
-        focus: 'Sesuai kebutuhan siswa',
-        sessions: 'Fleksibel',
-        mode: 'Offline / Online',
-        status: 'Draft',
-    },
-    {
-        id: 4,
-        name: 'Persiapan Ujian / Olimpiade',
-        level: 'SD - SMA',
-        focus: 'Try out, pembahasan, strategi',
-        sessions: 'Program khusus',
-        mode: 'Offline / Online',
-        status: 'Review',
-    },
-];
-
-const initialPackages = [
-    {
-        id: 1,
-        name: 'Reguler SD',
-        sessions: '8x',
-        price: 'Rp 450.000',
-        mode: 'Offline / Online',
-        status: 'Publik',
-    },
-    {
-        id: 2,
-        name: 'Intensif SMP',
-        sessions: '12x',
-        price: 'Rp 650.000',
-        mode: 'Hybrid',
-        status: 'Publik',
-    },
-    {
-        id: 3,
-        name: 'Privat SMA',
-        sessions: 'Fleksibel',
-        price: 'Rp 900.000',
-        mode: 'Offline',
-        status: 'Draft',
-    },
-];
+const normalizeSubjects = (value) => {
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (typeof value === 'string') {
+        return value
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean);
+    }
+    return [];
+};
 
 const statusStyles = {
     Aktif: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    Draft: 'bg-amber-50 text-amber-700 border-amber-200',
-    Review: 'bg-rose-50 text-rose-700 border-rose-200',
-    Publik: 'bg-violet-50 text-violet-700 border-violet-200',
+    Nonaktif: 'bg-slate-100 text-slate-600 border-slate-200',
 };
 
-const statusOptions = ['Aktif', 'Draft', 'Review'];
-const packageStatusOptions = ['Publik', 'Draft'];
+const statusOptions = ['Aktif', 'Nonaktif'];
 const modeOptions = ['Offline', 'Online', 'Hybrid', 'Offline / Online', 'Offline / Hybrid'];
 const levelOptions = ['Pra TK', 'TK', 'SD', 'SMP', 'SMA', 'Pra TK - SMA', 'TK - SMA', 'SD - SMA'];
 
@@ -198,8 +140,25 @@ function FormTextarea({ label, value, onChange, placeholder, rows = 3 }) {
 }
 
 export default function Programs() {
-    const [programs, setPrograms] = useState(initialPrograms);
-    const [packages, setPackages] = useState(initialPackages);
+    const { programs: programsData = [], packages: packagesData = [], allowedActions = {} } = usePage().props;
+    const normalizedPrograms = programsData.map((program) => ({
+        ...program,
+        subjects: normalizeSubjects(program.subjects),
+        is_active: program.is_active ?? true,
+    }));
+    const normalizedPackages = packagesData.map((pkg) => ({
+        ...pkg,
+        subjects: normalizeSubjects(pkg.subjects),
+        is_active: pkg.is_active ?? true,
+    }));
+
+    const [programs, setPrograms] = useState(normalizedPrograms);
+    const [packages, setPackages] = useState(normalizedPackages);
+
+    const can = (action) => (allowedActions.program ?? []).includes(action);
+    const canCreate = can('create');
+    const canEdit = can('edit');
+    const canDelete = can('delete');
 
     // Modal states
     const [showProgramModal, setShowProgramModal] = useState(false);
@@ -211,31 +170,58 @@ export default function Programs() {
 
     // Program form state
     const [programForm, setProgramForm] = useState({
-        name: '', level: '', focus: '', sessions: '', mode: '', status: 'Aktif'
+        name: '',
+        level: '',
+        description: '',
+        subjects: '',
+        is_active: true,
     });
 
     // Package form state
     const [packageForm, setPackageForm] = useState({
-        name: '', sessions: '', price: '', mode: '', status: 'Publik'
+        name: '',
+        level: '',
+        subjects: '',
+        sessions: '',
+        mode: '',
+        schedule: '',
+        is_active: true,
     });
 
     // Program handlers
     const openProgramModal = (program = null) => {
         if (program) {
             setEditingProgram(program);
-            setProgramForm({ ...program });
+            setProgramForm({
+                name: program.name || '',
+                level: program.level || '',
+                description: program.description || '',
+                subjects: normalizeSubjects(program.subjects).join(', '),
+                is_active: program.is_active ?? true,
+            });
         } else {
             setEditingProgram(null);
-            setProgramForm({ name: '', level: '', focus: '', sessions: '', mode: '', status: 'Aktif' });
+            setProgramForm({
+                name: '',
+                level: '',
+                description: '',
+                subjects: '',
+                is_active: true,
+            });
         }
         setShowProgramModal(true);
     };
 
     const saveProgramForm = () => {
+        const payload = {
+            ...programForm,
+            subjects: normalizeSubjects(programForm.subjects),
+            is_active: Boolean(programForm.is_active),
+        };
         if (editingProgram) {
-            setPrograms(programs.map(p => p.id === editingProgram.id ? { ...programForm, id: editingProgram.id } : p));
+            setPrograms(programs.map((p) => (p.id === editingProgram.id ? { ...payload, id: editingProgram.id } : p)));
         } else {
-            setPrograms([...programs, { ...programForm, id: Date.now() }]);
+            setPrograms([...programs, { ...payload, id: Date.now() }]);
         }
         setShowProgramModal(false);
     };
@@ -244,19 +230,41 @@ export default function Programs() {
     const openPackageModal = (pkg = null) => {
         if (pkg) {
             setEditingPackage(pkg);
-            setPackageForm({ ...pkg });
+            setPackageForm({
+                name: pkg.name || '',
+                level: pkg.level || '',
+                subjects: normalizeSubjects(pkg.subjects).join(', '),
+                sessions: pkg.sessions ?? '',
+                mode: pkg.mode || '',
+                schedule: pkg.schedule || '',
+                is_active: pkg.is_active ?? true,
+            });
         } else {
             setEditingPackage(null);
-            setPackageForm({ name: '', sessions: '', price: '', mode: '', status: 'Publik' });
+            setPackageForm({
+                name: '',
+                level: '',
+                subjects: '',
+                sessions: '',
+                mode: '',
+                schedule: '',
+                is_active: true,
+            });
         }
         setShowPackageModal(true);
     };
 
     const savePackageForm = () => {
+        const payload = {
+            ...packageForm,
+            subjects: normalizeSubjects(packageForm.subjects),
+            sessions: packageForm.sessions === '' ? null : Number(packageForm.sessions),
+            is_active: Boolean(packageForm.is_active),
+        };
         if (editingPackage) {
-            setPackages(packages.map(p => p.id === editingPackage.id ? { ...packageForm, id: editingPackage.id } : p));
+            setPackages(packages.map((p) => (p.id === editingPackage.id ? { ...payload, id: editingPackage.id } : p)));
         } else {
-            setPackages([...packages, { ...packageForm, id: Date.now() }]);
+            setPackages([...packages, { ...payload, id: Date.now() }]);
         }
         setShowPackageModal(false);
     };
@@ -289,57 +297,79 @@ export default function Programs() {
                             Kelola daftar program dan paket belajar ALC
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => openProgramModal()}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
-                    >
-                        {icons.plus}
-                        Tambah Program
-                    </button>
+                    {canCreate && (
+                        <button
+                            type="button"
+                            onClick={() => openProgramModal()}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
+                        >
+                            {icons.plus}
+                            Tambah Program
+                        </button>
+                    )}
                 </div>
 
                 {/* Program Cards */}
                 <div className="grid gap-4 sm:grid-cols-2">
-                    {programs.map((program) => (
-                        <div
-                            key={program.id}
-                            className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md"
-                        >
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="font-semibold text-slate-800">{program.name}</h3>
-                                    <p className="mt-0.5 text-sm text-slate-500">{program.level}</p>
+                    {programs.map((program) => {
+                        const statusLabel = program.is_active ? 'Aktif' : 'Nonaktif';
+
+                        return (
+                            <div
+                                key={program.id}
+                                className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="font-semibold text-slate-800">{program.name}</h3>
+                                        <p className="mt-0.5 text-sm text-slate-500">{program.level || 'Semua Jenjang'}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[statusLabel]}`}>
+                                            {statusLabel}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[program.status]}`}>
-                                        {program.status}
-                                    </span>
-                                </div>
+                                <p className="mt-3 text-sm text-slate-600">
+                                    {program.description || 'Belum ada deskripsi program.'}
+                                </p>
+                                {program.subjects?.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {program.subjects.map((subject) => (
+                                            <span
+                                                key={`${program.id}-${subject}`}
+                                                className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
+                                            >
+                                                {subject}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                                {(canEdit || canDelete) && (
+                                    <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4 opacity-0 transition group-hover:opacity-100">
+                                        {canEdit && (
+                                            <button
+                                                type="button"
+                                                onClick={() => openProgramModal(program)}
+                                                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-violet-100 hover:text-violet-700"
+                                            >
+                                                {icons.edit} Edit
+                                            </button>
+                                        )}
+                                        {canDelete && (
+                                            <button
+                                                type="button"
+                                                onClick={() => openDeleteModal('program', program)}
+                                                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-red-100 hover:text-red-700"
+                                            >
+                                                {icons.trash} Hapus
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
-                            <p className="mt-3 text-sm text-slate-600">{program.focus}</p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">{program.sessions}</span>
-                                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">{program.mode}</span>
-                            </div>
-                            <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4 opacity-0 transition group-hover:opacity-100">
-                                <button
-                                    type="button"
-                                    onClick={() => openProgramModal(program)}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-violet-100 hover:text-violet-700"
-                                >
-                                    {icons.edit} Edit
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => openDeleteModal('program', program)}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-red-100 hover:text-red-700"
-                                >
-                                    {icons.trash} Hapus
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* Packages Table */}
@@ -347,62 +377,74 @@ export default function Programs() {
                     <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                         <div>
                             <h2 className="font-semibold text-slate-800">Paket Belajar</h2>
-                            <p className="mt-0.5 text-sm text-slate-500">Daftar paket yang tampil di website</p>
+                            <p className="mt-0.5 text-sm text-slate-500">Daftar paket berdasarkan data yang tersimpan</p>
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => openPackageModal()}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100"
-                        >
-                            {icons.plus} Tambah Paket
-                        </button>
+                        {canCreate && (
+                            <button
+                                type="button"
+                                onClick={() => openPackageModal()}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100"
+                            >
+                                {icons.plus} Tambah Paket
+                            </button>
+                        )}
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
                             <thead>
                                 <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
                                     <th className="px-5 py-3 font-medium">Nama Paket</th>
+                                    <th className="px-5 py-3 font-medium">Jenjang</th>
                                     <th className="px-5 py-3 font-medium">Sesi</th>
-                                    <th className="px-5 py-3 font-medium">Harga</th>
                                     <th className="px-5 py-3 font-medium">Mode</th>
+                                    <th className="px-5 py-3 font-medium">Jadwal</th>
                                     <th className="px-5 py-3 font-medium">Status</th>
                                     <th className="px-5 py-3 font-medium text-right">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {packages.map((pkg) => (
-                                    <tr key={pkg.id} className="transition hover:bg-slate-50">
-                                        <td className="px-5 py-4 font-medium text-slate-800">{pkg.name}</td>
-                                        <td className="px-5 py-4 text-slate-600">{pkg.sessions}</td>
-                                        <td className="px-5 py-4 text-slate-600">{pkg.price}</td>
-                                        <td className="px-5 py-4 text-slate-600">{pkg.mode}</td>
-                                        <td className="px-5 py-4">
-                                            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[pkg.status]}`}>
-                                                {pkg.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <div className="flex justify-end gap-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openPackageModal(pkg)}
-                                                    className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600"
-                                                    title="Edit"
-                                                >
-                                                    {icons.edit}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openDeleteModal('package', pkg)}
-                                                    className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
-                                                    title="Hapus"
-                                                >
-                                                    {icons.trash}
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {packages.map((pkg) => {
+                                    const statusLabel = pkg.is_active ? 'Aktif' : 'Nonaktif';
+
+                                    return (
+                                        <tr key={pkg.id} className="transition hover:bg-slate-50">
+                                            <td className="px-5 py-4 font-medium text-slate-800">{pkg.name}</td>
+                                            <td className="px-5 py-4 text-slate-600">{pkg.level || '-'}</td>
+                                            <td className="px-5 py-4 text-slate-600">{pkg.sessions ?? '-'}</td>
+                                            <td className="px-5 py-4 text-slate-600">{pkg.mode || '-'}</td>
+                                            <td className="px-5 py-4 text-slate-600">{pkg.schedule || '-'}</td>
+                                            <td className="px-5 py-4">
+                                                <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[statusLabel]}`}>
+                                                    {statusLabel}
+                                                </span>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <div className="flex justify-end gap-1">
+                                                    {canEdit && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openPackageModal(pkg)}
+                                                            className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600"
+                                                            title="Edit"
+                                                        >
+                                                            {icons.edit}
+                                                        </button>
+                                                    )}
+                                                    {canDelete && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openDeleteModal('package', pkg)}
+                                                            className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
+                                                            title="Hapus"
+                                                        >
+                                                            {icons.trash}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -434,31 +476,23 @@ export default function Programs() {
                         />
                     </div>
                     <FormTextarea
-                        label="Fokus Pembelajaran"
-                        value={programForm.focus}
-                        onChange={(v) => setProgramForm({ ...programForm, focus: v })}
-                        placeholder="Deskripsi fokus program..."
+                        label="Deskripsi Program"
+                        value={programForm.description}
+                        onChange={(v) => setProgramForm({ ...programForm, description: v })}
+                        placeholder="Deskripsi singkat program..."
                     />
-                    <div className="grid gap-4 sm:grid-cols-3">
-                        <FormInput
-                            label="Sesi"
-                            value={programForm.sessions}
-                            onChange={(v) => setProgramForm({ ...programForm, sessions: v })}
-                            placeholder="8x pertemuan"
-                        />
-                        <FormSelect
-                            label="Mode"
-                            value={programForm.mode}
-                            onChange={(v) => setProgramForm({ ...programForm, mode: v })}
-                            options={modeOptions}
-                        />
-                        <FormSelect
-                            label="Status"
-                            value={programForm.status}
-                            onChange={(v) => setProgramForm({ ...programForm, status: v })}
-                            options={statusOptions}
-                        />
-                    </div>
+                    <FormInput
+                        label="Mata Pelajaran"
+                        value={programForm.subjects}
+                        onChange={(v) => setProgramForm({ ...programForm, subjects: v })}
+                        placeholder="contoh: Matematika, IPA, Bahasa Inggris"
+                    />
+                    <FormSelect
+                        label="Status"
+                        value={programForm.is_active ? 'Aktif' : 'Nonaktif'}
+                        onChange={(v) => setProgramForm({ ...programForm, is_active: v === 'Aktif' })}
+                        options={statusOptions}
+                    />
                     <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
                         <button
                             type="button"
@@ -492,33 +526,45 @@ export default function Programs() {
                         required
                     />
                     <div className="grid gap-4 sm:grid-cols-2">
+                        <FormSelect
+                            label="Jenjang"
+                            value={packageForm.level}
+                            onChange={(v) => setPackageForm({ ...packageForm, level: v })}
+                            options={levelOptions}
+                        />
+                        <FormInput
+                            label="Mata Pelajaran"
+                            value={packageForm.subjects}
+                            onChange={(v) => setPackageForm({ ...packageForm, subjects: v })}
+                            placeholder="contoh: Matematika, IPA"
+                        />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-3">
                         <FormInput
                             label="Jumlah Sesi"
                             value={packageForm.sessions}
                             onChange={(v) => setPackageForm({ ...packageForm, sessions: v })}
-                            placeholder="8x"
+                            placeholder="8"
                         />
-                        <FormInput
-                            label="Harga"
-                            value={packageForm.price}
-                            onChange={(v) => setPackageForm({ ...packageForm, price: v })}
-                            placeholder="Rp 450.000"
-                        />
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
                         <FormSelect
                             label="Mode"
                             value={packageForm.mode}
                             onChange={(v) => setPackageForm({ ...packageForm, mode: v })}
                             options={modeOptions}
                         />
-                        <FormSelect
-                            label="Status"
-                            value={packageForm.status}
-                            onChange={(v) => setPackageForm({ ...packageForm, status: v })}
-                            options={packageStatusOptions}
+                        <FormInput
+                            label="Jadwal"
+                            value={packageForm.schedule}
+                            onChange={(v) => setPackageForm({ ...packageForm, schedule: v })}
+                            placeholder="contoh: Senin - Jumat"
                         />
                     </div>
+                    <FormSelect
+                        label="Status"
+                        value={packageForm.is_active ? 'Aktif' : 'Nonaktif'}
+                        onChange={(v) => setPackageForm({ ...packageForm, is_active: v === 'Aktif' })}
+                        options={statusOptions}
+                    />
                     <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
                         <button
                             type="button"

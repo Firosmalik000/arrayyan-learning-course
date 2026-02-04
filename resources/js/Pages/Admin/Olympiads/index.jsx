@@ -1,21 +1,24 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import { useState } from 'react';
-
-const initialEvents = [
-    { id: 1, name: 'Olimpiade Sains Nasional', level: 'SD - SMA', schedule: 'Februari - April', quota: 120, fee: 0, status: 'Aktif' },
-    { id: 2, name: 'Matematika Islami Challenge', level: 'SD / SMP', schedule: 'Mei - Juni', quota: 80, fee: 150000, status: 'Terjadwal' },
-    { id: 3, name: 'English Creative Olympiad', level: 'SMP / SMA', schedule: 'Agustus', quota: 60, fee: 0, status: 'Draft' },
-];
 
 const statusStyles = {
     Aktif: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    Terjadwal: 'bg-violet-50 text-violet-700 border-violet-200',
-    Draft: 'bg-amber-50 text-amber-700 border-amber-200',
-    Selesai: 'bg-slate-100 text-slate-600 border-slate-200',
+    Nonaktif: 'bg-slate-100 text-slate-600 border-slate-200',
 };
 
-const statusOptions = ['Aktif', 'Terjadwal', 'Draft', 'Selesai'];
+const statusOptions = ['Aktif', 'Nonaktif'];
 const levelOptions = ['SD', 'SMP', 'SMA', 'SD / SMP', 'SMP / SMA', 'SD - SMA'];
+const categoryOptions = [
+    { value: 'free', label: 'Gratis' },
+    { value: 'paid', label: 'Berbayar' },
+];
+
+const normalizeCategory = (value) => {
+    if (!value) return 'free';
+    const normalized = value.toString().toLowerCase();
+    if (normalized === 'paid' || normalized === 'berbayar') return 'paid';
+    return 'free';
+};
 
 // Icons
 const icons = {
@@ -116,7 +119,15 @@ function FormSelect({ label, value, onChange, options, required }) {
                 required={required}
             >
                 <option value="">Pilih {label}</option>
-                {options.map((opt) => (<option key={opt} value={opt}>{opt}</option>))}
+                {options.map((opt) => {
+                    const optionValue = typeof opt === 'string' ? opt : opt.value;
+                    const optionLabel = typeof opt === 'string' ? opt : opt.label;
+                    return (
+                        <option key={optionValue} value={optionValue}>
+                            {optionLabel}
+                        </option>
+                    );
+                })}
             </select>
         </div>
     );
@@ -143,7 +154,13 @@ const formatCurrency = (value) => {
 };
 
 export default function Olympiads() {
-    const [events, setEvents] = useState(initialEvents);
+    const { olympiads: olympiadData = [], flash, allowedActions = {} } = usePage().props;
+    const events = olympiadData.map((event) => ({
+        ...event,
+        is_active: event.is_active ?? true,
+        category: normalizeCategory(event.category),
+        fee: event.fee ?? 0,
+    }));
 
     // Modal states
     const [showModal, setShowModal] = useState(false);
@@ -151,38 +168,77 @@ export default function Olympiads() {
     const [editing, setEditing] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
 
+    const can = (action) => (allowedActions.olimpiade ?? []).includes(action);
+    const canCreate = can('create');
+    const canEdit = can('edit');
+    const canDelete = can('delete');
+
     // Form state
     const [form, setForm] = useState({
-        name: '', level: '', schedule: '', quota: '', fee: '', status: 'Draft', description: ''
+        name: '',
+        level: '',
+        schedule: '',
+        selection_system: '',
+        category: 'free',
+        fee: '',
+        notes: '',
+        is_active: true,
     });
 
     // Stats
     const stats = [
         { label: 'Total Event', value: events.length, icon: icons.trophy, color: 'violet' },
-        { label: 'Total Kuota', value: events.reduce((a, b) => a + b.quota, 0), icon: icons.users, color: 'emerald' },
-        { label: 'Event Aktif', value: events.filter(e => e.status === 'Aktif').length, icon: icons.calendar, color: 'amber' },
+        { label: 'Gratis', value: events.filter((e) => e.category === 'free').length, icon: icons.users, color: 'emerald' },
+        { label: 'Event Aktif', value: events.filter((e) => e.is_active).length, icon: icons.calendar, color: 'amber' },
     ];
 
     // Handlers
     const openModal = (item = null) => {
         if (item) {
             setEditing(item);
-            setForm({ ...item, quota: item.quota.toString(), fee: item.fee.toString() });
+            setForm({
+                name: item.name || '',
+                level: item.level || '',
+                schedule: item.schedule || '',
+                selection_system: item.selection_system || '',
+                category: normalizeCategory(item.category),
+                fee: item.fee?.toString() ?? '',
+                notes: item.notes || '',
+                is_active: item.is_active ?? true,
+            });
         } else {
             setEditing(null);
-            setForm({ name: '', level: '', schedule: '', quota: '', fee: '', status: 'Draft', description: '' });
+            setForm({
+                name: '',
+                level: '',
+                schedule: '',
+                selection_system: '',
+                category: 'free',
+                fee: '',
+                notes: '',
+                is_active: true,
+            });
         }
         setShowModal(true);
     };
 
     const saveForm = () => {
-        const data = { ...form, quota: parseInt(form.quota) || 0, fee: parseInt(form.fee) || 0 };
+        const data = {
+            ...form,
+            fee: form.fee === '' ? 0 : parseFloat(form.fee) || 0,
+            is_active: Boolean(form.is_active),
+        };
         if (editing) {
-            setEvents(events.map(e => e.id === editing.id ? { ...data, id: editing.id } : e));
+            router.put(`/admin/olimpiade/${editing.id}`, data, {
+                preserveScroll: true,
+                onSuccess: () => setShowModal(false),
+            });
         } else {
-            setEvents([...events, { ...data, id: Date.now() }]);
+            router.post('/admin/olimpiade', data, {
+                preserveScroll: true,
+                onSuccess: () => setShowModal(false),
+            });
         }
-        setShowModal(false);
     };
 
     const openDeleteModal = (item) => {
@@ -191,8 +247,10 @@ export default function Olympiads() {
     };
 
     const confirmDelete = () => {
-        setEvents(events.filter(e => e.id !== deleteTarget.id));
-        setShowDeleteModal(false);
+        router.delete(`/admin/olimpiade/${deleteTarget.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setShowDeleteModal(false),
+        });
     };
 
     return (
@@ -200,22 +258,30 @@ export default function Olympiads() {
             <Head title="Olimpiade" />
 
             <div className="space-y-6">
+                {flash?.success && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                        {flash.success}
+                    </div>
+                )}
+
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800">Olimpiade</h1>
                         <p className="mt-1 text-sm text-slate-600">
-                            Kelola jadwal lomba, biaya, dan kuota peserta
+                            Kelola jadwal lomba, biaya, dan sistem seleksi
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => openModal()}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
-                    >
-                        {icons.plus}
-                        Tambah Olimpiade
-                    </button>
+                    {canCreate && (
+                        <button
+                            type="button"
+                            onClick={() => openModal()}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
+                        >
+                            {icons.plus}
+                            Tambah Olimpiade
+                        </button>
+                    )}
                 </div>
 
                 {/* Stats */}
@@ -237,50 +303,69 @@ export default function Olympiads() {
 
                 {/* Event Cards */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {events.map((event) => (
-                        <div key={event.id} className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-amber-400 text-white">
-                                    {icons.trophy}
+                    {events.map((event) => {
+                        const statusLabel = event.is_active ? 'Aktif' : 'Nonaktif';
+                        const categoryLabel = event.category === 'paid' ? 'Berbayar' : 'Gratis';
+
+                        return (
+                            <div key={event.id} className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-amber-400 text-white">
+                                        {icons.trophy}
+                                    </div>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[statusLabel]}`}>
+                                            {statusLabel}
+                                        </span>
+                                        <span className="rounded-full border border-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                                            {categoryLabel}
+                                        </span>
+                                    </div>
                                 </div>
-                                <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[event.status]}`}>
-                                    {event.status}
-                                </span>
+                                <h3 className="mt-4 font-semibold text-slate-800">{event.name}</h3>
+                                <p className="mt-1 text-sm text-slate-500">{event.level || 'Semua Jenjang'}</p>
+                                <div className="mt-4 space-y-2 text-sm">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-slate-500">Jadwal</span>
+                                        <span className="font-medium text-slate-700">{event.schedule || '-'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-slate-500">Seleksi</span>
+                                        <span className="font-medium text-slate-700">{event.selection_system || '-'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-slate-500">Biaya</span>
+                                        <span className="font-medium text-slate-700">{formatCurrency(event.fee)}</span>
+                                    </div>
+                                </div>
+                                {event.notes && (
+                                    <p className="mt-3 text-sm text-slate-600 line-clamp-2">{event.notes}</p>
+                                )}
+                                {(canEdit || canDelete) && (
+                                    <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4 opacity-0 transition group-hover:opacity-100">
+                                        {canEdit && (
+                                            <button
+                                                type="button"
+                                                onClick={() => openModal(event)}
+                                                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-violet-100 hover:text-violet-700"
+                                            >
+                                                {icons.edit} Edit
+                                            </button>
+                                        )}
+                                        {canDelete && (
+                                            <button
+                                                type="button"
+                                                onClick={() => openDeleteModal(event)}
+                                                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-red-100 hover:text-red-700"
+                                            >
+                                                {icons.trash} Hapus
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
-                            <h3 className="mt-4 font-semibold text-slate-800">{event.name}</h3>
-                            <p className="mt-1 text-sm text-slate-500">{event.level}</p>
-                            <div className="mt-4 space-y-2 text-sm">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-slate-500">Jadwal</span>
-                                    <span className="font-medium text-slate-700">{event.schedule}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-slate-500">Kuota</span>
-                                    <span className="font-medium text-slate-700">{event.quota} peserta</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-slate-500">Biaya</span>
-                                    <span className="font-medium text-slate-700">{formatCurrency(event.fee)}</span>
-                                </div>
-                            </div>
-                            <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4 opacity-0 transition group-hover:opacity-100">
-                                <button
-                                    type="button"
-                                    onClick={() => openModal(event)}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-violet-100 hover:text-violet-700"
-                                >
-                                    {icons.edit} Edit
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => openDeleteModal(event)}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-red-100 hover:text-red-700"
-                                >
-                                    {icons.trash} Hapus
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 
@@ -290,14 +375,36 @@ export default function Olympiads() {
                     <FormInput label="Nama Olimpiade" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="contoh: Olimpiade Sains Nasional" required />
                     <div className="grid gap-4 sm:grid-cols-2">
                         <FormSelect label="Jenjang" value={form.level} onChange={(v) => setForm({ ...form, level: v })} options={levelOptions} required />
-                        <FormInput label="Jadwal" value={form.schedule} onChange={(v) => setForm({ ...form, schedule: v })} placeholder="Februari - April" />
+                        <FormInput label="Jadwal" type="date" value={form.schedule} onChange={(v) => setForm({ ...form, schedule: v })} />
                     </div>
+                    <FormInput
+                        label="Sistem Seleksi"
+                        value={form.selection_system}
+                        onChange={(v) => setForm({ ...form, selection_system: v })}
+                        placeholder="contoh: Seleksi internal + pembinaan"
+                    />
                     <div className="grid gap-4 sm:grid-cols-3">
-                        <FormInput label="Kuota Peserta" type="number" value={form.quota} onChange={(v) => setForm({ ...form, quota: v })} placeholder="120" />
-                        <FormInput label="Biaya (Rp)" type="number" value={form.fee} onChange={(v) => setForm({ ...form, fee: v })} placeholder="0 untuk gratis" />
-                        <FormSelect label="Status" value={form.status} onChange={(v) => setForm({ ...form, status: v })} options={statusOptions} />
+                        <FormInput
+                            label="Biaya (Rp)"
+                            type="number"
+                            value={form.fee}
+                            onChange={(v) => setForm({ ...form, fee: v })}
+                            placeholder="0 untuk gratis"
+                        />
+                        <FormSelect
+                            label="Kategori"
+                            value={form.category}
+                            onChange={(v) => setForm({ ...form, category: v })}
+                            options={categoryOptions}
+                        />
+                        <FormSelect
+                            label="Status"
+                            value={form.is_active ? 'Aktif' : 'Nonaktif'}
+                            onChange={(v) => setForm({ ...form, is_active: v === 'Aktif' })}
+                            options={statusOptions}
+                        />
                     </div>
-                    <FormTextarea label="Deskripsi" value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Deskripsi olimpiade..." />
+                    <FormTextarea label="Catatan" value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} placeholder="Catatan tambahan..." />
                     <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
                         <button type="button" onClick={() => setShowModal(false)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
                             Batal

@@ -2,7 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\BankSoal;
+use App\Models\Olympiad;
 use App\Models\PageContent;
+use App\Models\Program;
 use Illuminate\Database\Seeder;
 
 class LandingContentSeeder extends Seeder
@@ -621,9 +624,159 @@ class LandingContentSeeder extends Seeder
             ],
         ];
 
-        PageContent::updateOrCreate(
-            ['slug' => 'landing'],
-            ['content' => $content],
-        );
+        $content['media']['logo'] = [
+            'path' => null,
+        ];
+
+        $sections = $this->buildSectionPayloads($content);
+
+        foreach ($sections as $slug => $payload) {
+            PageContent::updateOrCreate(
+                ['slug' => $slug],
+                ['content' => $payload],
+            );
+        }
+
+        foreach ($content['bankSoalItems'] ?? [] as $item) {
+            if (! isset($item['slug'])) {
+                continue;
+            }
+            BankSoal::updateOrCreate(
+                ['slug' => $item['slug']],
+                [
+                    'name' => $item['name'] ?? ['id' => '', 'en' => ''],
+                    'category' => $item['category'] ?? ['id' => '', 'en' => ''],
+                    'level' => $item['level'] ?? ['id' => '', 'en' => ''],
+                    'format' => $item['format'] ?? null,
+                    'questions' => $item['questions'] ?? 0,
+                    'description' => $item['description'] ?? ['id' => '', 'en' => ''],
+                    'tone' => $item['tone'] ?? 'violet',
+                    'is_active' => true,
+                ],
+            );
+        }
+
+        foreach ($content['packages'] ?? [] as $package) {
+            $name = $package['name']['id'] ?? ($package['name'] ?? null);
+            if (! $name) {
+                continue;
+            }
+
+            Program::updateOrCreate(
+                ['name' => $name],
+                [
+                    'level' => $package['level']['id'] ?? ($package['level'] ?? null),
+                    'description' => $package['description']['id'] ?? ($package['description'] ?? null),
+                    'subjects' => $package['highlights']['id'] ?? ($package['highlights'] ?? []),
+                    'is_active' => true,
+                ],
+            );
+        }
+
+        foreach ($content['olympiadHighlights'] ?? [] as $item) {
+            $name = $item['name']['id'] ?? ($item['name'] ?? null);
+            if (! $name) {
+                continue;
+            }
+
+            $categoryLabel = strtolower((string) ($item['category']['id'] ?? ($item['category'] ?? 'free')));
+            $category = in_array($categoryLabel, ['berbayar', 'paid'], true) ? 'paid' : 'free';
+
+            Olympiad::updateOrCreate(
+                ['name' => $name],
+                [
+                    'level' => $item['level']['id'] ?? ($item['level'] ?? 'Semua Jenjang'),
+                    'schedule' => $item['schedule']['id'] ?? ($item['schedule'] ?? null),
+                    'category' => $category,
+                    'is_active' => true,
+                ],
+            );
+        }
+    }
+
+    private function buildSectionPayloads(array $content): array
+    {
+        $sectionTitles = $content['sectionTitles'] ?? [];
+        $media = $content['media'] ?? [];
+
+        $payloads = [
+            'hero' => array_filter([
+                'siteConfig' => $content['siteConfig'] ?? null,
+                'heroContent' => $content['heroContent'] ?? null,
+                'sectionTitles' => $this->pickSectionTitles($sectionTitles, ['hero']),
+                'media' => $this->pickMedia($media, ['heroImage']),
+            ]),
+            'why' => array_filter([
+                'featureCards' => $content['featureCards'] ?? null,
+                'sectionTitles' => $this->pickSectionTitles($sectionTitles, ['why']),
+            ]),
+            'profile' => array_filter([
+                'aboutContent' => $content['aboutContent'] ?? null,
+                'visionMission' => $content['visionMission'] ?? null,
+                'sectionTitles' => $this->pickSectionTitles($sectionTitles, ['profile']),
+                'media' => $this->pickMedia($media, ['aboutImage']),
+            ]),
+            'education' => array_filter([
+                'educationLevels' => $content['educationLevels'] ?? null,
+                'subjects' => $content['subjects'] ?? null,
+                'sectionTitles' => $this->pickSectionTitles($sectionTitles, ['education']),
+            ]),
+            'program' => array_filter([
+                'sectionTitles' => $this->pickSectionTitles($sectionTitles, ['program']),
+            ]),
+            'gallery' => array_filter([
+                'gallery' => $content['gallery'] ?? null,
+                'sectionTitles' => $this->pickSectionTitles($sectionTitles, ['gallery']),
+            ]),
+            'stats' => array_filter([
+                'stats' => $content['stats'] ?? null,
+            ]),
+            'bank-soal' => array_filter([
+                'bankSoalContent' => $content['bankSoalContent'] ?? null,
+                'bankSoalPasskey' => $content['bankSoalPasskey'] ?? null,
+                'bankSoalCategories' => $content['bankSoalCategories'] ?? null,
+            ]),
+            'cta' => array_filter([
+                'sectionTitles' => $this->pickSectionTitles($sectionTitles, ['olympiad', 'register']),
+                'ctaButtons' => $content['ctaButtons'] ?? null,
+            ]),
+            'contact' => array_filter([
+                'sectionTitles' => $this->pickSectionTitles($sectionTitles, ['contact']),
+                'contactInfo' => $content['contactInfo'] ?? null,
+                'operatingHours' => $content['operatingHours'] ?? null,
+            ]),
+            'logo' => array_filter([
+                'media' => $this->pickMedia($media, ['logo']),
+            ]),
+        ];
+
+        return array_filter($payloads);
+    }
+
+    private function pickSectionTitles(array $sectionTitles, array $keys): array
+    {
+        $result = [];
+        foreach (['id', 'en'] as $lang) {
+            foreach ($keys as $key) {
+                $value = $sectionTitles[$lang][$key] ?? null;
+                if ($value !== null) {
+                    $result[$lang][$key] = $value;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    private function pickMedia(array $media, array $keys): array
+    {
+        $picked = [];
+        foreach ($keys as $key) {
+            if (isset($media[$key])) {
+                $picked[$key] = $media[$key];
+            }
+        }
+
+        return $picked;
     }
 }

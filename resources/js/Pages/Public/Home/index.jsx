@@ -8,7 +8,6 @@ import { useI18n } from '@/lib/i18n';
 // Shared data
 import { fadeUp, stagger, icons, toneStyles } from '@/data';
 import { siteConfig, contactInfo, operatingHours, stats } from '@/data/content/site';
-import { packages as defaultPackages, olympiadHighlights as defaultOlympiadHighlights } from '@/data/content/programs';
 
 // Page-specific data
 import {
@@ -18,10 +17,10 @@ import {
     visionMission,
     educationLevels,
     subjects,
+    programContent,
     bankSoalContent,
     bankSoalPasskey,
-    bankSoalCategories,
-    bankSoalItems,
+    olympiadContent,
     sectionTitles,
     ctaButtons,
 } from './data';
@@ -107,14 +106,15 @@ export default function Home({ landingContent }) {
         visionMission,
         educationLevels,
         subjects,
+        programContent,
         bankSoalContent,
         bankSoalPasskey,
-        bankSoalCategories,
-        bankSoalItems,
+        olympiadContent,
+        bankSoalItems: [],
         sectionTitles,
         ctaButtons,
-        packages: defaultPackages,
-        olympiadHighlights: defaultOlympiadHighlights,
+        packages: [],
+        olympiadHighlights: [],
         gallery: {
             items: [],
         },
@@ -136,7 +136,9 @@ export default function Home({ landingContent }) {
     const vm = landing.visionMission[language] || landing.visionMission.id;
     const levels = landing.educationLevels[language] || landing.educationLevels.id;
     const subj = landing.subjects[language] || landing.subjects.id;
+    const programContentText = landing.programContent[language] || landing.programContent.id;
     const bank = landing.bankSoalContent[language] || landing.bankSoalContent.id;
+    const olympiad = landing.olympiadContent[language] || landing.olympiadContent.id;
     const hours = landing.operatingHours[language] || landing.operatingHours.id;
     const badges = landing.heroContent.badges[language] || landing.heroContent.badges.id;
     const heroPanel = {
@@ -145,15 +147,31 @@ export default function Home({ landingContent }) {
     };
     const features = landing.featureCards[language] || landing.featureCards.id;
     const statItems = landing.stats[language] || landing.stats.id;
-    const packages = (landing.packages || []).map((pkg) => ({
-        id: pkg.id,
-        name: localizeField(pkg.name, language),
-        level: localizeField(pkg.level, language),
-        sessions: localizeField(pkg.sessions, language),
-        mode: localizeField(pkg.mode, language),
-        description: localizeField(pkg.description, language),
-        highlights: localizeList(pkg.highlights, language),
-    }));
+    const programSource = Array.isArray(landing.programs) ? landing.programs : [];
+
+    const programItems = programSource.map((item) => {
+        if (item?.name && typeof item.name === 'object') {
+            return {
+                id: item.id,
+                name: localizeField(item.name, language),
+                level: localizeField(item.level, language),
+                sessions: localizeField(item.sessions, language),
+                mode: localizeField(item.mode, language),
+                description: localizeField(item.description, language),
+                subjects: localizeList(item.highlights, language),
+            };
+        }
+
+        return {
+            id: item.id,
+            name: item.name,
+            level: item.level,
+            sessions: item.sessions ? `${item.sessions} sesi` : null,
+            mode: null,
+            description: item.description,
+            subjects: item.subjects || [],
+        };
+    });
     const heroImageUrl = landing.media?.heroImage?.url || landing.media?.heroImage?.path || '/images/hero-student.jpg';
     const aboutImageUrl = landing.media?.aboutImage?.url || landing.media?.aboutImage?.path || '/images/about-class.jpg';
     const heroImageAlt = localizeField(landing.media?.heroImage?.alt, language) || (language === 'en' ? 'ALC student' : 'Siswa ALC');
@@ -536,7 +554,7 @@ export default function Home({ landingContent }) {
                         variants={stagger}
                         className="mt-8 sm:mt-10 grid alc-gap-md md:grid-cols-3"
                     >
-                        {packages.map((item) => {
+                        {programItems.map((item) => {
                             const isGold = item.id === 'reguler' || item.id === 'olimpiade';
                             const borderColor = isGold ? 'border-amber-300' : 'border-violet-300';
                             const accentBar = isGold
@@ -555,25 +573,38 @@ export default function Home({ landingContent }) {
                                         {item.name}
                                     </h3>
                                     <span className="self-start sm:self-auto alc-pill bg-amber-100/70 alc-caption font-semibold text-amber-700">
-                                        {item.mode}
+                                        {item.mode || item.level}
                                     </span>
                                 </div>
                                 <p className="mt-3 sm:mt-4 alc-body-sm text-slate-600">
-                                    {item.description}
+                                    {item.description || programContentText.fallbackDescription}
                                 </p>
                                 <div className="mt-3 sm:mt-4 flex flex-col alc-gap-sm alc-body-sm text-slate-600 border-t border-slate-100 pt-3 sm:pt-4">
-                                    <p>
-                                        <span className="font-semibold text-slate-700">
-                                            {language === 'en' ? 'Level:' : 'Jenjang:'}
-                                        </span>{' '}
-                                        {item.level}
-                                    </p>
-                                    <p>
-                                        <span className="font-semibold text-slate-700">
-                                            {language === 'en' ? 'Sessions:' : 'Pertemuan:'}
-                                        </span>{' '}
-                                        {item.sessions}
-                                    </p>
+                                    {item.level && (
+                                        <p>
+                                            <span className="font-semibold text-slate-700">
+                                                {programContentText.levelLabel}:
+                                            </span>{' '}
+                                            {item.level}
+                                        </p>
+                                    )}
+                                    {item.sessions && (
+                                        <p>
+                                            <span className="font-semibold text-slate-700">
+                                                {programContentText.sessionsLabel}:
+                                            </span>{' '}
+                                            {item.sessions}
+                                        </p>
+                                    )}
+                                    {Array.isArray(item.subjects) && item.subjects.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {item.subjects.map((subject) => (
+                                                <span key={`${item.id}-${subject}`} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
+                                                    {subject}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </motion.div>
                             );
@@ -852,16 +883,18 @@ export default function Home({ landingContent }) {
                                     </svg>
                                 </div>
                                 <span className="alc-pill bg-emerald-100 alc-caption font-medium text-emerald-700">
-                                    {language === 'en' ? 'Free' : 'Gratis'}
+                                    {olympiad.free?.badge || (language === 'en' ? 'Free' : 'Gratis')}
                                 </span>
                             </div>
                             <h3 className="mt-3 sm:mt-4 font-display alc-card-title font-semibold text-slate-800">
-                                {language === 'en' ? 'Free Olympiad' : 'Olimpiade Gratis'}
+                                {olympiad.free?.title || (language === 'en' ? 'Free Olympiad' : 'Olimpiade Gratis')}
                             </h3>
                             <p className="mt-2 sm:mt-3 alc-body-sm text-slate-600">
-                                {language === 'en'
-                                    ? 'National and international olympiad preparation programs without registration fees.'
-                                    : 'Program persiapan olimpiade nasional dan internasional tanpa biaya pendaftaran.'}
+                                {olympiad.free?.description || (
+                                    language === 'en'
+                                        ? 'National and international olympiad preparation programs without registration fees.'
+                                        : 'Program persiapan olimpiade nasional dan internasional tanpa biaya pendaftaran.'
+                                )}
                             </p>
                             <div className="mt-4 sm:mt-5 pt-4 border-t border-emerald-100">
                                 <button
@@ -902,16 +935,18 @@ export default function Home({ landingContent }) {
                                     </svg>
                                 </div>
                                 <span className="alc-pill bg-amber-100 alc-caption font-medium text-amber-700">
-                                    {language === 'en' ? 'Paid' : 'Berbayar'}
+                                    {olympiad.paid?.badge || (language === 'en' ? 'Paid' : 'Berbayar')}
                                 </span>
                             </div>
                             <h3 className="mt-3 sm:mt-4 font-display alc-card-title font-semibold text-slate-800">
-                                {language === 'en' ? 'Premium Olympiad' : 'Olimpiade Premium'}
+                                {olympiad.paid?.title || (language === 'en' ? 'Premium Olympiad' : 'Olimpiade Premium')}
                             </h3>
                             <p className="mt-2 sm:mt-3 alc-body-sm text-slate-600">
-                                {language === 'en'
-                                    ? 'Exclusive competition programs with intensive mentoring and comprehensive preparation materials.'
-                                    : 'Program kompetisi eksklusif dengan mentoring intensif dan materi persiapan yang komprehensif.'}
+                                {olympiad.paid?.description || (
+                                    language === 'en'
+                                        ? 'Exclusive competition programs with intensive mentoring and comprehensive preparation materials.'
+                                        : 'Program kompetisi eksklusif dengan mentoring intensif dan materi persiapan yang komprehensif.'
+                                )}
                             </p>
                             <div className="mt-4 sm:mt-5 pt-4 border-t border-amber-100">
                                 <button

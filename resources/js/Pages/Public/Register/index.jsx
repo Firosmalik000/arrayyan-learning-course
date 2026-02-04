@@ -16,6 +16,8 @@ export default function Register() {
     const studentFields = formFields.student[language] || formFields.student.id;
     const teacherFields = formFields.teacher[language] || formFields.teacher.id;
 
+    const labelClass = 'mb-1.5 block text-sm font-medium text-slate-600';
+
     const inputClass =
         'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-200 sm:rounded-2xl sm:px-4';
 
@@ -106,6 +108,7 @@ export default function Register() {
                             </h3>
                             <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-4">
                                 <div>
+                                    <label className={labelClass}>{studentFields.name}</label>
                                     <input
                                         type="text"
                                         className={inputClass}
@@ -118,6 +121,7 @@ export default function Register() {
                                     )}
                                 </div>
                                 <div>
+                                    <label className={labelClass}>{studentFields.address}</label>
                                     <textarea
                                         rows="2"
                                         className={`${inputClass} resize-none`}
@@ -130,6 +134,7 @@ export default function Register() {
                                     )}
                                 </div>
                                 <div>
+                                    <label className={labelClass}>{studentFields.schoolName}</label>
                                     <input
                                         type="text"
                                         className={inputClass}
@@ -142,6 +147,7 @@ export default function Register() {
                                     )}
                                 </div>
                                 <div>
+                                    <label className={labelClass}>{studentFields.level}</label>
                                     <input
                                         type="text"
                                         className={inputClass}
@@ -154,6 +160,7 @@ export default function Register() {
                                     )}
                                 </div>
                                 <div>
+                                    <label className={labelClass}>{studentFields.subjects}</label>
                                     <input
                                         type="text"
                                         className={inputClass}
@@ -166,6 +173,7 @@ export default function Register() {
                                     )}
                                 </div>
                                 <div>
+                                    <label className={labelClass}>{studentFields.program}</label>
                                     <select
                                         className={`${selectClass} ${!studentForm.data.program ? 'text-slate-400' : 'text-slate-700'}`}
                                         value={studentForm.data.program}
@@ -183,6 +191,7 @@ export default function Register() {
                                     )}
                                 </div>
                                 <div>
+                                    <label className={labelClass}>{studentFields.package}</label>
                                     <select
                                         className={`${selectClass} ${!studentForm.data.package ? 'text-slate-400' : 'text-slate-700'}`}
                                         value={studentForm.data.package}
@@ -200,6 +209,7 @@ export default function Register() {
                                     )}
                                 </div>
                                 <div>
+                                    <label className={labelClass}>{studentFields.parentContact}</label>
                                     <input
                                         type="text"
                                         className={inputClass}
@@ -211,20 +221,28 @@ export default function Register() {
                                         <p className="mt-1 text-xs text-rose-500">{studentForm.errors.parent_contact}</p>
                                     )}
                                 </div>
-                                <input
-                                    type="text"
-                                    className={inputClass}
-                                    placeholder={studentFields.preferredMode}
-                                    value={studentForm.data.preferred_mode}
-                                    onChange={(e) => studentForm.setData('preferred_mode', e.target.value)}
-                                />
-                                <textarea
-                                    rows="3"
-                                    className={`${inputClass} resize-none`}
-                                    placeholder={studentFields.notes}
-                                    value={studentForm.data.notes}
-                                    onChange={(e) => studentForm.setData('notes', e.target.value)}
-                                />
+                                <div>
+                                    <label className={labelClass}>{studentFields.preferredMode}</label>
+                                    <select
+                                        className={`${selectClass} ${!studentForm.data.preferred_mode ? 'text-slate-400' : 'text-slate-700'}`}
+                                        value={studentForm.data.preferred_mode}
+                                        onChange={(e) => studentForm.setData('preferred_mode', e.target.value)}
+                                    >
+                                        <option value="" disabled>{studentFields.preferredMode}</option>
+                                        <option value="offline">Offline</option>
+                                        <option value="online">Online</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>{studentFields.notes}</label>
+                                    <textarea
+                                        rows="3"
+                                        className={`${inputClass} resize-none`}
+                                        placeholder={studentFields.notes}
+                                        value={studentForm.data.notes}
+                                        onChange={(e) => studentForm.setData('notes', e.target.value)}
+                                    />
+                                </div>
                             </div>
                             <button
                                 type="submit"
@@ -247,6 +265,7 @@ export default function Register() {
                             </h3>
                             <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-4">
                                 <div>
+                                    <label className={labelClass}>{teacherFields.name}</label>
                                     <input
                                         type="text"
                                         className={inputClass}
@@ -259,6 +278,7 @@ export default function Register() {
                                     )}
                                 </div>
                                 <div>
+                                    <label className={labelClass}>{teacherFields.address}</label>
                                     <textarea
                                         rows="2"
                                         className={`${inputClass} resize-none`}
@@ -271,6 +291,7 @@ export default function Register() {
                                     )}
                                 </div>
                                 <div>
+                                    <label className={labelClass}>{teacherFields.education}</label>
                                     <input
                                         type="text"
                                         className={inputClass}
@@ -283,6 +304,7 @@ export default function Register() {
                                     )}
                                 </div>
                                 <div>
+                                    <label className={labelClass}>{teacherFields.subjects}</label>
                                     <input
                                         type="text"
                                         className={inputClass}
@@ -294,14 +316,18 @@ export default function Register() {
                                         <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.subjects}</p>
                                     )}
                                 </div>
-                                <input
-                                    type="text"
-                                    className={inputClass}
-                                    placeholder={teacherFields.experience}
-                                    value={teacherForm.data.experience}
-                                    onChange={(e) => teacherForm.setData('experience', e.target.value)}
-                                />
                                 <div>
+                                    <label className={labelClass}>{teacherFields.experience}</label>
+                                    <input
+                                        type="text"
+                                        className={inputClass}
+                                        placeholder={teacherFields.experience}
+                                        value={teacherForm.data.experience}
+                                        onChange={(e) => teacherForm.setData('experience', e.target.value)}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={labelClass}>{teacherFields.contact}</label>
                                     <input
                                         type="text"
                                         className={inputClass}
@@ -314,7 +340,7 @@ export default function Register() {
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-slate-500 mb-1.5">{teacherFields.cv}</label>
+                                    <label className={labelClass}>{teacherFields.cv}</label>
                                     <input
                                         type="file"
                                         accept=".pdf,.doc,.docx"
@@ -325,13 +351,16 @@ export default function Register() {
                                         <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.cv}</p>
                                     )}
                                 </div>
-                                <textarea
-                                    rows="3"
-                                    className={`${inputClass} resize-none`}
-                                    placeholder={teacherFields.notes}
-                                    value={teacherForm.data.notes}
-                                    onChange={(e) => teacherForm.setData('notes', e.target.value)}
-                                />
+                                <div>
+                                    <label className={labelClass}>{teacherFields.notes}</label>
+                                    <textarea
+                                        rows="3"
+                                        className={`${inputClass} resize-none`}
+                                        placeholder={teacherFields.notes}
+                                        value={teacherForm.data.notes}
+                                        onChange={(e) => teacherForm.setData('notes', e.target.value)}
+                                    />
+                                </div>
                             </div>
                             <button
                                 type="submit"
