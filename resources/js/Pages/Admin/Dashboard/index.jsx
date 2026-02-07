@@ -94,7 +94,7 @@ export default function Dashboard() {
                         {canExport && (
                             <button
                                 type="button"
-                                className="rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:from-violet-800 hover:to-amber-500 sm:px-4 sm:py-2"
+                                className="rounded-full bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:opacity-90 sm:px-4 sm:py-2"
                             >
                                 Export Laporan
                             </button>

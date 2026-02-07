@@ -13,6 +13,7 @@ use App\Models\StudentRegistration;
 use App\Models\Teacher;
 use App\Models\TeacherRegistration;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -130,18 +131,28 @@ class MasterDataController extends Controller
             ->values()
             ->all();
 
-        $studentRegistrations = $pendingStudentQuery->latest()->limit(5)->get()->map(
-            function (StudentRegistration $registration) {
-                return [
-                    'id' => 'student-'.$registration->id,
-                    'name' => $registration->student_name,
-                    'type' => 'Murid',
-                    'program' => $registration->program ?: ($registration->package ?: '-'),
-                    'status' => 'Pending',
-                    'created_at' => $registration->created_at,
-                ];
-            }
-        );
+        $studentRegistrations = $pendingStudentQuery
+            ->with('programItem:id,name')
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(
+                function (StudentRegistration $registration) {
+                    $programName = $registration->programItem?->name;
+                    if (! $programName) {
+                        $programName = $registration->program ?: ($registration->package ?: '-');
+                    }
+
+                    return [
+                        'id' => 'student-'.$registration->id,
+                        'name' => $registration->student_name,
+                        'type' => 'Murid',
+                        'program' => $programName,
+                        'status' => 'Pending',
+                        'created_at' => $registration->created_at,
+                    ];
+                }
+            );
 
         $teacherRegistrations = $pendingTeacherQuery->latest()->limit(5)->get()->map(
             function (TeacherRegistration $registration) {
@@ -301,7 +312,11 @@ class MasterDataController extends Controller
                     'experience' => $teacher->experience,
                     'contact' => $teacher->contact,
                     'cv_path' => $teacher->cv_path,
-                    'cv_url' => $teacher->cv_path ? Storage::url($teacher->cv_path) : null,
+                    'cv_url' => $teacher->cv_path
+                        ? (Str::startsWith($teacher->cv_path, ['http://', 'https://'])
+                            ? $teacher->cv_path
+                            : Storage::url($teacher->cv_path))
+                        : null,
                     'notes' => $teacher->notes,
                     'is_active' => $teacher->is_active,
                     'created_at' => $teacher->created_at,
@@ -316,7 +331,32 @@ class MasterDataController extends Controller
     public function students(): Response
     {
         return Inertia::render('Admin/Students', [
-            'students' => Student::query()->latest()->get(),
+            'students' => Student::query()
+                ->with('programItem:id,name')
+                ->latest()
+                ->get()
+                ->map(function (Student $student) {
+                    return [
+                        'id' => $student->id,
+                        'name' => $student->name,
+                        'address' => $student->address,
+                        'school_name' => $student->school_name,
+                        'level' => $student->level,
+                        'subjects' => $student->subjects,
+                        'program_id' => $student->program_id,
+                        'program' => $student->programItem?->name ?? $student->program,
+                        'package' => $student->package,
+                        'parent_contact' => $student->parent_contact,
+                        'preferred_mode' => $student->preferred_mode,
+                        'notes' => $student->notes,
+                        'is_active' => $student->is_active,
+                        'created_at' => $student->created_at,
+                    ];
+                }),
+            'programs' => Program::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name', 'level']),
         ]);
     }
 
@@ -337,7 +377,7 @@ class MasterDataController extends Controller
     private function registrationPayload(): array
     {
         $students = StudentRegistration::query()
-            ->with(['approver:id,name', 'rejector:id,name'])
+            ->with(['approver:id,name', 'rejector:id,name', 'programItem:id,name'])
             ->latest()
             ->get()
             ->map(function (StudentRegistration $student) {
@@ -348,7 +388,7 @@ class MasterDataController extends Controller
                     'school_name' => $student->school_name,
                     'level' => $student->level,
                     'subjects' => $student->subjects,
-                    'program' => $student->program,
+                    'program' => $student->programItem?->name ?? $student->program,
                     'package' => $student->package,
                     'parent_contact' => $student->parent_contact,
                     'preferred_mode' => $student->preferred_mode,

@@ -1,6 +1,7 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { motion } from 'framer-motion';
+import { Link, usePage } from '@inertiajs/react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import SeoHead from '@/Components/SeoHead';
 import SectionTitle from '@/Components/SectionTitle';
 import PasskeyModal from '@/Components/PasskeyModal';
 import { useI18n } from '@/lib/i18n';
@@ -65,6 +66,11 @@ export default function OlympiadDetail({ slug }) {
     const t = detailContent[language] || detailContent.id;
     const text = pageContent[language] || pageContent.id;
     const [hasAccess, setHasAccess] = useState(false);
+    const shouldReduceMotion = useReducedMotion();
+    const floatSlow = shouldReduceMotion ? undefined : { y: [0, -16, 0] };
+    const floatFast = shouldReduceMotion ? undefined : { y: [0, -10, 0] };
+    const floatSlowTransition = shouldReduceMotion ? undefined : { duration: 8, repeat: Infinity, ease: 'easeInOut' };
+    const floatFastTransition = shouldReduceMotion ? undefined : { duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 };
     const [showPasskeyModal, setShowPasskeyModal] = useState(false);
 
     useEffect(() => {
@@ -81,9 +87,7 @@ export default function OlympiadDetail({ slug }) {
     if (!event) {
         return (
             <>
-                <Head>
-                    <title>{t.notFound}</title>
-                </Head>
+                <SeoHead title={t.notFound} noIndex />
                 <section className="bg-gradient-to-br from-violet-50 via-white to-amber-50 min-h-screen flex items-center justify-center">
                     <div className="alc-container text-center">
                         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-slate-400">
@@ -105,7 +109,7 @@ export default function OlympiadDetail({ slug }) {
                         <p className="text-slate-600 mb-6">{t.notFoundDesc}</p>
                         <Link
                             href="/olimpiade"
-                            className="inline-flex items-center gap-2 alc-button bg-gradient-to-r from-violet-600 to-violet-700 text-white font-semibold"
+                            className="inline-flex items-center gap-2 alc-button bg-brand-primary text-white font-semibold"
                         >
                             <svg
                                 className="h-4 w-4"
@@ -135,15 +139,32 @@ export default function OlympiadDetail({ slug }) {
 
     return (
         <>
-            <Head>
-                <title>{eventName}</title>
-                <meta name="description" content={eventDesc} />
-            </Head>
+            <SeoHead
+                title={eventName}
+                description={eventDesc}
+                type="event"
+                structuredData={{
+                    '@type': 'Event',
+                    name: eventName,
+                    description: eventDesc,
+                    startDate: event.schedule_raw,
+                }}
+            />
 
             {/* Hero Section */}
             <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-amber-50 alc-pattern alc-section">
-                <div className="absolute -left-24 top-10 h-32 w-32 sm:h-52 sm:w-52 rounded-full bg-violet-200/60 blur-3xl" />
-                <div className="absolute right-0 top-20 h-40 w-40 sm:h-64 sm:w-64 rounded-full bg-amber-200/70 blur-3xl" />
+                <motion.div
+                    aria-hidden
+                    animate={floatSlow}
+                    transition={floatSlowTransition}
+                    className="absolute -left-24 top-10 h-32 w-32 sm:h-52 sm:w-52 rounded-full bg-violet-200/60 blur-3xl"
+                />
+                <motion.div
+                    aria-hidden
+                    animate={floatFast}
+                    transition={floatFastTransition}
+                    className="absolute right-0 top-20 h-40 w-40 sm:h-64 sm:w-64 rounded-full bg-amber-200/70 blur-3xl"
+                />
 
                 <div className="alc-container max-w-6xl relative">
                     <Link
@@ -264,7 +285,7 @@ export default function OlympiadDetail({ slug }) {
                                     href={contactInfo.whatsapp.link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex w-full items-center justify-center alc-button bg-gradient-to-r from-violet-600 to-amber-500 alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:from-violet-700 hover:to-amber-600 min-h-[44px]"
+                                    className="inline-flex w-full items-center justify-center alc-button bg-brand-primary alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:opacity-90 min-h-[44px]"
                                 >
                                     {t.register}
                                     <svg
@@ -300,7 +321,7 @@ export default function OlympiadDetail({ slug }) {
                     <motion.div
                         initial="hidden"
                         whileInView="visible"
-                        viewport={{ once: true, amount: 0.2 }}
+                        viewport={{ once: false, amount: 0.2 }}
                         variants={stagger}
                         className="grid md:grid-cols-2 alc-gap-lg"
                     >
@@ -370,3 +391,4 @@ export default function OlympiadDetail({ slug }) {
         </>
     );
 }
+

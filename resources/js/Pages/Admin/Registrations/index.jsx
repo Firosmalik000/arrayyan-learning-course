@@ -190,7 +190,7 @@ export default function Registrations() {
                             onClick={() => setActiveTab(tab.key)}
                             className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
                                 activeTab === tab.key
-                                    ? 'bg-gradient-to-r from-violet-600 to-violet-700 text-white shadow'
+                                    ? 'bg-brand-primary text-white shadow'
                                     : 'text-slate-500 hover:text-slate-700'
                             }`}
                         >

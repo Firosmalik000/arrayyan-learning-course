@@ -6,21 +6,32 @@ use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\OlympiadController;
 use App\Http\Controllers\Admin\RegistrationController as AdminRegistrationController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\SeoController;
+use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\TeacherController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\LandingContentController;
 use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\SitemapController;
+use App\Models\Program;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', [LandingContentController::class, 'show'])->name('home');
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/olimpiade', function () {
     return Inertia::render('Public/Olympiad', [
         'olympiads' => \App\Models\Olympiad::query()->where('is_active', true)->latest()->get(),
     ]);
 })->name('olympiad');
 Route::get('/olimpiade/{slug}', fn ($slug) => Inertia::render('Public/Olympiad/Detail', ['slug' => $slug]))->name('olympiad.detail');
-Route::get('/pendaftaran', fn () => Inertia::render('Public/Register'))->name('register');
+Route::get('/pendaftaran', fn () => Inertia::render('Public/Register', [
+    'programs' => Program::query()
+        ->where('is_active', true)
+        ->orderBy('name')
+        ->get(['id', 'name', 'level']),
+]))->name('register');
 Route::get('/bank-soal', [LandingContentController::class, 'bankSoal'])->name('banksoal');
 Route::get('/bank-soal/{slug}', fn ($slug) => Inertia::render('Public/BankSoal/Detail', ['slug' => $slug]))->name('banksoal.detail');
 
@@ -110,9 +121,30 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::get('/pengajar', [MasterDataController::class, 'teachers'])
         ->middleware('role_or_permission:administrator|pengajar.view,admin')
         ->name('teachers');
+    Route::post('/pengajar', [TeacherController::class, 'store'])
+        ->middleware('role_or_permission:administrator|pengajar.create,admin')
+        ->name('teachers.store');
+    Route::put('/pengajar/{teacher}', [TeacherController::class, 'update'])
+        ->middleware('role_or_permission:administrator|pengajar.edit,admin')
+        ->name('teachers.update');
+    Route::delete('/pengajar/{teacher}', [TeacherController::class, 'destroy'])
+        ->middleware('role_or_permission:administrator|pengajar.delete,admin')
+        ->name('teachers.destroy');
     Route::get('/pelajar', [MasterDataController::class, 'students'])
         ->middleware('role_or_permission:administrator|pelajar.view,admin')
         ->name('students');
+    Route::put('/pelajar/{student}', [StudentController::class, 'update'])
+        ->middleware('role_or_permission:administrator|pelajar.edit,admin')
+        ->name('students.update');
+    Route::delete('/pelajar/{student}', [StudentController::class, 'destroy'])
+        ->middleware('role_or_permission:administrator|pelajar.delete,admin')
+        ->name('students.destroy');
+    Route::get('/seo', [SeoController::class, 'edit'])
+        ->middleware('role_or_permission:administrator|seo.view,admin')
+        ->name('seo');
+    Route::put('/seo', [SeoController::class, 'update'])
+        ->middleware('role_or_permission:administrator|seo.edit,admin')
+        ->name('seo.update');
     Route::get('/pengaturan', fn () => Inertia::render('Admin/Settings'))
         ->middleware('role_or_permission:administrator|pengaturan.view,admin')
         ->name('settings');

@@ -1,6 +1,7 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { motion } from 'framer-motion';
+import { Link, usePage } from '@inertiajs/react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import SeoHead from '@/Components/SeoHead';
 import SectionTitle from '@/Components/SectionTitle';
 import PasskeyModal from '@/Components/PasskeyModal';
 import { useI18n } from '@/lib/i18n';
@@ -65,6 +66,11 @@ export default function Olympiad() {
     const [activeLevel, setActiveLevel] = useState(null);
     const [activeMonth, setActiveMonth] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const shouldReduceMotion = useReducedMotion();
+    const floatSlow = shouldReduceMotion ? undefined : { y: [0, -16, 0] };
+    const floatFast = shouldReduceMotion ? undefined : { y: [0, -10, 0] };
+    const floatSlowTransition = shouldReduceMotion ? undefined : { duration: 8, repeat: Infinity, ease: 'easeInOut' };
+    const floatFastTransition = shouldReduceMotion ? undefined : { duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 };
     const [hasAccess, setHasAccess] = useState(false);
     const [showPasskeyModal, setShowPasskeyModal] = useState(false);
 
@@ -103,15 +109,27 @@ export default function Olympiad() {
 
     return (
         <>
-            <Head>
-                <title>{text.title}</title>
-                <meta name="description" content="Informasi olimpiade dan lomba prestasi siswa ALC, termasuk jadwal, jenjang, dan biaya." />
-            </Head>
+            <SeoHead
+                title={text.title}
+                description={language === 'id'
+                    ? 'Informasi olimpiade dan lomba prestasi siswa ALC, termasuk jadwal, jenjang, dan biaya.'
+                    : 'Information about ALC student olympiads and competitions, including schedules, levels, and fees.'}
+            />
 
             {/* Hero */}
             <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-amber-50 alc-pattern alc-section-tight">
-                <div className="absolute -left-24 top-10 h-32 w-32 sm:h-52 sm:w-52 rounded-full bg-violet-200/60 blur-3xl" />
-                <div className="absolute right-0 top-20 h-40 w-40 sm:h-64 sm:w-64 rounded-full bg-amber-200/70 blur-3xl" />
+                <motion.div
+                    aria-hidden
+                    animate={floatSlow}
+                    transition={floatSlowTransition}
+                    className="absolute -left-24 top-10 h-32 w-32 sm:h-52 sm:w-52 rounded-full bg-violet-200/60 blur-3xl"
+                />
+                <motion.div
+                    aria-hidden
+                    animate={floatFast}
+                    transition={floatFastTransition}
+                    className="absolute right-0 top-20 h-40 w-40 sm:h-64 sm:w-64 rounded-full bg-amber-200/70 blur-3xl"
+                />
                 <div className="alc-container max-w-6xl relative">
                     <Link href="/" className="inline-flex items-center gap-2 alc-body-sm text-violet-600 hover:text-violet-700 transition mb-6">
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -204,7 +222,13 @@ export default function Olympiad() {
 
                     {/* Results Grid */}
                     {filteredEvents.length > 0 ? (
-                        <motion.div initial="hidden" animate="visible" variants={stagger} className="grid alc-gap-md md:grid-cols-2 lg:grid-cols-3">
+                        <motion.div
+                            initial="hidden"
+                            whileInView="visible"
+                            viewport={{ once: false, amount: 0.2 }}
+                            variants={stagger}
+                            className="grid alc-gap-md md:grid-cols-2 lg:grid-cols-3"
+                        >
                             {filteredEvents.map((event) => {
                                 const eventName = event.name[language] || event.name.id;
                                 const eventLevel = event.level[language] || event.level.id;

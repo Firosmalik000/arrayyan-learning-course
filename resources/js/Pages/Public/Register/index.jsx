@@ -1,13 +1,15 @@
-import { Head, useForm, usePage, router } from '@inertiajs/react';
+import { useForm, usePage, router } from '@inertiajs/react';
 import { useState } from 'react';
+import SeoHead from '@/Components/SeoHead';
 import SectionTitle from '@/Components/SectionTitle';
 import { useI18n } from '@/lib/i18n';
 
 // Page-specific data
-import { pageContent, formFields, initialStudentForm, initialTeacherForm, programOptions, packageOptions } from './data';
+import { pageContent, formFields, initialStudentForm, initialTeacherForm, packageOptions } from './data';
 
 export default function Register() {
     const { props } = usePage();
+    const programs = props.programs ?? [];
     const { language } = useI18n();
     const flashSuccess = props.flash?.success;
     const [activeTab, setActiveTab] = useState('student');
@@ -26,6 +28,11 @@ export default function Register() {
 
     const studentForm = useForm(initialStudentForm);
     const teacherForm = useForm(initialTeacherForm);
+    const programOptions = programs.map((program) => ({
+        value: program.id,
+        label: program.level ? `${program.name} • ${program.level}` : program.name,
+    }));
+    const hasPrograms = programOptions.length > 0;
 
     const handleStudentSubmit = (event) => {
         event.preventDefault();
@@ -55,13 +62,12 @@ export default function Register() {
 
     return (
         <>
-            <Head>
-                <title>{text.title}</title>
-                <meta
-                    name="description"
-                    content="Form pendaftaran murid dan pengajar untuk Ar Rayyan Learning Course."
-                />
-            </Head>
+            <SeoHead
+                title={text.title}
+                description={language === 'id'
+                    ? 'Form pendaftaran murid dan pengajar untuk Ar Rayyan Learning Course.'
+                    : 'Student and teacher registration form for Ar Rayyan Learning Course.'}
+            />
 
             <section className="bg-gradient-to-br from-violet-50 via-white to-amber-50 py-10 alc-pattern sm:py-16">
                 <div className="mx-auto w-full max-w-xl px-4 sm:px-6">
@@ -87,8 +93,8 @@ export default function Register() {
                                 className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
                                     activeTab === tab.key
                                         ? tab.key === 'student'
-                                            ? 'bg-gradient-to-r from-violet-700 to-violet-500 text-white shadow'
-                                            : 'bg-gradient-to-r from-amber-500 to-amber-400 text-white shadow'
+                                            ? 'bg-brand-primary text-white shadow'
+                                            : 'bg-brand-secondary text-white shadow'
                                         : 'text-slate-500 hover:text-slate-700'
                                 }`}
                             >
@@ -175,19 +181,22 @@ export default function Register() {
                                 <div>
                                     <label className={labelClass}>{studentFields.program}</label>
                                     <select
-                                        className={`${selectClass} ${!studentForm.data.program ? 'text-slate-400' : 'text-slate-700'}`}
-                                        value={studentForm.data.program}
-                                        onChange={(e) => studentForm.setData('program', e.target.value)}
+                                        className={`${selectClass} ${!studentForm.data.program_id ? 'text-slate-400' : 'text-slate-700'}`}
+                                        value={studentForm.data.program_id}
+                                        onChange={(e) => studentForm.setData('program_id', e.target.value)}
+                                        disabled={!hasPrograms}
                                     >
-                                        <option value="" disabled>{studentFields.program}</option>
+                                        <option value="" disabled>
+                                            {hasPrograms ? studentFields.program : language === 'en' ? 'No active programs yet' : 'Belum ada program aktif'}
+                                        </option>
                                         {programOptions.map((opt) => (
                                             <option key={opt.value} value={opt.value}>
-                                                {opt.label[language] || opt.label.id}
+                                                {opt.label}
                                             </option>
                                         ))}
                                     </select>
-                                    {studentForm.errors.program && (
-                                        <p className="mt-1 text-xs text-rose-500">{studentForm.errors.program}</p>
+                                    {studentForm.errors.program_id && (
+                                        <p className="mt-1 text-xs text-rose-500">{studentForm.errors.program_id}</p>
                                     )}
                                 </div>
                                 <div>
@@ -247,7 +256,7 @@ export default function Register() {
                             <button
                                 type="submit"
                                 disabled={studentForm.processing}
-                                className="mt-4 w-full rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-4 py-2.5 text-sm font-semibold text-white shadow transition hover:from-violet-800 hover:to-amber-500 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-6 sm:px-6 sm:py-3"
+                                className="mt-4 w-full rounded-full bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white shadow transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-6 sm:px-6 sm:py-3"
                             >
                                 {text.submitStudent}
                             </button>

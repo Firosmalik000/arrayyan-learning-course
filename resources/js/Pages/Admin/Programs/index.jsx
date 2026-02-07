@@ -301,7 +301,7 @@ export default function Programs() {
                         <button
                             type="button"
                             onClick={() => openProgramModal()}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
                         >
                             {icons.plus}
                             Tambah Program
@@ -503,7 +503,7 @@ export default function Programs() {
                         </button>
                         <button
                             type="submit"
-                            className="rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
+                            className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
                         >
                             {editingProgram ? 'Simpan Perubahan' : 'Tambah Program'}
                         </button>
@@ -575,7 +575,7 @@ export default function Programs() {
                         </button>
                         <button
                             type="submit"
-                            className="rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
+                            className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
                         >
                             {editingPackage ? 'Simpan Perubahan' : 'Tambah Paket'}
                         </button>

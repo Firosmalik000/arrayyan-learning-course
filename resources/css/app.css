@@ -15,6 +15,20 @@
         sans-serif;
     --font-hero: 'Poppins', 'Plus Jakarta Sans', ui-sans-serif, system-ui,
         sans-serif;
+
+    /* Dynamic colors from SEO settings */
+    --color-brand-primary: var(--color-primary, #7c3aed);
+    --color-brand-secondary: var(--color-secondary, #f59e0b);
+    --color-brand-accent: var(--color-accent, #10b981);
+    --color-brand-primary-strong: color-mix(in oklab, var(--color-brand-primary) 85%, black);
+    --color-brand-secondary-strong: color-mix(in oklab, var(--color-brand-secondary) 85%, black);
+    --color-brand-primary-soft: color-mix(in oklab, var(--color-brand-primary) 12%, white);
+    --color-brand-primary-faint: color-mix(in oklab, var(--color-brand-primary) 6%, white);
+    --color-brand-secondary-soft: color-mix(in oklab, var(--color-brand-secondary) 14%, white);
+    --color-brand-secondary-faint: color-mix(in oklab, var(--color-brand-secondary) 8%, white);
+    --color-brand-accent-soft: color-mix(in oklab, var(--color-brand-accent) 14%, white);
+    --color-brand-accent-faint: color-mix(in oklab, var(--color-brand-accent) 8%, white);
+    --color-brand-border: color-mix(in oklab, var(--color-brand-primary) 22%, white);
 }
 
 @layer base {
@@ -173,5 +187,340 @@
 
     .alc-glow {
         box-shadow: 0 28px 80px -40px rgba(88, 28, 135, 0.4);
+    }
+
+    /* Dynamic brand color utilities */
+    .bg-brand-primary {
+        background-color: var(--color-primary, #7c3aed);
+    }
+    .bg-brand-secondary {
+        background-color: var(--color-secondary, #f59e0b);
+    }
+    .bg-brand-accent {
+        background-color: var(--color-accent, #10b981);
+    }
+    .bg-brand-soft {
+        background-color: var(--color-brand-primary-soft);
+    }
+    .bg-brand-faint {
+        background-color: var(--color-brand-primary-faint);
+    }
+    .bg-brand-secondary-soft {
+        background-color: var(--color-brand-secondary-soft);
+    }
+    .bg-brand-accent-soft {
+        background-color: var(--color-brand-accent-soft);
+    }
+    .bg-brand-gradient {
+        background-image: linear-gradient(
+            135deg,
+            var(--color-brand-primary),
+            color-mix(in oklab, var(--color-brand-secondary) 70%, var(--color-brand-primary))
+        );
+    }
+    .bg-brand-shell {
+        background-image:
+            radial-gradient(
+                circle at top,
+                color-mix(in oklab, var(--color-brand-primary) 18%, white),
+                transparent 60%
+            ),
+            radial-gradient(
+                circle at 20% 85%,
+                color-mix(in oklab, var(--color-brand-secondary) 16%, white),
+                transparent 65%
+            ),
+            linear-gradient(135deg, #f8fafc, #ffffff);
+    }
+    .bg-brand-footer {
+        background-image: linear-gradient(
+            135deg,
+            #ffffff,
+            color-mix(in oklab, var(--color-brand-primary) 6%, white),
+            #ffffff
+        );
+    }
+    .text-brand-primary {
+        color: var(--color-primary, #7c3aed);
+    }
+    .text-brand-secondary {
+        color: var(--color-secondary, #f59e0b);
+    }
+    .text-brand-accent {
+        color: var(--color-accent, #10b981);
+    }
+    .border-brand-primary {
+        border-color: var(--color-primary, #7c3aed);
+    }
+    .border-brand-secondary {
+        border-color: var(--color-secondary, #f59e0b);
+    }
+    .border-brand-accent {
+        border-color: var(--color-accent, #10b981);
+    }
+    .border-brand-soft {
+        border-color: var(--color-brand-border);
+    }
+    .border-brand-secondary-soft {
+        border-color: color-mix(in oklab, var(--color-brand-secondary) 22%, white);
+    }
+    .border-brand-accent-soft {
+        border-color: color-mix(in oklab, var(--color-brand-accent) 22%, white);
+    }
+    .ring-brand-primary {
+        --tw-ring-color: var(--color-primary, #7c3aed);
+    }
+    .hover\:bg-brand-primary:hover {
+        background-color: var(--color-primary, #7c3aed);
+    }
+    .hover\:bg-brand-faint:hover {
+        background-color: var(--color-brand-primary-faint);
+    }
+    .hover\:bg-brand-soft:hover {
+        background-color: var(--color-brand-primary-soft);
+    }
+    .hover\:text-brand-primary:hover {
+        color: var(--color-primary, #7c3aed);
+    }
+    .hover\:border-brand-soft:hover {
+        border-color: var(--color-brand-border);
+    }
+    .focus\:ring-brand-primary:focus {
+        --tw-ring-color: var(--color-primary, #7c3aed);
+    }
+    .focus\:border-brand-primary:focus {
+        border-color: var(--color-primary, #7c3aed);
+    }
+    .ring-brand-soft {
+        --tw-ring-color: var(--color-brand-border);
+    }
+    .shadow-brand {
+        box-shadow: 0 16px 35px -20px color-mix(in oklab, var(--color-brand-primary) 60%, transparent);
+    }
+    .group:hover .group-hover\:text-brand-primary {
+        color: var(--color-primary, #7c3aed);
+    }
+
+    .public-theme .text-violet-600,
+    .public-theme .text-violet-700,
+    .public-theme .text-violet-800 {
+        color: var(--color-brand-primary);
+    }
+    .public-theme .text-amber-600,
+    .public-theme .text-amber-700,
+    .public-theme .text-amber-800,
+    .public-theme .text-amber-900\/80 {
+        color: var(--color-brand-secondary);
+    }
+    .public-theme .bg-violet-50,
+    .public-theme .bg-violet-50\/40,
+    .public-theme .bg-violet-50\/60 {
+        background-color: var(--color-brand-primary-faint);
+    }
+    .public-theme .bg-violet-100,
+    .public-theme .bg-violet-100\/70 {
+        background-color: var(--color-brand-primary-soft);
+    }
+    .public-theme .bg-violet-200\/30,
+    .public-theme .bg-violet-200\/60 {
+        background-color: color-mix(in oklab, var(--color-brand-primary) 18%, white);
+    }
+    .public-theme .bg-violet-300\/20 {
+        background-color: color-mix(in oklab, var(--color-brand-primary) 24%, white);
+    }
+    .public-theme .bg-violet-400\/20 {
+        background-color: color-mix(in oklab, var(--color-brand-primary) 30%, white);
+    }
+    .public-theme .bg-violet-700 {
+        background-color: var(--color-brand-primary);
+    }
+    .public-theme .bg-violet-600 {
+        background-color: var(--color-brand-primary);
+    }
+    .public-theme .bg-violet-800 {
+        background-color: var(--color-brand-primary-strong);
+    }
+    .public-theme .bg-amber-50,
+    .public-theme .bg-amber-50\/80 {
+        background-color: var(--color-brand-secondary-faint);
+    }
+    .public-theme .bg-amber-100,
+    .public-theme .bg-amber-100\/70 {
+        background-color: var(--color-brand-secondary-soft);
+    }
+    .public-theme .bg-amber-200\/30,
+    .public-theme .bg-amber-200\/70 {
+        background-color: color-mix(in oklab, var(--color-brand-secondary) 18%, white);
+    }
+    .public-theme .bg-amber-300\/20,
+    .public-theme .bg-amber-400\/20 {
+        background-color: color-mix(in oklab, var(--color-brand-secondary) 24%, white);
+    }
+    .public-theme .bg-amber-500 {
+        background-color: var(--color-brand-secondary);
+    }
+    .public-theme .bg-amber-600 {
+        background-color: var(--color-brand-secondary-strong);
+    }
+    .public-theme .border-violet-100,
+    .public-theme .border-violet-100\/70,
+    .public-theme .border-violet-100\/80,
+    .public-theme .border-violet-200,
+    .public-theme .border-violet-200\/70,
+    .public-theme .border-violet-200\/60,
+    .public-theme .border-violet-200\/80,
+    .public-theme .border-violet-300 {
+        border-color: var(--color-brand-border);
+    }
+    .public-theme .border-violet-500,
+    .public-theme .border-violet-600 {
+        border-color: var(--color-brand-primary);
+    }
+    .public-theme .border-amber-100,
+    .public-theme .border-amber-100\/60,
+    .public-theme .border-amber-100\/70,
+    .public-theme .border-amber-200,
+    .public-theme .border-amber-200\/80,
+    .public-theme .border-amber-300 {
+        border-color: color-mix(in oklab, var(--color-brand-secondary) 22%, white);
+    }
+    .public-theme .from-violet-50 {
+        --tw-gradient-from: var(--color-brand-primary-faint);
+        --tw-gradient-to: color-mix(in oklab, var(--color-brand-primary-faint) 0%, transparent);
+        --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+    }
+    .public-theme .from-violet-100\/70,
+    .public-theme .from-violet-200\/60,
+    .public-theme .from-violet-400,
+    .public-theme .from-violet-600,
+    .public-theme .from-violet-700 {
+        --tw-gradient-from: var(--color-brand-primary);
+        --tw-gradient-to: color-mix(in oklab, var(--color-brand-primary) 0%, transparent);
+        --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+    }
+    .public-theme .from-violet-900\/20 {
+        --tw-gradient-from: color-mix(in oklab, var(--color-brand-primary) 45%, black);
+        --tw-gradient-to: color-mix(in oklab, var(--color-brand-primary) 0%, transparent);
+        --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+    }
+    .public-theme .to-violet-50,
+    .public-theme .to-violet-50\/30,
+    .public-theme .to-violet-200\/60 {
+        --tw-gradient-to: var(--color-brand-primary-faint);
+    }
+    .public-theme .to-violet-400,
+    .public-theme .to-violet-500,
+    .public-theme .to-violet-700 {
+        --tw-gradient-to: var(--color-brand-primary);
+    }
+    .public-theme .via-violet-100\/60 {
+        --tw-gradient-stops: var(--tw-gradient-from), var(--color-brand-primary-soft), var(--tw-gradient-to);
+    }
+    .public-theme .from-amber-50,
+    .public-theme .from-amber-100\/70,
+    .public-theme .from-amber-200\/60 {
+        --tw-gradient-from: var(--color-brand-secondary-faint);
+        --tw-gradient-to: color-mix(in oklab, var(--color-brand-secondary-faint) 0%, transparent);
+        --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+    }
+    .public-theme .from-amber-400,
+    .public-theme .from-amber-500 {
+        --tw-gradient-from: var(--color-brand-secondary);
+        --tw-gradient-to: color-mix(in oklab, var(--color-brand-secondary) 0%, transparent);
+        --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+    }
+    .public-theme .to-amber-50,
+    .public-theme .to-amber-200\/60 {
+        --tw-gradient-to: var(--color-brand-secondary-faint);
+    }
+    .public-theme .to-amber-400,
+    .public-theme .to-amber-500 {
+        --tw-gradient-to: var(--color-brand-secondary);
+    }
+    .public-theme .via-amber-100\/60 {
+        --tw-gradient-stops: var(--tw-gradient-from), var(--color-brand-secondary-soft), var(--tw-gradient-to);
+    }
+    .public-theme .focus\:border-violet-400:focus,
+    .public-theme .focus\:border-violet-500:focus {
+        border-color: var(--color-brand-primary);
+    }
+    .public-theme .focus\:ring-violet-100:focus,
+    .public-theme .focus\:ring-violet-200:focus {
+        --tw-ring-color: var(--color-brand-primary-soft);
+    }
+    .public-theme .hover\:bg-violet-50:hover,
+    .public-theme .hover\:bg-violet-100\/80:hover {
+        background-color: var(--color-brand-primary-faint);
+    }
+    .public-theme .hover\:bg-violet-800:hover,
+    .public-theme .hover\:to-violet-800:hover,
+    .public-theme .hover\:from-violet-700:hover,
+    .public-theme .hover\:from-violet-800:hover {
+        --tw-gradient-from: var(--color-brand-primary-strong);
+        --tw-gradient-to: var(--color-brand-primary-strong);
+        background-color: var(--color-brand-primary-strong);
+    }
+    .public-theme .hover\:to-amber-500:hover,
+    .public-theme .hover\:to-amber-600:hover,
+    .public-theme .hover\:bg-amber-600:hover {
+        --tw-gradient-to: var(--color-brand-secondary-strong);
+        background-color: var(--color-brand-secondary-strong);
+    }
+    .public-theme .hover\:border-violet-200:hover,
+    .public-theme .hover\:border-violet-300:hover {
+        border-color: var(--color-brand-border);
+    }
+    .public-theme .hover\:text-violet-600:hover,
+    .public-theme .hover\:text-violet-700:hover,
+    .public-theme .hover\:text-violet-800:hover {
+        color: var(--color-brand-primary);
+    }
+    .public-theme .group:hover .group-hover\:text-violet-700 {
+        color: var(--color-brand-primary);
+    }
+    .public-theme .shadow-violet-200 {
+        --tw-shadow-color: color-mix(in oklab, var(--color-brand-primary) 25%, transparent);
+    }
+    .public-theme .file\:bg-violet-50::file-selector-button {
+        background-color: var(--color-brand-primary-faint);
+    }
+    .public-theme .file\:text-violet-700::file-selector-button {
+        color: var(--color-brand-primary);
+    }
+    .public-theme .hover\:file\:bg-violet-100:hover::file-selector-button {
+        background-color: var(--color-brand-primary-soft);
+    }
+
+    .public-theme .alc-pattern {
+        background-image:
+            url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='96'%20height='96'%20viewBox='0%200%2096%2096'%20fill='none'%3E%3Cpath%20d='M48%206L56%2036L86%2048L56%2060L48%2090L40%2060L10%2048L40%2036Z'%20stroke='%23000000'%20stroke-opacity='0.12'%20stroke-width='1'/%3E%3C/svg%3E"),
+            radial-gradient(
+                circle at top,
+                color-mix(in oklab, var(--color-brand-primary) 18%, transparent),
+                transparent 55%
+            ),
+            radial-gradient(
+                circle at 25% 80%,
+                color-mix(in oklab, var(--color-brand-secondary) 18%, transparent),
+                transparent 60%
+            ),
+            linear-gradient(to bottom right, var(--tw-gradient-stops));
+        background-size: 96px 96px, auto, auto, auto;
+    }
+
+    .public-theme .alc-geometry {
+        background-image:
+            radial-gradient(
+                circle at 20% 20%,
+                color-mix(in oklab, var(--color-brand-accent) 16%, transparent),
+                transparent 65%
+            ),
+            radial-gradient(
+                circle at 70% 80%,
+                color-mix(in oklab, var(--color-brand-primary) 14%, transparent),
+                transparent 70%
+            ),
+            linear-gradient(to bottom right, var(--tw-gradient-stops));
+        background-size: auto, auto, auto;
     }
 }

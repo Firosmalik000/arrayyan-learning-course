@@ -28,7 +28,8 @@
       "Bash(powershell -Command \"cd C:\\\\laragon\\\\www\\\\arrayyan; npm run build\")",
       "Bash(ls -la \"C:\\\\laragon\\\\www\\\\arrayyan\\\\resources\\\\js\\\\Pages\\\\Admin\\\\Students\"\" 2>&1 || echo \"Students directory check complete \")",
       "Bash(powershell -Command:*)",
-      "Bash(vendor/bin/pint:*)"
+      "Bash(vendor/bin/pint:*)",
+      "Bash(C:laragonbinphpphp-8.4.4-Win32-vs16-x64php.exe vendor/bin/pint --dirty)"
     ]
   }
 }

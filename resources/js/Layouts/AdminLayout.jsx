@@ -1,52 +1,59 @@
 import { Link, usePage, router } from '@inertiajs/react';
-import { useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 
 const getMenu = (pendingCounts, allowedMenus) => {
     const isAllowed = (menuId) => !allowedMenus || allowedMenus.includes(menuId);
 
     const menu = [
         { href: '/admin', label: 'Dashboard', icon: 'dashboard', menuId: 'dashboard' },
-    {
-        label: 'Content',
-        icon: 'layout',
-        children: [
-            { href: '/admin/landing', label: 'Landing Page', icon: 'layout', menuId: 'landing' },
-        ],
-    },
-    {
-        label: 'Master Data',
-        icon: 'database',
-        children: [
-            { href: '/admin/program', label: 'Program', icon: 'book', menuId: 'program' },
-            { href: '/admin/bank-soal', label: 'Bank Soal', icon: 'layers', menuId: 'bank-soal' },
-            { href: '/admin/olimpiade', label: 'Olimpiade', icon: 'trophy', menuId: 'olimpiade' },
-            {
-                href: '/admin/pendaftaran/pelajar',
-                label: 'Pendaftaran Pelajar',
-                icon: 'users',
-                menuId: 'pendaftaran',
-                badge: pendingCounts?.student > 0 ? String(pendingCounts.student) : null,
-            },
-            {
-                href: '/admin/pendaftaran/pengajar',
-                label: 'Pendaftaran Pengajar',
-                icon: 'user',
-                menuId: 'pendaftaran',
-                badge: pendingCounts?.teacher > 0 ? String(pendingCounts.teacher) : null,
-            },
-            { href: '/admin/pelajar', label: 'Pelajar', icon: 'users', menuId: 'pelajar' },
-            { href: '/admin/pengajar', label: 'Pengajar', icon: 'user', menuId: 'pengajar' },
-        ],
-    },
-    {
-        label: 'Administrator',
-        icon: 'shield',
-        children: [
-            { href: '/admin/akses-menu', label: 'Akses Menu', icon: 'key', menuId: 'akses-menu' },
-            { href: '/admin/roles', label: 'Role', icon: 'badge', menuId: 'roles' },
-            { href: '/admin/users', label: 'User', icon: 'users', menuId: 'users' },
-        ],
-    },
+        {
+            label: 'Content',
+            icon: 'layout',
+            children: [
+                { href: '/admin/landing', label: 'Landing Page', icon: 'layout', menuId: 'landing' },
+                { href: '/admin/seo', label: 'SEO', icon: 'search', menuId: 'seo' },
+            ],
+        },
+        {
+            label: 'Master Data',
+            icon: 'database',
+            children: [
+                { href: '/admin/program', label: 'Program', icon: 'book', menuId: 'program' },
+                { href: '/admin/bank-soal', label: 'Bank Soal', icon: 'layers', menuId: 'bank-soal' },
+                { href: '/admin/olimpiade', label: 'Olimpiade', icon: 'trophy', menuId: 'olimpiade' },
+            ],
+        },
+        {
+            label: 'Internal Management',
+            icon: 'users',
+            children: [
+                {
+                    href: '/admin/pendaftaran/pelajar',
+                    label: 'Pendaftaran Pelajar',
+                    icon: 'users',
+                    menuId: 'pendaftaran',
+                    badge: pendingCounts?.student > 0 ? String(pendingCounts.student) : null,
+                },
+                {
+                    href: '/admin/pendaftaran/pengajar',
+                    label: 'Pendaftaran Pengajar',
+                    icon: 'user',
+                    menuId: 'pendaftaran',
+                    badge: pendingCounts?.teacher > 0 ? String(pendingCounts.teacher) : null,
+                },
+                { href: '/admin/pelajar', label: 'Pelajar', icon: 'users', menuId: 'pelajar' },
+                { href: '/admin/pengajar', label: 'Pengajar', icon: 'user', menuId: 'pengajar' },
+            ],
+        },
+        {
+            label: 'Administrator',
+            icon: 'shield',
+            children: [
+                { href: '/admin/akses-menu', label: 'Akses Menu', icon: 'key', menuId: 'akses-menu' },
+                { href: '/admin/roles', label: 'Role', icon: 'badge', menuId: 'roles' },
+                { href: '/admin/users', label: 'User', icon: 'users', menuId: 'users' },
+            ],
+        },
         { href: '/admin/pengaturan', label: 'Pengaturan', icon: 'settings', menuId: 'pengaturan' },
     ];
 
@@ -416,8 +423,37 @@ export default function AdminLayout({ children }) {
 
     const user = props.auth?.user || { name: 'Admin ALC', email: 'admin@alclearning.id' };
 
-    const menu = getMenu(pendingRegistrationCounts, allowedMenus);
-    const flatMenu = getFlatMenu(menu);
+    const menu = useMemo(() => getMenu(pendingRegistrationCounts, allowedMenus), [
+        pendingRegistrationCounts?.total,
+        pendingRegistrationCounts?.student,
+        pendingRegistrationCounts?.teacher,
+        allowedMenus ? allowedMenus.join('|') : 'all',
+    ]);
+    const flatMenu = useMemo(() => getFlatMenu(menu), [menu]);
+    const groupLabels = useMemo(
+        () => menu.filter((item) => item.children).map((item) => item.label),
+        [menu]
+    );
+    const [openGroups, setOpenGroups] = useState(() => (
+        groupLabels.reduce((acc, label) => {
+            acc[label] = true;
+            return acc;
+        }, {})
+    ));
+
+    useEffect(() => {
+        setOpenGroups((prev) => {
+            const missing = groupLabels.filter((label) => prev[label] === undefined);
+            if (missing.length === 0) {
+                return prev;
+            }
+            const next = { ...prev };
+            missing.forEach((label) => {
+                next[label] = true;
+            });
+            return next;
+        });
+    }, [groupLabels]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -439,7 +475,7 @@ export default function AdminLayout({ children }) {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50/30 text-slate-900">
+        <div className="min-h-screen bg-brand-shell text-slate-900">
             <div className="flex min-h-screen">
                 {/* Desktop Sidebar */}
                 <aside className="hidden w-72 flex-col border-r border-slate-200/50 bg-white/80 backdrop-blur-xl md:flex">
@@ -447,15 +483,15 @@ export default function AdminLayout({ children }) {
                     <div className="border-b border-slate-100 px-5 py-5">
                         <Link href="/admin" className="flex items-center gap-3 group">
                             {appLogo ? (
-                                <img src={appLogo} alt="Logo" className="h-12 w-12 rounded-2xl object-contain shadow-lg shadow-violet-200 transition-transform group-hover:scale-105" />
+                                <img src={appLogo} alt="Logo" className="h-12 w-12 rounded-2xl object-contain shadow-brand transition-transform group-hover:scale-105" />
                             ) : (
-                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-violet-700 text-white shadow-lg shadow-violet-200 transition-transform group-hover:scale-105">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-gradient text-white shadow-brand transition-transform group-hover:scale-105">
                                     <span className="text-sm font-bold tracking-wide">ALC</span>
                                 </div>
                             )}
                             <div>
                                 <p className="text-sm font-bold text-slate-800">Admin Console</p>
-                                <p className="text-xs font-medium text-violet-600">Ar Rayyan Learning</p>
+                                <p className="text-xs font-medium text-brand-primary">Ar Rayyan Learning</p>
                             </div>
                         </Link>
                     </div>
@@ -472,7 +508,7 @@ export default function AdminLayout({ children }) {
                                             href={item.href}
                                             className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition-all ${
                                                 isActive
-                                                    ? 'bg-gradient-to-r from-violet-500 to-violet-600 text-white shadow-md shadow-violet-200'
+                                                    ? 'bg-brand-gradient text-white shadow-md shadow-brand'
                                                     : 'text-slate-600 hover:bg-slate-50'
                                             }`}
                                         >
@@ -488,7 +524,7 @@ export default function AdminLayout({ children }) {
                                             </span>
                                             {item.badge && (
                                                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                                                    isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700'
+                                                    isActive ? 'bg-white/20 text-white' : 'bg-brand-secondary-soft text-brand-secondary'
                                                 }`}>
                                                     {item.badge}
                                                 </span>
@@ -498,20 +534,31 @@ export default function AdminLayout({ children }) {
                                 }
 
                                 const isGroupActive = item.children.some((child) => child.href === url);
+                                const isGroupOpen = openGroups[item.label] ?? true;
 
                                 return (
                                     <div key={item.label}>
-                                        <div className={`mb-3 flex items-center gap-2 px-3 text-xs font-bold uppercase tracking-wider ${
-                                            isGroupActive ? 'text-violet-600' : 'text-slate-400'
-                                        }`}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setOpenGroups((prev) => ({
+                                                ...prev,
+                                                [item.label]: !isGroupOpen,
+                                            }))}
+                                            className={`mb-3 flex w-full items-center gap-2 px-3 text-xs font-bold uppercase tracking-wider transition ${
+                                                isGroupActive ? 'text-brand-primary' : 'text-slate-400'
+                                            }`}
+                                        >
                                             <span className={`flex h-6 w-6 items-center justify-center rounded-md ${
-                                                isGroupActive ? 'bg-violet-100 text-violet-600' : 'bg-slate-100 text-slate-400'
+                                                isGroupActive ? 'bg-brand-soft text-brand-primary' : 'bg-slate-100 text-slate-400'
                                             }`}>
                                                 {icons[item.icon]}
                                             </span>
-                                            {item.label}
-                                        </div>
-                                        <div className="space-y-1 pl-2">
+                                            <span className="flex-1 text-left">{item.label}</span>
+                                            <span className={`text-slate-300 transition-transform ${isGroupOpen ? 'rotate-180' : ''}`}>
+                                                {icons.chevronDown}
+                                            </span>
+                                        </button>
+                                        <div className={`space-y-1 pl-2 ${isGroupOpen ? '' : 'hidden'}`}>
                                             {item.children.map((child) => {
                                                 const isActive = url === child.href;
                                                 return (
@@ -520,7 +567,7 @@ export default function AdminLayout({ children }) {
                                                         href={child.href}
                                                         className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition-all ${
                                                             isActive
-                                                                ? 'bg-gradient-to-r from-violet-500 to-violet-600 text-white shadow-md shadow-violet-200'
+                                                                ? 'bg-brand-gradient text-white shadow-md shadow-brand'
                                                                 : 'text-slate-600 hover:bg-slate-50'
                                                         }`}
                                                     >
@@ -536,10 +583,10 @@ export default function AdminLayout({ children }) {
                                                         </span>
                                                         {child.badge && (
                                                             <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                                                                isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700'
-                                                            }`}>
-                                                                {child.badge}
-                                                            </span>
+                                                                isActive ? 'bg-white/20 text-white' : 'bg-brand-secondary-soft text-brand-secondary'
+                                                        }`}>
+                                                            {child.badge}
+                                                        </span>
                                                         )}
                                                     </Link>
                                                 );
@@ -557,7 +604,7 @@ export default function AdminLayout({ children }) {
                             href="/"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-violet-200 hover:text-violet-600"
+                            className="flex items-center justify-center gap-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:border-brand-soft hover:text-brand-primary"
                         >
                             {icons.external}
                             Lihat Website
@@ -621,33 +668,16 @@ export default function AdminLayout({ children }) {
 
                             {/* Right: Actions + Profile */}
                             <div className="flex items-center gap-2 sm:gap-3">
-                                {/* Search Button */}
-                                <button
-                                    type="button"
-                                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
-                                >
-                                    {icons.search}
-                                </button>
-
-                                {/* Notification Button */}
-                                <button
-                                    type="button"
-                                    className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
-                                >
-                                    {icons.bell}
-                                    <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                                        3
-                                    </span>
-                                </button>
+                                {/* Search & Notification buttons removed */}
 
                                 {/* Profile Dropdown */}
                                 <div className="relative" ref={profileRef}>
                                     <button
                                         type="button"
                                         onClick={() => setIsProfileOpen(!isProfileOpen)}
-                                        className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:border-violet-200 hover:shadow-md"
+                                        className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:border-brand-soft hover:shadow-md"
                                     >
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-amber-400 text-white">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-gradient text-white">
                                             <span className="text-xs font-bold">
                                                 {user.name?.charAt(0)?.toUpperCase() || 'A'}
                                             </span>
@@ -717,7 +747,7 @@ export default function AdminLayout({ children }) {
                                         href={item.href}
                                         className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                                             isActive
-                                                ? 'bg-violet-600 text-white shadow-md'
+                                                ? 'bg-brand-primary text-white shadow-md'
                                                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                         }`}
                                     >
@@ -758,13 +788,13 @@ export default function AdminLayout({ children }) {
                             {appLogo ? (
                                 <img src={appLogo} alt="Logo" className="h-10 w-10 rounded-xl object-contain shadow-lg" />
                             ) : (
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-violet-700 text-white shadow-lg">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-gradient text-white shadow-brand">
                                     <span className="text-xs font-bold">ALC</span>
                                 </div>
                             )}
                             <div>
                                 <p className="text-sm font-bold text-slate-800">Admin</p>
-                                <p className="text-xs text-violet-600">Ar Rayyan Learning</p>
+                                <p className="text-xs text-brand-primary">Ar Rayyan Learning</p>
                             </div>
                         </Link>
                         <button
@@ -789,7 +819,7 @@ export default function AdminLayout({ children }) {
                                             onClick={() => setIsMobileMenuOpen(false)}
                                             className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition ${
                                                 isActive
-                                                    ? 'bg-violet-600 text-white'
+                                                    ? 'bg-brand-primary text-white'
                                                     : 'text-slate-600 hover:bg-slate-50'
                                             }`}
                                         >
@@ -803,25 +833,36 @@ export default function AdminLayout({ children }) {
                                             </span>
                                             {item.badge && (
                                                 <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                                                    isActive ? 'bg-white/20' : 'bg-amber-100 text-amber-700'
-                                                }`}>
-                                                    {item.badge}
-                                                </span>
+                                                    isActive ? 'bg-white/20' : 'bg-brand-secondary-soft text-brand-secondary'
+                                            }`}>
+                                                {item.badge}
+                                            </span>
                                             )}
                                         </Link>
                                     );
                                 }
 
                                 const isGroupActive = item.children.some((child) => child.href === url);
+                                const isGroupOpen = openGroups[item.label] ?? true;
 
                                 return (
                                     <div key={item.label}>
-                                        <div className={`mb-2 flex items-center gap-2 px-3 text-xs font-bold uppercase tracking-wider ${
-                                            isGroupActive ? 'text-violet-600' : 'text-slate-400'
-                                        }`}>
-                                            {item.label}
-                                        </div>
-                                        <div className="space-y-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setOpenGroups((prev) => ({
+                                                ...prev,
+                                                [item.label]: !isGroupOpen,
+                                            }))}
+                                            className={`mb-2 flex w-full items-center gap-2 px-3 text-xs font-bold uppercase tracking-wider transition ${
+                                                isGroupActive ? 'text-brand-primary' : 'text-slate-400'
+                                            }`}
+                                        >
+                                            <span className="flex-1 text-left">{item.label}</span>
+                                            <span className={`text-slate-300 transition-transform ${isGroupOpen ? 'rotate-180' : ''}`}>
+                                                {icons.chevronDown}
+                                            </span>
+                                        </button>
+                                        <div className={`space-y-1 ${isGroupOpen ? '' : 'hidden'}`}>
                                             {item.children.map((child) => {
                                                 const isActive = url === child.href;
                                                 return (
@@ -831,10 +872,10 @@ export default function AdminLayout({ children }) {
                                                         onClick={() => setIsMobileMenuOpen(false)}
                                                         className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition ${
                                                             isActive
-                                                                ? 'bg-violet-600 text-white'
-                                                                : 'text-slate-600 hover:bg-slate-50'
-                                                        }`}
-                                                    >
+                                                            ? 'bg-brand-primary text-white'
+                                                            : 'text-slate-600 hover:bg-slate-50'
+                                                    }`}
+                                                >
                                                         <span className="flex items-center gap-3">
                                                             <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${
                                                                 isActive ? 'bg-white/20' : 'bg-slate-100'
@@ -845,10 +886,10 @@ export default function AdminLayout({ children }) {
                                                         </span>
                                                         {child.badge && (
                                                             <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                                                                isActive ? 'bg-white/20' : 'bg-amber-100 text-amber-700'
-                                                            }`}>
-                                                                {child.badge}
-                                                            </span>
+                                                                isActive ? 'bg-white/20' : 'bg-brand-secondary-soft text-brand-secondary'
+                                                        }`}>
+                                                            {child.badge}
+                                                        </span>
                                                         )}
                                                     </Link>
                                                 );

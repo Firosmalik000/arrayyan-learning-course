@@ -1,6 +1,7 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { motion } from 'framer-motion';
+import { Link, router } from '@inertiajs/react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import SeoHead from '@/Components/SeoHead';
 import SectionTitle from '@/Components/SectionTitle';
 import { useI18n } from '@/lib/i18n';
 
@@ -91,6 +92,11 @@ export default function BankSoalDetail({ slug }) {
 
     // Passkey state
     const [hasAccess, setHasAccess] = useState(false);
+    const shouldReduceMotion = useReducedMotion();
+    const floatSlow = shouldReduceMotion ? undefined : { y: [0, -16, 0] };
+    const floatFast = shouldReduceMotion ? undefined : { y: [0, -10, 0] };
+    const floatSlowTransition = shouldReduceMotion ? undefined : { duration: 8, repeat: Infinity, ease: 'easeInOut' };
+    const floatFastTransition = shouldReduceMotion ? undefined : { duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 };
     const [passkey, setPasskey] = useState('');
     const [error, setError] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -124,9 +130,7 @@ export default function BankSoalDetail({ slug }) {
     if (!item) {
         return (
             <>
-                <Head>
-                    <title>{t.notFound}</title>
-                </Head>
+                <SeoHead title={t.notFound} noIndex />
                 <section className="bg-gradient-to-br from-violet-50 via-white to-amber-50 min-h-screen flex items-center justify-center">
                     <div className="alc-container text-center">
                         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-slate-400">
@@ -148,7 +152,7 @@ export default function BankSoalDetail({ slug }) {
                         <p className="text-slate-600 mb-6">{t.notFoundDesc}</p>
                         <Link
                             href="/bank-soal"
-                            className="inline-flex items-center gap-2 alc-button bg-gradient-to-r from-violet-600 to-violet-700 text-white font-semibold"
+                            className="inline-flex items-center gap-2 alc-button bg-brand-primary text-white font-semibold"
                         >
                             <svg
                                 className="h-4 w-4"
@@ -180,12 +184,20 @@ export default function BankSoalDetail({ slug }) {
     if (!hasAccess) {
         return (
             <>
-                <Head>
-                    <title>{pk.title}</title>
-                </Head>
+                <SeoHead title={pk.title} noIndex />
                 <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-amber-50 min-h-screen flex items-center justify-center alc-pattern">
-                    <div className="absolute -left-24 top-10 h-32 w-32 sm:h-52 sm:w-52 rounded-full bg-violet-200/60 blur-3xl" />
-                    <div className="absolute right-0 top-20 h-40 w-40 sm:h-64 sm:w-64 rounded-full bg-amber-200/70 blur-3xl" />
+                    <motion.div
+                        aria-hidden
+                        animate={floatSlow}
+                        transition={floatSlowTransition}
+                        className="absolute -left-24 top-10 h-32 w-32 sm:h-52 sm:w-52 rounded-full bg-violet-200/60 blur-3xl"
+                    />
+                    <motion.div
+                        aria-hidden
+                        animate={floatFast}
+                        transition={floatFastTransition}
+                        className="absolute right-0 top-20 h-40 w-40 sm:h-64 sm:w-64 rounded-full bg-amber-200/70 blur-3xl"
+                    />
 
                     <div className="alc-container max-w-md relative">
                         <div className="alc-card border border-slate-100 bg-white shadow-xl">
@@ -295,7 +307,7 @@ export default function BankSoalDetail({ slug }) {
                                     <button
                                         type="submit"
                                         disabled={!passkey || isLoading}
-                                        className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {isLoading ? (
                                             <span className="flex items-center justify-center gap-2">
@@ -321,17 +333,37 @@ export default function BankSoalDetail({ slug }) {
     // Has access - show content
     const toneClass = toneStyles[item.tone] || toneStyles.violet;
 
+    const itemName = item.name[language] || item.name.id;
+    const itemDesc = item.description[language] || item.description.id;
+
     return (
         <>
-            <Head>
-                <title>{item.name[language] || item.name.id}</title>
-                <meta name="description" content={item.description[language] || item.description.id} />
-            </Head>
+            <SeoHead
+                title={itemName}
+                description={itemDesc}
+                type="product"
+                structuredData={{
+                    '@type': 'Product',
+                    name: itemName,
+                    description: itemDesc,
+                    category: item.category[language] || item.category.id,
+                }}
+            />
 
             {/* Hero Section */}
             <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-amber-50 alc-pattern alc-section">
-                <div className="absolute -left-24 top-10 h-32 w-32 sm:h-52 sm:w-52 rounded-full bg-violet-200/60 blur-3xl" />
-                <div className="absolute right-0 top-20 h-40 w-40 sm:h-64 sm:w-64 rounded-full bg-amber-200/70 blur-3xl" />
+                <motion.div
+                    aria-hidden
+                    animate={floatSlow}
+                    transition={floatSlowTransition}
+                    className="absolute -left-24 top-10 h-32 w-32 sm:h-52 sm:w-52 rounded-full bg-violet-200/60 blur-3xl"
+                />
+                <motion.div
+                    aria-hidden
+                    animate={floatFast}
+                    transition={floatFastTransition}
+                    className="absolute right-0 top-20 h-40 w-40 sm:h-64 sm:w-64 rounded-full bg-amber-200/70 blur-3xl"
+                />
 
                 <div className="alc-container max-w-6xl relative">
                     <Link
@@ -439,7 +471,7 @@ export default function BankSoalDetail({ slug }) {
                                     href={contactInfo.whatsapp.link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex w-full items-center justify-center alc-button bg-gradient-to-r from-violet-600 to-amber-500 alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:from-violet-700 hover:to-amber-600 min-h-[44px]"
+                                    className="inline-flex w-full items-center justify-center alc-button bg-brand-primary alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:opacity-90 min-h-[44px]"
                                 >
                                     {t.startPractice}
                                     <svg
@@ -475,7 +507,7 @@ export default function BankSoalDetail({ slug }) {
                     <motion.div
                         initial="hidden"
                         whileInView="visible"
-                        viewport={{ once: true, amount: 0.2 }}
+                        viewport={{ once: false, amount: 0.2 }}
                         variants={stagger}
                         className="grid md:grid-cols-2 alc-gap-lg"
                     >
@@ -524,3 +556,4 @@ export default function BankSoalDetail({ slug }) {
         </>
     );
 }
+

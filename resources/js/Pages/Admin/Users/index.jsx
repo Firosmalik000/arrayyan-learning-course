@@ -177,7 +177,7 @@ export default function Users() {
                             <button
                                 type="button"
                                 onClick={() => setInviteModal(true)}
-                                className="rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:from-violet-800 hover:to-amber-500 sm:px-4 sm:py-2"
+                                className="rounded-full bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:opacity-90 sm:px-4 sm:py-2"
                             >
                                 Undang User
                             </button>
@@ -475,7 +475,7 @@ export default function Users() {
                         <button
                             type="submit"
                             disabled={editForm.processing}
-                            className="rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
+                            className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
                         >
                             Simpan
                         </button>
@@ -548,7 +548,7 @@ export default function Users() {
                         <button
                             type="submit"
                             disabled={inviteForm.processing}
-                            className="rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800"
+                            className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
                         >
                             Kirim Undangan
                         </button>

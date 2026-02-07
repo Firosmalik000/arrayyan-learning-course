@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\Admin\SeoController;
 use App\Models\PageContent;
 use App\Models\StudentRegistration;
 use App\Models\TeacherRegistration;
@@ -53,11 +54,22 @@ class HandleInertiaRequests extends Middleware
             'allowedMenus' => fn () => $this->getAllowedMenuIds($request),
             'allowedActions' => fn () => $this->getAllowedActions($request),
             'impersonation' => fn () => $this->getImpersonationState($request),
+            'seoSettings' => fn () => $this->getSeoSettings($request),
+            'url' => fn () => $request->url(),
         ];
     }
 
     private function getLogoUrl(): ?string
     {
+        // First try SEO settings (new centralized location)
+        $seoContent = PageContent::where('slug', 'seo-settings')->first()?->content;
+        $path = Arr::get($seoContent ?? [], 'contact.logo.path');
+
+        if ($path) {
+            return Storage::url($path);
+        }
+
+        // Fallback to legacy landing logo
         $content = PageContent::where('slug', 'logo')->first()?->content;
         $path = Arr::get($content ?? [], 'media.logo.path');
 
@@ -193,5 +205,11 @@ class HandleInertiaRequests extends Middleware
         }
 
         return $allowed;
+    }
+
+    private function getSeoSettings(Request $request): ?array
+    {
+        // Load SEO settings for all pages (colors apply to admin too)
+        return SeoController::getPublicSettings();
     }
 }

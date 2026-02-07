@@ -183,7 +183,7 @@ export default function PasskeyModal({ isOpen, onClose, targetUrl, correctPasske
                             <button
                                 type="submit"
                                 disabled={!passkey || isLoading}
-                                className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-violet-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-violet-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isLoading ? (
                                     <span className="flex items-center justify-center gap-2">

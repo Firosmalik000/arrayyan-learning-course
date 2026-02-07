@@ -85,6 +85,12 @@ class PermissionCatalog
             'section' => 'Administrator',
         ],
         [
+            'id' => 'seo',
+            'label' => 'SEO',
+            'description' => 'Pengaturan SEO website.',
+            'section' => 'Content',
+        ],
+        [
             'id' => 'pengaturan',
             'label' => 'Pengaturan',
             'description' => 'Konfigurasi aplikasi.',

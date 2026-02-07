@@ -1,13 +1,14 @@
-import { Head, Link } from '@inertiajs/react';
-import { motion } from 'framer-motion';
+import { Link, usePage } from '@inertiajs/react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useRef, useState } from 'react';
+import SeoHead from '@/Components/SeoHead';
 import SectionTitle from '@/Components/SectionTitle';
 import PasskeyModal from '@/Components/PasskeyModal';
 import { useI18n } from '@/lib/i18n';
 
 // Shared data
 import { fadeUp, stagger, icons, toneStyles } from '@/data';
-import { siteConfig, contactInfo, operatingHours, stats } from '@/data/content/site';
+import { siteConfig, stats } from '@/data/content/site';
 
 // Page-specific data
 import {
@@ -28,6 +29,11 @@ import { olympiadPasskey } from '../Olympiad/data';
 
 export default function Home({ landingContent }) {
     const { language } = useI18n();
+    const { seoSettings } = usePage().props;
+    const shouldReduceMotion = useReducedMotion();
+
+    // Get contact info from SEO settings (centralized source)
+    const seoContact = seoSettings?.contact || {};
 
     // State for Bank Soal passkey modal
     const [showBankSoalPasskey, setShowBankSoalPasskey] = useState(false);
@@ -97,8 +103,6 @@ export default function Home({ landingContent }) {
 
     const defaultContent = {
         siteConfig,
-        contactInfo,
-        operatingHours,
         stats,
         heroContent,
         featureCards,
@@ -125,9 +129,9 @@ export default function Home({ landingContent }) {
     };
 
     const landing = mergeContent(defaultContent, landingContent || {});
-    const socialCards = landing.contactInfo?.socials?.length
-        ? landing.contactInfo.socials
-        : defaultContent.contactInfo.socials;
+
+    // Use social media from SEO settings (centralized source)
+    const socialCards = seoContact.socials?.length ? seoContact.socials : [];
 
     // Get localized content
     const t = landing.sectionTitles[language] || landing.sectionTitles.id;
@@ -139,7 +143,18 @@ export default function Home({ landingContent }) {
     const programContentText = landing.programContent[language] || landing.programContent.id;
     const bank = landing.bankSoalContent[language] || landing.bankSoalContent.id;
     const olympiad = landing.olympiadContent[language] || landing.olympiadContent.id;
-    const hours = landing.operatingHours[language] || landing.operatingHours.id;
+
+    // Use operating hours from SEO settings (centralized source)
+    const hours = {
+        weekday: seoContact.operatingHours?.weekday?.[language] || seoContact.operatingHours?.weekday?.id || '',
+        weekend: seoContact.operatingHours?.weekend?.[language] || seoContact.operatingHours?.weekend?.id || '',
+    };
+
+    // Use address from SEO settings (centralized source)
+    const contactAddress = {
+        text: seoContact.address?.full?.[language] || seoContact.address?.full?.id || '',
+        mapLink: seoContact.address?.mapLink || '',
+    };
     const badges = landing.heroContent.badges[language] || landing.heroContent.badges.id;
     const heroPanel = {
         left: landing.heroContent.panels.left[language] || landing.heroContent.panels.left.id,
@@ -177,21 +192,32 @@ export default function Home({ landingContent }) {
     const heroImageAlt = localizeField(landing.media?.heroImage?.alt, language) || (language === 'en' ? 'ALC student' : 'Siswa ALC');
     const aboutImageAlt = localizeField(landing.media?.aboutImage?.alt, language) || (language === 'en' ? 'ALC class' : 'Kelas ALC');
     const galleryItems = landing.gallery?.items || [];
+    const floatSlow = shouldReduceMotion ? undefined : { y: [0, -16, 0] };
+    const floatFast = shouldReduceMotion ? undefined : { y: [0, -10, 0] };
+    const floatSlowTransition = shouldReduceMotion ? undefined : { duration: 8, repeat: Infinity, ease: 'easeInOut' };
+    const floatFastTransition = shouldReduceMotion ? undefined : { duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 };
 
     return (
         <>
-            <Head>
-                <title>Home</title>
-                <meta
-                    name="description"
-                    content="Ar Rayyan Learning Course (ALC) adalah lembaga pendidikan islami yang ramah anak dengan program belajar fleksibel untuk berbagai jenjang."
-                />
-            </Head>
+            <SeoHead
+                title="Home"
+                type="website"
+            />
 
             {/* Hero Section */}
             <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-amber-50 alc-pattern alc-section">
-                <div className="absolute -left-24 top-10 h-32 w-32 sm:h-52 sm:w-52 rounded-full bg-violet-200/60 blur-3xl" />
-                <div className="absolute right-0 top-20 h-40 w-40 sm:h-64 sm:w-64 rounded-full bg-amber-200/70 blur-3xl" />
+                <motion.div
+                    aria-hidden
+                    animate={floatSlow}
+                    transition={floatSlowTransition}
+                    className="absolute -left-24 top-10 h-32 w-32 sm:h-52 sm:w-52 rounded-full bg-violet-200/60 blur-3xl"
+                />
+                <motion.div
+                    aria-hidden
+                    animate={floatFast}
+                    transition={floatFastTransition}
+                    className="absolute right-0 top-20 h-40 w-40 sm:h-64 sm:w-64 rounded-full bg-amber-200/70 blur-3xl"
+                />
 
                 <div className="alc-container grid max-w-6xl alc-gap-lg lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
                     <motion.div
@@ -329,7 +355,7 @@ export default function Home({ landingContent }) {
                                     key={feature.title}
                                     initial={{ opacity: 0, y: 20 }}
                                     whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true, amount: 0.3 }}
+                                    viewport={{ once: false, amount: 0.3 }}
                                     transition={{ duration: 0.5 }}
                                     className="alc-card border border-slate-100 bg-white shadow-sm transition hover:shadow-md"
                                 >
@@ -362,7 +388,7 @@ export default function Home({ landingContent }) {
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, amount: 0.3 }}
+                            viewport={{ once: false, amount: 0.3 }}
                             transition={{ duration: 0.6 }}
                             className="relative"
                         >
@@ -454,7 +480,7 @@ export default function Home({ landingContent }) {
                         <motion.div
                             initial={{ opacity: 0, x: -30 }}
                             whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true, amount: 0.3 }}
+                            viewport={{ once: false, amount: 0.3 }}
                             transition={{ duration: 0.6 }}
                             whileHover={{ y: -4 }}
                             className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-amber-200/80 bg-gradient-to-br from-amber-50 via-amber-100/60 to-yellow-50 p-6 sm:p-8 shadow-lg transition-shadow hover:shadow-xl"
@@ -480,7 +506,7 @@ export default function Home({ landingContent }) {
                                         key={level}
                                         initial={{ opacity: 0, x: -10 }}
                                         whileInView={{ opacity: 1, x: 0 }}
-                                        viewport={{ once: true }}
+                                        viewport={{ once: false }}
                                         transition={{ delay: index * 0.08 }}
                                         className="flex items-center gap-3 rounded-xl bg-white/70 px-4 py-2.5 shadow-sm border border-amber-100/60"
                                     >
@@ -497,7 +523,7 @@ export default function Home({ landingContent }) {
                         <motion.div
                             initial={{ opacity: 0, x: 30 }}
                             whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true, amount: 0.3 }}
+                            viewport={{ once: false, amount: 0.3 }}
                             transition={{ duration: 0.6, delay: 0.15 }}
                             whileHover={{ y: -4 }}
                             className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-violet-200/80 bg-gradient-to-br from-violet-50 via-violet-100/60 to-indigo-50 p-6 sm:p-8 shadow-lg transition-shadow hover:shadow-xl"
@@ -524,7 +550,7 @@ export default function Home({ landingContent }) {
                                         key={subject}
                                         initial={{ opacity: 0, scale: 0.8 }}
                                         whileInView={{ opacity: 1, scale: 1 }}
-                                        viewport={{ once: true }}
+                                        viewport={{ once: false }}
                                         transition={{ delay: index * 0.06 }}
                                         whileHover={{ scale: 1.05 }}
                                         className="rounded-xl bg-white/80 border border-violet-200/60 px-4 py-2 text-sm font-semibold text-violet-700 shadow-sm transition-colors hover:bg-violet-100/80 hover:text-violet-800"
@@ -550,7 +576,7 @@ export default function Home({ landingContent }) {
                     <motion.div
                         initial="hidden"
                         whileInView="visible"
-                        viewport={{ once: true, amount: 0.2 }}
+                        viewport={{ once: false, amount: 0.2 }}
                         variants={stagger}
                         className="mt-8 sm:mt-10 grid alc-gap-md md:grid-cols-3"
                     >
@@ -670,7 +696,7 @@ export default function Home({ landingContent }) {
                     <motion.div
                         initial="hidden"
                         whileInView="visible"
-                        viewport={{ once: true, amount: 0.2 }}
+                        viewport={{ once: false, amount: 0.2 }}
                         variants={stagger}
                         className="mt-4 flex gap-3 overflow-x-auto pb-3"
                         ref={galleryRef}
@@ -743,7 +769,7 @@ export default function Home({ landingContent }) {
                     <motion.div
                         initial="hidden"
                         whileInView="visible"
-                        viewport={{ once: true, amount: 0.2 }}
+                        viewport={{ once: false, amount: 0.2 }}
                         variants={stagger}
                         className="mt-8 sm:mt-10 grid alc-gap-md md:grid-cols-2"
                     >
@@ -860,7 +886,7 @@ export default function Home({ landingContent }) {
                     <motion.div
                         initial="hidden"
                         whileInView="visible"
-                        viewport={{ once: true, amount: 0.2 }}
+                        viewport={{ once: false, amount: 0.2 }}
                         variants={stagger}
                         className="mt-8 sm:mt-10 grid alc-gap-md md:grid-cols-2"
                     >
@@ -1023,7 +1049,7 @@ export default function Home({ landingContent }) {
                                     rel={isExternal ? 'noopener noreferrer' : undefined}
                                     initial={{ opacity: 0, y: 20 }}
                                     whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true, amount: 0.3 }}
+                                    viewport={{ once: false, amount: 0.3 }}
                                     transition={{ duration: 0.5, delay: index * 0.1 }}
                                     className="group flex flex-col items-center alc-card border border-slate-100 bg-white shadow-sm transition hover:shadow-lg hover:-translate-y-1"
                                 >
@@ -1043,7 +1069,7 @@ export default function Home({ landingContent }) {
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, amount: 0.3 }}
+                            viewport={{ once: false, amount: 0.3 }}
                             transition={{ duration: 0.5, delay: 0.3 }}
                             className="flex flex-col items-center alc-card border border-amber-100 bg-white shadow-sm"
                         >
@@ -1061,7 +1087,7 @@ export default function Home({ landingContent }) {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, amount: 0.3 }}
+                        viewport={{ once: false, amount: 0.3 }}
                         transition={{ duration: 0.5, delay: 0.4 }}
                         className="mt-8 sm:mt-10 alc-card border border-slate-100 bg-white shadow-sm"
                     >
@@ -1074,17 +1100,19 @@ export default function Home({ landingContent }) {
                                     {language === 'en' ? 'Office Address' : 'Alamat Kantor'}
                                 </p>
                                 <p className="mt-1 alc-body-sm text-slate-500">
-                                    {landing.contactInfo.address[language] || landing.contactInfo.address.id}
+                                    {contactAddress.text || '-'}
                                 </p>
                             </div>
-                            <a
-                                href={landing.contactInfo.address.mapLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center alc-button border border-violet-200 bg-white alc-body-sm font-semibold text-violet-700 transition hover:bg-violet-50 hover:border-violet-300 min-h-[44px] flex-shrink-0"
-                            >
-                                {cta.viewMap}
-                            </a>
+                            {contactAddress.mapLink && (
+                                <a
+                                    href={contactAddress.mapLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center alc-button border border-violet-200 bg-white alc-body-sm font-semibold text-violet-700 transition hover:bg-violet-50 hover:border-violet-300 min-h-[44px] flex-shrink-0"
+                                >
+                                    {cta.viewMap}
+                                </a>
+                            )}
                         </div>
                     </motion.div>
                 </div>
@@ -1122,3 +1150,4 @@ export default function Home({ landingContent }) {
         </>
     );
 }
+

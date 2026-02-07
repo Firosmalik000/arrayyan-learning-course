@@ -13,7 +13,7 @@ export default function Login() {
     });
 
     const inputClass =
-        'w-full border-b border-slate-200 bg-transparent pb-2 text-sm text-slate-700 outline-none transition focus:border-violet-500';
+        'w-full border-b border-slate-200 bg-transparent pb-2 text-sm text-slate-700 outline-none transition focus:border-brand-primary';
 
     return (
         <>
@@ -24,7 +24,7 @@ export default function Login() {
                         href="/"
                         className="flex items-center gap-2 font-semibold text-slate-500 lg:hidden"
                     >
-                        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-soft text-brand-primary">
                             ALC
                         </span>
                         Ar Rayyan LC
@@ -36,7 +36,7 @@ export default function Login() {
                 </div>
 
                 <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-violet-600">
+                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-brand-primary">
                         {isAdmin ? 'Admin Access' : 'Member Access'}
                     </p>
                     <h1 className="text-2xl font-semibold text-slate-800">
@@ -52,18 +52,18 @@ export default function Login() {
                 <div className="grid gap-3 sm:grid-cols-2">
                     <button
                         type="button"
-                        className="flex items-center justify-center gap-3 rounded-full border border-violet-200 bg-white px-4 py-2 text-xs font-semibold text-violet-700 shadow-sm transition hover:border-violet-300"
+                        className="flex items-center justify-center gap-3 rounded-full border border-brand-soft bg-white px-4 py-2 text-xs font-semibold text-brand-primary shadow-sm transition hover:border-brand-soft"
                     >
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-100 text-sm font-bold text-violet-700">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand-primary">
                             f
                         </span>
                         Masuk dengan Facebook
                     </button>
                     <button
                         type="button"
-                        className="flex items-center justify-center gap-3 rounded-full border border-violet-200 bg-white px-4 py-2 text-xs font-semibold text-violet-700 shadow-sm transition hover:border-violet-300"
+                        className="flex items-center justify-center gap-3 rounded-full border border-brand-soft bg-white px-4 py-2 text-xs font-semibold text-brand-primary shadow-sm transition hover:border-brand-soft"
                     >
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-bold text-violet-700 shadow-sm">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-bold text-brand-primary shadow-sm">
                             G
                         </span>
                         Masuk dengan Google
@@ -137,11 +137,11 @@ export default function Login() {
                                         event.target.checked
                                     )
                                 }
-                                className="h-4 w-4 rounded border-slate-300 text-violet-600"
+                                className="h-4 w-4 rounded border-slate-300 text-brand-primary"
                             />
                             Ingat saya
                         </label>
-                        <Link href="#" className="text-violet-700">
+                        <Link href="#" className="text-brand-primary">
                             Lupa password?
                         </Link>
                     </div>
@@ -149,7 +149,7 @@ export default function Login() {
                     <button
                         type="submit"
                         disabled={form.processing}
-                        className="w-full rounded-full bg-gradient-to-r from-violet-700 to-amber-400 px-5 py-3 text-sm font-semibold text-white shadow transition hover:from-violet-800 hover:to-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="w-full rounded-full bg-brand-primary px-5 py-3 text-sm font-semibold text-white shadow transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {form.processing ? 'Memproses...' : 'Masuk Sekarang'}
                     </button>
@@ -157,7 +157,7 @@ export default function Login() {
 
                 <p className="text-center text-xs text-slate-500">
                     Belum punya akun?{' '}
-                    <span className="font-semibold text-violet-700">
+                    <span className="font-semibold text-brand-primary">
                         Hubungi admin ALC
                     </span>
                 </p>

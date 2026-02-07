@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Admin\SeoController;
 use App\Models\BankSoal;
 use App\Models\Olympiad;
 use App\Models\PageContent;
@@ -54,6 +55,7 @@ class LandingContentController extends Controller
             'programs' => $content['programs'],
             'bankSoalItems' => $content['bankSoalItems'],
             'olympiadHighlights' => $content['olympiadHighlights'],
+            'seoSettings' => SeoController::getPublicSettings(),
         ]);
     }
 

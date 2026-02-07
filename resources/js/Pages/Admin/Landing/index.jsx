@@ -29,8 +29,7 @@ const tabs = [
     { id: 'bank-soal', label: 'Bank Soal' },
     { id: 'olimpiade', label: 'Olimpiade' },
     { id: 'cta', label: 'CTA' },
-    { id: 'contact', label: 'Contact' },
-    { id: 'logo', label: 'Logo' },
+    { id: 'contact', label: 'Contact', readOnly: true },
 ];
 
 const iconOptions = [
@@ -307,7 +306,7 @@ function SelectInput({ label, value, onChange, options }) {
         </div>
     );
 }
-export default function Landing({ landingContent, programs = [], bankSoalItems = [], olympiadHighlights = [] }) {
+export default function Landing({ landingContent, programs = [], bankSoalItems = [], olympiadHighlights = [], seoSettings }) {
     const [activeTab, setActiveTab] = useState('hero');
     const [lang, setLang] = useState('id');
 
@@ -1604,146 +1603,117 @@ export default function Landing({ landingContent, programs = [], bankSoalItems =
                             </div>
                         </Card>
 
-                        <div className="grid gap-5 lg:grid-cols-2">
-                            <Card>
-                                <CardHeader title="Sosial Media" subtitle="Kontak dan social link" />
-                                <div className="space-y-3">
-                                    {(content.contactInfo.socials || []).map((social, index) => (
-                                        <ItemCard
-                                            key={social.key || `social-${index}`}
-                                            title={social.label?.[lang] || social.key || `Sosial ${index + 1}`}
-                                            onDelete={() =>
-                                                updateContent(
-                                                    'contactInfo.socials',
-                                                    content.contactInfo.socials.filter((_, i) => i !== index),
-                                                )
-                                            }
-                                        >
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <FieldLabel>Key</FieldLabel>
-                                                    <input
-                                                        type="text"
-                                                        value={social.key || ''}
-                                                        onChange={(e) => updateContent(`contactInfo.socials.${index}.key`, e.target.value)}
-                                                        className={inputClass}
-                                                        placeholder="contoh: facebook"
-                                                    />
-                                                </div>
-                                                <LocalizedField
-                                                    label="Label"
-                                                    value={social.label?.[lang]}
-                                                    onChange={(value) => updateContent(`contactInfo.socials.${index}.label.${lang}`, value)}
-                                                />
-                                                <div className="grid gap-4 sm:grid-cols-2">
-                                                    <div>
-                                                        <FieldLabel>Value</FieldLabel>
-                                                        <input
-                                                            type="text"
-                                                            value={social.value || ''}
-                                                            onChange={(e) => updateContent(`contactInfo.socials.${index}.value`, e.target.value)}
-                                                            className={inputClass}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <FieldLabel>Link</FieldLabel>
-                                                        <input
-                                                            type="text"
-                                                            value={social.link || ''}
-                                                            onChange={(e) => updateContent(`contactInfo.socials.${index}.link`, e.target.value)}
-                                                            className={inputClass}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="grid gap-4 sm:grid-cols-2">
-                                                    <SelectInput
-                                                        label="Icon"
-                                                        value={social.icon}
-                                                        onChange={(value) => updateContent(`contactInfo.socials.${index}.icon`, value)}
-                                                        options={iconOptions}
-                                                    />
-                                                    <SelectInput
-                                                        label="Tone"
-                                                        value={social.tone}
-                                                        onChange={(value) => updateContent(`contactInfo.socials.${index}.tone`, value)}
-                                                        options={toneOptions}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </ItemCard>
-                                    ))}
-                                    <AddButton
-                                        label="Tambah Sosial"
-                                        onClick={() =>
-                                            updateContent('contactInfo.socials', [
-                                                ...(content.contactInfo.socials || []),
-                                                {
-                                                    key: '',
-                                                    label: { id: '', en: '' },
-                                                    value: '',
-                                                    link: '',
-                                                    icon: 'phone',
-                                                    tone: 'slate',
-                                                },
-                                            ])
-                                        }
-                                    />
-                                </div>
-                            </Card>
-
-                            <Card>
-                                <CardHeader title="Alamat & Jam Operasional" subtitle="Alamat dan jam layanan" />
-                                <div className="space-y-4">
-                                    <LocalizedField
-                                        label="Alamat"
-                                        value={content.contactInfo.address?.[lang]}
-                                        onChange={(value) => updateContent(`contactInfo.address.${lang}`, value)}
-                                        textarea
-                                        rows={2}
-                                    />
-                                    <div>
-                                        <FieldLabel>Map Link</FieldLabel>
-                                        <input
-                                            type="text"
-                                            value={content.contactInfo.address?.mapLink || ''}
-                                            onChange={(e) => updateContent('contactInfo.address.mapLink', e.target.value)}
-                                            className={inputClass}
-                                        />
-                                    </div>
-                                    <LocalizedField
-                                        label="Jam Kerja (Weekday)"
-                                        value={content.operatingHours?.[lang]?.weekday}
-                                        onChange={(value) => updateContent(`operatingHours.${lang}.weekday`, value)}
-                                    />
-                                    <LocalizedField
-                                        label="Jam Kerja (Weekend)"
-                                        value={content.operatingHours?.[lang]?.weekend}
-                                        onChange={(value) => updateContent(`operatingHours.${lang}.weekend`, value)}
-                                    />
-                                </div>
-                            </Card>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'logo' && (
-                    <div className="space-y-6">
+                        {/* Read-only contact info from SEO Settings */}
                         <Card>
                             <CardHeader
-                                title="Logo Website"
-                                subtitle="Logo ini digunakan di navbar & footer halaman publik, serta sidebar admin dashboard."
+                                title="Data Kontak (Read-only)"
+                                subtitle={
+                                    <>
+                                        Data kontak dikelola di{' '}
+                                        <Link href="/admin/seo" className="text-violet-600 hover:underline font-medium">
+                                            SEO Settings
+                                        </Link>{' '}
+                                        sebagai sumber data terpusat.
+                                    </>
+                                }
                             />
-                            <ImageUpload
-                                label="Upload Logo"
-                                description="Format: JPG, PNG, SVG. Maks 3MB. Rekomendasi: gambar persegi atau transparan."
-                                previewUrl={logoPreview}
-                                onChange={updateLogo}
-                                onClear={() => {
-                                    setData('logo', null);
-                                    updateContent('media.logo', { url: null, path: null });
-                                }}
-                            />
+                            <div className="space-y-4">
+                                {/* Logo Preview */}
+                                {seoSettings?.contact?.logo?.url && (
+                                    <div>
+                                        <FieldLabel>Logo</FieldLabel>
+                                        <div className="mt-1.5 flex items-center gap-3">
+                                            <img
+                                                src={seoSettings.contact.logo.url}
+                                                alt="Logo"
+                                                className="h-12 w-12 rounded-lg border border-slate-200 object-contain"
+                                            />
+                                            <span className="text-sm text-slate-500">Dikelola di SEO Settings</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Phone & Email */}
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <FieldLabel>Telepon</FieldLabel>
+                                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
+                                            {seoSettings?.contact?.phone || '-'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <FieldLabel>Email</FieldLabel>
+                                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
+                                            {seoSettings?.contact?.email || '-'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Address */}
+                                <div>
+                                    <FieldLabel>Alamat ({lang.toUpperCase()})</FieldLabel>
+                                    <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
+                                        {seoSettings?.contact?.address?.full?.[lang] || '-'}
+                                    </div>
+                                </div>
+
+                                {/* Operating Hours */}
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <FieldLabel>Jam Kerja Weekday ({lang.toUpperCase()})</FieldLabel>
+                                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
+                                            {seoSettings?.contact?.operatingHours?.weekday?.[lang] || '-'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <FieldLabel>Jam Kerja Weekend ({lang.toUpperCase()})</FieldLabel>
+                                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
+                                            {seoSettings?.contact?.operatingHours?.weekend?.[lang] || '-'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Social Links */}
+                                <div>
+                                    <FieldLabel>Social Media</FieldLabel>
+                                    <div className="space-y-2 mt-1.5">
+                                        {(seoSettings?.contact?.socials || []).length > 0 ? (
+                                            seoSettings.contact.socials.map((social, index) => (
+                                                <div
+                                                    key={social.key || `social-${index}`}
+                                                    className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+                                                >
+                                                    <span className="text-xs font-medium text-slate-500 uppercase w-20">{social.key || '-'}</span>
+                                                    <span className="text-sm text-slate-700">{social.label?.[lang] || social.value || '-'}</span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm text-slate-500 italic">
+                                                Belum ada data social media
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </Card>
+
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                            <div className="flex items-start gap-3">
+                                <svg className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                </svg>
+                                <div>
+                                    <p className="text-sm font-medium text-amber-800">Data Terpusat di SEO Settings</p>
+                                    <p className="mt-1 text-sm text-amber-700">
+                                        Untuk mengedit logo, kontak, alamat, dan social media, silakan ke halaman{' '}
+                                        <Link href="/admin/seo" className="font-semibold underline">
+                                            SEO Settings
+                                        </Link>
+                                        . Data ini akan otomatis ditampilkan di halaman publik.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

@@ -16,6 +16,7 @@ class StudentRegistration extends Model
         'school_name',
         'level',
         'subjects',
+        'program_id',
         'program',
         'package',
         'parent_contact',
@@ -46,5 +47,10 @@ class StudentRegistration extends Model
     public function rejector(): BelongsTo
     {
         return $this->belongsTo(User::class, 'rejected_by');
+    }
+
+    public function programItem(): BelongsTo
+    {
+        return $this->belongsTo(Program::class, 'program_id');
     }
 }

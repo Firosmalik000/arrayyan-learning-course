@@ -22,12 +22,6 @@ export const pageContent = {
     },
 };
 
-export const programOptions = [
-    { value: 'reguler', label: { id: 'Reguler', en: 'Regular' } },
-    { value: 'privat', label: { id: 'Privat', en: 'Private' } },
-    { value: 'persiapan_ujian_olimpiade', label: { id: 'Persiapan Ujian/Olimpiade', en: 'Exam/Olympiad Preparation' } },
-];
-
 export const packageOptions = [
     { value: '8', label: '8 pertemuan/bulan' },
     { value: '12', label: '12 pertemuan/bulan' },
@@ -92,7 +86,7 @@ export const initialStudentForm = {
     school_name: '',
     level: '',
     subjects: '',
-    program: '',
+    program_id: '',
     package: '',
     parent_contact: '',
     preferred_mode: '',

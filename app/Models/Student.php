@@ -16,6 +16,7 @@ class Student extends Model
         'school_name',
         'level',
         'subjects',
+        'program_id',
         'program',
         'package',
         'parent_contact',
@@ -41,5 +42,10 @@ class Student extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function programItem(): BelongsTo
+    {
+        return $this->belongsTo(Program::class, 'program_id');
     }
 }
