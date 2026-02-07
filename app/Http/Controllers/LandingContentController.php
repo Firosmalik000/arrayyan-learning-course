@@ -70,6 +70,31 @@ class LandingContentController extends Controller
         ]);
     }
 
+    public function programs(): Response
+    {
+        $content = $this->loadLandingContent();
+        $content['programs'] = $this->getPrograms(true);
+
+        return Inertia::render('Public/Program', [
+            'landingContent' => $this->withMediaUrls($content),
+            'programs' => $content['programs'],
+        ]);
+    }
+
+    public function programDetail(int $program): Response
+    {
+        $content = $this->loadLandingContent();
+        $record = Program::query()
+            ->whereKey($program)
+            ->where('is_active', true)
+            ->first();
+
+        return Inertia::render('Public/Program/Detail', [
+            'landingContent' => $this->withMediaUrls($content),
+            'program' => $record ? $this->formatProgram($record) : null,
+        ]);
+    }
+
     public function update(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -381,16 +406,24 @@ class LandingContentController extends Controller
             $query->where('is_active', true);
         }
 
-        return $query->latest()->get()->map(function (Program $program) {
-            return [
-                'id' => $program->id,
-                'name' => $program->name,
-                'level' => $program->level,
-                'description' => $program->description,
-                'subjects' => $program->subjects ?? [],
-                'is_active' => $program->is_active,
-            ];
-        })->values()->all();
+        return $query->latest()->get()
+            ->map(fn (Program $program) => $this->formatProgram($program))
+            ->values()
+            ->all();
+    }
+
+    private function formatProgram(Program $program): array
+    {
+        return [
+            'id' => $program->id,
+            'name' => $program->name,
+            'level' => $program->level,
+            'description' => $program->description,
+            'subjects' => $program->subjects ?? [],
+            'mode' => $program->mode,
+            'image_url' => $program->image_path ? Storage::url($program->image_path) : null,
+            'is_active' => $program->is_active,
+        ];
     }
 
     private function getOlympiadHighlights(bool $onlyActive = false): array

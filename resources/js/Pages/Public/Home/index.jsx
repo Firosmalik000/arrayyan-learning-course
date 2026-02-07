@@ -101,6 +101,14 @@ export default function Home({ landingContent }) {
         return value[lang] || value.id || [];
     };
 
+    const formatModeLabel = (value) => {
+        if (!value) return null;
+        const normalized = String(value).toLowerCase();
+        if (normalized === 'online') return 'Online';
+        if (normalized === 'offline') return 'Offline';
+        return value;
+    };
+
     const defaultContent = {
         siteConfig,
         stats,
@@ -174,6 +182,7 @@ export default function Home({ landingContent }) {
                 mode: localizeField(item.mode, language),
                 description: localizeField(item.description, language),
                 subjects: localizeList(item.highlights, language),
+                imageUrl: item.image_url || null,
             };
         }
 
@@ -182,11 +191,14 @@ export default function Home({ landingContent }) {
             name: item.name,
             level: item.level,
             sessions: item.sessions ? `${item.sessions} sesi` : null,
-            mode: null,
+            mode: item.mode || null,
             description: item.description,
             subjects: item.subjects || [],
+            imageUrl: item.image_url || null,
         };
     });
+    const programPreview = programItems.slice(0, 3);
+    const hasMorePrograms = programItems.length > 3;
     const heroImageUrl = landing.media?.heroImage?.url || landing.media?.heroImage?.path || '/images/hero-student.jpg';
     const aboutImageUrl = landing.media?.aboutImage?.url || landing.media?.aboutImage?.path || '/images/about-class.jpg';
     const heroImageAlt = localizeField(landing.media?.heroImage?.alt, language) || (language === 'en' ? 'ALC student' : 'Siswa ALC');
@@ -578,64 +590,121 @@ export default function Home({ landingContent }) {
                         whileInView="visible"
                         viewport={{ once: false, amount: 0.2 }}
                         variants={stagger}
-                        className="mt-8 sm:mt-10 grid alc-gap-md md:grid-cols-3"
+                        className="mt-8 sm:mt-10"
                     >
-                        {programItems.map((item) => {
-                            const isGold = item.id === 'reguler' || item.id === 'olimpiade';
-                            const borderColor = isGold ? 'border-amber-300' : 'border-violet-300';
-                            const accentBar = isGold
-                                ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400'
-                                : 'bg-gradient-to-r from-violet-400 via-indigo-400 to-violet-400';
-                            return (
-                            <motion.div
-                                key={item.id}
-                                variants={fadeUp}
-                                whileHover={{ y: -6 }}
-                                className={`relative overflow-hidden alc-card border-2 ${borderColor} bg-white shadow-sm transition hover:shadow-md`}
-                            >
-                                <div className={`absolute top-0 left-0 h-1 w-full ${accentBar}`} />
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between alc-gap-sm">
-                                    <h3 className="font-display alc-card-title font-semibold text-slate-800">
-                                        {item.name}
-                                    </h3>
-                                    <span className="self-start sm:self-auto alc-pill bg-amber-100/70 alc-caption font-semibold text-amber-700">
-                                        {item.mode || item.level}
-                                    </span>
-                                </div>
-                                <p className="mt-3 sm:mt-4 alc-body-sm text-slate-600">
-                                    {item.description || programContentText.fallbackDescription}
-                                </p>
-                                <div className="mt-3 sm:mt-4 flex flex-col alc-gap-sm alc-body-sm text-slate-600 border-t border-slate-100 pt-3 sm:pt-4">
-                                    {item.level && (
-                                        <p>
-                                            <span className="font-semibold text-slate-700">
-                                                {programContentText.levelLabel}:
-                                            </span>{' '}
-                                            {item.level}
-                                        </p>
-                                    )}
-                                    {item.sessions && (
-                                        <p>
-                                            <span className="font-semibold text-slate-700">
-                                                {programContentText.sessionsLabel}:
-                                            </span>{' '}
-                                            {item.sessions}
-                                        </p>
-                                    )}
-                                    {Array.isArray(item.subjects) && item.subjects.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {item.subjects.map((subject) => (
-                                                <span key={`${item.id}-${subject}`} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
-                                                    {subject}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </motion.div>
-                            );
-                        })}
+                        {programPreview.length > 0 ? (
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {programPreview.map((item) => {
+                                    const modeLabel = formatModeLabel(item.mode);
+                                    const description = item.description || programContentText.fallbackDescription;
+                                    return (
+                                        <motion.div
+                                            key={item.id}
+                                            variants={fadeUp}
+                                            whileHover={{ y: -6 }}
+                                            className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
+                                        >
+                                            <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
+                                                {item.imageUrl ? (
+                                                    <img
+                                                        src={item.imageUrl}
+                                                        alt={item.name}
+                                                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                                                        loading="lazy"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-100 via-white to-amber-100 text-violet-600">
+                                                        <span className="text-2xl font-semibold">
+                                                            {item.name?.charAt(0) || 'A'}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/45 via-transparent to-transparent" />
+                                                <div className="absolute right-3 top-3 flex flex-wrap items-center gap-2">
+                                                    {modeLabel && (
+                                                        <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
+                                                            {modeLabel}
+                                                        </span>
+                                                    )}
+                                                    {item.level && (
+                                                        <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
+                                                            {item.level}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex h-full flex-col gap-3 p-5">
+                                                <div>
+                                                    <h3 className="font-display text-base font-semibold text-slate-800">
+                                                        {item.name}
+                                                    </h3>
+                                                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                                                        {description}
+                                                    </p>
+                                                </div>
+                                                <div className="grid gap-2 text-xs text-slate-600">
+                                                    {item.level && (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-semibold text-slate-700">
+                                                                {programContentText.levelLabel}:
+                                                            </span>
+                                                            <span>{item.level}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.sessions && (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-semibold text-slate-700">
+                                                                {programContentText.sessionsLabel}:
+                                                            </span>
+                                                            <span>{item.sessions}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {Array.isArray(item.subjects) && item.subjects.length > 0 && (
+                                                    <div className="mt-auto flex flex-wrap gap-2">
+                                                        {item.subjects.slice(0, 3).map((subject) => (
+                                                            <span
+                                                                key={`${item.id}-${subject}`}
+                                                                className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
+                                                            >
+                                                                {subject}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                <Link
+                                                    href={`/program/${item.id}`}
+                                                    className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-violet-700 transition hover:text-violet-800"
+                                                >
+                                                    {language === 'en' ? 'View Detail' : 'Lihat Detail'}
+                                                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 5l7 7-7 7" />
+                                                    </svg>
+                                                </Link>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center text-sm text-slate-500">
+                                {language === 'en' ? 'Programs will be available soon.' : 'Program akan segera tersedia.'}
+                            </div>
+                        )}
                     </motion.div>
+                    {hasMorePrograms && (
+                        <div className="mt-6 flex justify-center">
+                            <Link
+                                href="/program"
+                                className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white px-5 py-2.5 text-sm font-semibold text-violet-700 shadow-sm transition hover:border-violet-300 hover:text-violet-800"
+                            >
+                                {language === 'en' ? 'View All Programs' : 'Lihat Semua Program'}
+                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 5l7 7-7 7" />
+                                </svg>
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </section>
 

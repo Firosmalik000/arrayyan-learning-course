@@ -54,7 +54,6 @@ const getMenu = (pendingCounts, allowedMenus) => {
                 { href: '/admin/users', label: 'User', icon: 'users', menuId: 'users' },
             ],
         },
-        { href: '/admin/pengaturan', label: 'Pengaturan', icon: 'settings', menuId: 'pengaturan' },
     ];
 
     return menu.flatMap((item) => {
@@ -171,21 +170,6 @@ const icons = {
         >
             <circle cx="12" cy="8" r="3.5" />
             <path d="M4 20a8 8 0 0 1 16 0" />
-        </svg>
-    ),
-    settings: (
-        <svg
-            viewBox="0 0 24 24"
-            className="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-        >
-            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
-            <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.86l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.86-.34 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.86.34l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.6-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.34-1.86l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 8 4.6a1.7 1.7 0 0 0 1-1.6V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.86-.34l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c0 .66.26 1.3.73 1.77.47.47 1.1.73 1.77.73H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
         </svg>
     ),
     shield: (
@@ -705,14 +689,6 @@ export default function AdminLayout({ children }) {
                                             >
                                                 {icons.profile}
                                                 Profil Saya
-                                            </Link>
-                                            <Link
-                                                href="/admin/pengaturan"
-                                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition hover:bg-slate-50"
-                                                onClick={() => setIsProfileOpen(false)}
-                                            >
-                                                {icons.settings}
-                                                Pengaturan
                                             </Link>
                                             <Link
                                                 href="/admin/help"

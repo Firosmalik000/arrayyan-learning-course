@@ -74,6 +74,9 @@ Route::get('/pendaftaran', fn () => Inertia::render('Public/Register', [
         ->orderBy('name')
         ->get(['id', 'name', 'level']),
 ]))->name('register');
+Route::get('/program', [LandingContentController::class, 'programs'])->name('programs');
+Route::get('/program/{program}', [LandingContentController::class, 'programDetail'])
+    ->name('programs.detail');
 Route::get('/bank-soal', [LandingContentController::class, 'bankSoal'])->name('banksoal');
 Route::get('/bank-soal/{slug}', function ($slug) {
     $bankSoal = BankSoal::query()
@@ -217,9 +220,6 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::put('/seo', [SeoController::class, 'update'])
         ->middleware('role_or_permission:administrator|seo.edit,admin')
         ->name('seo.update');
-    Route::get('/pengaturan', fn () => Inertia::render('Admin/Settings'))
-        ->middleware('role_or_permission:administrator|pengaturan.view,admin')
-        ->name('settings');
     Route::get('/akses-menu', [AccessMenuController::class, 'index'])
         ->middleware('role_or_permission:administrator|akses-menu.view,admin')
         ->name('access-menu');

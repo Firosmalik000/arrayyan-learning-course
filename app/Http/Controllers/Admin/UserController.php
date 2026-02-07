@@ -295,7 +295,6 @@ class UserController extends Controller
             'akses-menu' => 'admin.access-menu',
             'roles' => 'admin.roles',
             'users' => 'admin.users',
-            'pengaturan' => 'admin.settings',
             default => null,
         };
     }

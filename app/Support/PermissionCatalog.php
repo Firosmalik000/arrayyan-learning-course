@@ -90,12 +90,6 @@ class PermissionCatalog
             'description' => 'Pengaturan SEO website.',
             'section' => 'Content',
         ],
-        [
-            'id' => 'pengaturan',
-            'label' => 'Pengaturan',
-            'description' => 'Konfigurasi aplikasi.',
-            'section' => 'System',
-        ],
     ];
 
     public static function permissionNames(): array
