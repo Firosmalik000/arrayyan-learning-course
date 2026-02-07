@@ -19,6 +19,7 @@ class Olympiad extends Model
         'category',
         'fee',
         'notes',
+        'image_path',
         'is_active',
     ];
 

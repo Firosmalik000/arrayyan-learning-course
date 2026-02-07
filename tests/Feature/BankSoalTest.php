@@ -116,6 +116,35 @@ class BankSoalTest extends TestCase
         );
     }
 
+    public function test_public_detail_page_shows_links(): void
+    {
+        $bankSoal = BankSoal::create([
+            'slug' => 'matematika-sd-paket-1',
+            'name' => ['id' => 'Matematika SD - Paket 1', 'en' => 'Math SD - Package 1'],
+            'category' => ['id' => 'Matematika', 'en' => 'Math'],
+            'level' => ['id' => 'SD', 'en' => 'Elementary'],
+            'format' => 'Online',
+            'questions' => 120,
+            'description' => ['id' => 'Latihan soal matematika', 'en' => 'Math practice'],
+            'links' => [
+                ['id' => 1, 'label' => 'Kelas 1', 'link' => 'https://example.com/kelas-1'],
+                ['id' => 2, 'label' => 'Kelas 2', 'link' => 'https://example.com/kelas-2'],
+            ],
+            'tone' => 'violet',
+            'is_active' => true,
+        ]);
+
+        $response = $this->get("/bank-soal/{$bankSoal->slug}");
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Public/BankSoal/Detail', false)
+            ->where('bankSoal.slug', 'matematika-sd-paket-1')
+            ->where('bankSoal.links.0.label', 'Kelas 1')
+            ->where('bankSoal.links.1.label', 'Kelas 2')
+        );
+    }
+
     public function test_admin_bank_soal_routes_require_auth(): void
     {
         $this->post('/admin/bank-soal', [])->assertRedirect('/login');

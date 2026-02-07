@@ -1,5 +1,5 @@
-import { Head, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, useForm, usePage, router } from '@inertiajs/react';
+import { useMemo, useState } from 'react';
 
 const normalizeSubjects = (value) => {
     if (Array.isArray(value)) return value.filter(Boolean);
@@ -18,7 +18,11 @@ const statusStyles = {
 };
 
 const statusOptions = ['Aktif', 'Nonaktif'];
-const modeOptions = ['Offline', 'Online', 'Hybrid', 'Offline / Online', 'Offline / Hybrid'];
+const programModeOptions = [
+    { value: 'offline', label: 'Offline' },
+    { value: 'online', label: 'Online' },
+];
+const packageModeOptions = ['Offline', 'Online', 'Hybrid', 'Offline / Online', 'Offline / Hybrid'];
 const levelOptions = ['Pra TK', 'TK', 'SD', 'SMP', 'SMA', 'Pra TK - SMA', 'TK - SMA', 'SD - SMA'];
 
 // Icons
@@ -46,6 +50,12 @@ const icons = {
     warning: (
         <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        </svg>
+    ),
+    eye: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
     ),
 };
@@ -115,9 +125,15 @@ function FormSelect({ label, value, onChange, options, required }) {
                 required={required}
             >
                 <option value="">Pilih {label}</option>
-                {options.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                ))}
+                {options.map((opt) => {
+                    const optionValue = typeof opt === 'string' ? opt : opt.value;
+                    const optionLabel = typeof opt === 'string' ? opt : opt.label;
+                    return (
+                        <option key={optionValue} value={optionValue}>
+                            {optionLabel}
+                        </option>
+                    );
+                })}
             </select>
         </div>
     );
@@ -139,24 +155,40 @@ function FormTextarea({ label, value, onChange, placeholder, rows = 3 }) {
     );
 }
 
+const normalizeModeValue = (value) => (value ? value.toString().trim().toLowerCase() : '');
+
+const formatModeLabel = (value) => {
+    const normalized = normalizeModeValue(value);
+    if (normalized === 'online') return 'Online';
+    if (normalized === 'offline') return 'Offline';
+    return value || '-';
+};
+
+const getInitials = (value) => {
+    if (!value) return 'ALC';
+    const chars = value.trim().split(/\s+/).map((part) => part[0]).join('');
+    return chars.slice(0, 2).toUpperCase();
+};
+
 export default function Programs() {
-    const { programs: programsData = [], packages: packagesData = [], allowedActions = {} } = usePage().props;
-    const normalizedPrograms = programsData.map((program) => ({
+    const { programs: programsData = [], packages: packagesData = [], allowedActions = {}, flash } = usePage().props;
+    const programs = useMemo(() => programsData.map((program) => ({
         ...program,
         subjects: normalizeSubjects(program.subjects),
-        is_active: program.is_active ?? true,
-    }));
+        is_active: Number(program.is_active ?? 1) === 1,
+        mode: normalizeModeValue(program.mode),
+    })), [programsData]);
     const normalizedPackages = packagesData.map((pkg) => ({
         ...pkg,
         subjects: normalizeSubjects(pkg.subjects),
-        is_active: pkg.is_active ?? true,
+        is_active: Number(pkg.is_active ?? 1) === 1,
     }));
 
-    const [programs, setPrograms] = useState(normalizedPrograms);
     const [packages, setPackages] = useState(normalizedPackages);
 
     const can = (action) => (allowedActions.program ?? []).includes(action);
     const canCreate = can('create');
+    const canView = can('view');
     const canEdit = can('edit');
     const canDelete = can('delete');
 
@@ -164,16 +196,21 @@ export default function Programs() {
     const [showProgramModal, setShowProgramModal] = useState(false);
     const [showPackageModal, setShowPackageModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showProgramDetailModal, setShowProgramDetailModal] = useState(false);
     const [editingProgram, setEditingProgram] = useState(null);
     const [editingPackage, setEditingPackage] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState({ type: '', item: null });
+    const [programDetail, setProgramDetail] = useState(null);
+    const [currentProgramImageUrl, setCurrentProgramImageUrl] = useState(null);
 
     // Program form state
-    const [programForm, setProgramForm] = useState({
+    const programForm = useForm({
         name: '',
         level: '',
         description: '',
         subjects: '',
+        mode: '',
+        image: null,
         is_active: true,
     });
 
@@ -192,38 +229,62 @@ export default function Programs() {
     const openProgramModal = (program = null) => {
         if (program) {
             setEditingProgram(program);
-            setProgramForm({
+            programForm.setData({
                 name: program.name || '',
                 level: program.level || '',
                 description: program.description || '',
                 subjects: normalizeSubjects(program.subjects).join(', '),
-                is_active: program.is_active ?? true,
+                mode: normalizeModeValue(program.mode),
+                image: null,
+                is_active: Number(program.is_active ?? 1) === 1,
             });
+            setCurrentProgramImageUrl(program.image_url || null);
         } else {
             setEditingProgram(null);
-            setProgramForm({
+            programForm.setData({
                 name: '',
                 level: '',
                 description: '',
                 subjects: '',
+                mode: '',
+                image: null,
                 is_active: true,
             });
+            setCurrentProgramImageUrl(null);
         }
+        programForm.clearErrors();
         setShowProgramModal(true);
+    };
+
+    const openProgramDetailModal = (program) => {
+        setProgramDetail(program);
+        setShowProgramDetailModal(true);
     };
 
     const saveProgramForm = () => {
         const payload = {
-            ...programForm,
-            subjects: normalizeSubjects(programForm.subjects),
-            is_active: Boolean(programForm.is_active),
+            ...programForm.data,
+            subjects: normalizeSubjects(programForm.data.subjects),
+            is_active: programForm.data.is_active ? 1 : 0,
+            mode: programForm.data.mode || null,
         };
-        if (editingProgram) {
-            setPrograms(programs.map((p) => (p.id === editingProgram.id ? { ...payload, id: editingProgram.id } : p)));
-        } else {
-            setPrograms([...programs, { ...payload, id: Date.now() }]);
-        }
-        setShowProgramModal(false);
+
+        programForm.transform(() => ({
+            ...payload,
+            ...(editingProgram ? { _method: 'put' } : {}),
+        }));
+
+        const url = editingProgram ? `/admin/program/${editingProgram.id}` : '/admin/program';
+
+        programForm.post(url, {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => {
+                setShowProgramModal(false);
+                programForm.reset('image');
+            },
+            onFinish: () => programForm.transform((data) => data),
+        });
     };
 
     // Package handlers
@@ -237,7 +298,7 @@ export default function Programs() {
                 sessions: pkg.sessions ?? '',
                 mode: pkg.mode || '',
                 schedule: pkg.schedule || '',
-                is_active: pkg.is_active ?? true,
+                is_active: Number(pkg.is_active ?? 1) === 1,
             });
         } else {
             setEditingPackage(null);
@@ -259,7 +320,7 @@ export default function Programs() {
             ...packageForm,
             subjects: normalizeSubjects(packageForm.subjects),
             sessions: packageForm.sessions === '' ? null : Number(packageForm.sessions),
-            is_active: Boolean(packageForm.is_active),
+            is_active: packageForm.is_active ? 1 : 0,
         };
         if (editingPackage) {
             setPackages(packages.map((p) => (p.id === editingPackage.id ? { ...payload, id: editingPackage.id } : p)));
@@ -277,11 +338,14 @@ export default function Programs() {
 
     const confirmDelete = () => {
         if (deleteTarget.type === 'program') {
-            setPrograms(programs.filter(p => p.id !== deleteTarget.item.id));
+            router.delete(`/admin/program/${deleteTarget.item.id}`, {
+                preserveScroll: true,
+                onSuccess: () => setShowDeleteModal(false),
+            });
         } else {
             setPackages(packages.filter(p => p.id !== deleteTarget.item.id));
+            setShowDeleteModal(false);
         }
-        setShowDeleteModal(false);
     };
 
     return (
@@ -289,6 +353,11 @@ export default function Programs() {
             <Head title="Program & Paket" />
 
             <div className="space-y-6">
+                {flash?.success && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                        {flash.success}
+                    </div>
+                )}
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -310,27 +379,47 @@ export default function Programs() {
                 </div>
 
                 {/* Program Cards */}
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {programs.map((program) => {
                         const statusLabel = program.is_active ? 'Aktif' : 'Nonaktif';
+                        const modeLabel = formatModeLabel(program.mode);
 
                         return (
                             <div
                                 key={program.id}
                                 className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md"
                             >
+                                <div className="mb-4 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+                                    {program.image_url ? (
+                                        <img
+                                            src={program.image_url}
+                                            alt={program.name}
+                                            className="h-40 w-full object-cover"
+                                            loading="lazy"
+                                        />
+                                    ) : (
+                                        <div className="flex h-40 items-center justify-center bg-gradient-to-br from-slate-100 via-white to-violet-50">
+                                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-sm font-semibold text-violet-600 shadow-sm">
+                                                {getInitials(program.name)}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0 flex-1">
                                         <h3 className="font-semibold text-slate-800">{program.name}</h3>
                                         <p className="mt-0.5 text-sm text-slate-500">{program.level || 'Semua Jenjang'}</p>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-col items-end gap-2">
                                         <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[statusLabel]}`}>
                                             {statusLabel}
                                         </span>
+                                        <span className="rounded-full border border-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                                            {modeLabel}
+                                        </span>
                                     </div>
                                 </div>
-                                <p className="mt-3 text-sm text-slate-600">
+                                <p className="mt-3 text-sm text-slate-600 line-clamp-2">
                                     {program.description || 'Belum ada deskripsi program.'}
                                 </p>
                                 {program.subjects?.length > 0 && (
@@ -345,8 +434,17 @@ export default function Programs() {
                                         ))}
                                     </div>
                                 )}
-                                {(canEdit || canDelete) && (
-                                    <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4 opacity-0 transition group-hover:opacity-100">
+                                {(canView || canEdit || canDelete) && (
+                                    <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                                        {canView && (
+                                            <button
+                                                type="button"
+                                                onClick={() => openProgramDetailModal(program)}
+                                                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-200"
+                                            >
+                                                {icons.eye} Detail
+                                            </button>
+                                        )}
                                         {canEdit && (
                                             <button
                                                 type="button"
@@ -460,39 +558,75 @@ export default function Programs() {
             >
                 <form onSubmit={(e) => { e.preventDefault(); saveProgramForm(); }} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <FormInput
-                            label="Nama Program"
-                            value={programForm.name}
-                            onChange={(v) => setProgramForm({ ...programForm, name: v })}
-                            placeholder="contoh: Reguler"
-                            required
-                        />
+                        <div className="space-y-1">
+                            <FormInput
+                                label="Nama Program"
+                                value={programForm.data.name}
+                                onChange={(v) => programForm.setData('name', v)}
+                                placeholder="contoh: Reguler"
+                                required
+                            />
+                            {programForm.errors.name && <p className="text-xs text-rose-500">{programForm.errors.name}</p>}
+                        </div>
+                        <div className="space-y-1">
+                            <FormSelect
+                                label="Jenjang"
+                                value={programForm.data.level}
+                                onChange={(v) => programForm.setData('level', v)}
+                                options={levelOptions}
+                                required
+                            />
+                            {programForm.errors.level && <p className="text-xs text-rose-500">{programForm.errors.level}</p>}
+                        </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1">
+                            <FormSelect
+                                label="Mode Program"
+                                value={programForm.data.mode}
+                                onChange={(v) => programForm.setData('mode', v)}
+                                options={programModeOptions}
+                                required
+                            />
+                            {programForm.errors.mode && <p className="text-xs text-rose-500">{programForm.errors.mode}</p>}
+                        </div>
                         <FormSelect
-                            label="Jenjang"
-                            value={programForm.level}
-                            onChange={(v) => setProgramForm({ ...programForm, level: v })}
-                            options={levelOptions}
-                            required
+                            label="Status"
+                            value={programForm.data.is_active ? 'Aktif' : 'Nonaktif'}
+                            onChange={(v) => programForm.setData('is_active', v === 'Aktif')}
+                            options={statusOptions}
                         />
                     </div>
                     <FormTextarea
                         label="Deskripsi Program"
-                        value={programForm.description}
-                        onChange={(v) => setProgramForm({ ...programForm, description: v })}
+                        value={programForm.data.description}
+                        onChange={(v) => programForm.setData('description', v)}
                         placeholder="Deskripsi singkat program..."
                     />
                     <FormInput
                         label="Mata Pelajaran"
-                        value={programForm.subjects}
-                        onChange={(v) => setProgramForm({ ...programForm, subjects: v })}
+                        value={programForm.data.subjects}
+                        onChange={(v) => programForm.setData('subjects', v)}
                         placeholder="contoh: Matematika, IPA, Bahasa Inggris"
                     />
-                    <FormSelect
-                        label="Status"
-                        value={programForm.is_active ? 'Aktif' : 'Nonaktif'}
-                        onChange={(v) => setProgramForm({ ...programForm, is_active: v === 'Aktif' })}
-                        options={statusOptions}
-                    />
+                    <div>
+                        <label className="mb-1.5 block text-sm font-medium text-slate-700">Upload Foto</label>
+                        <input
+                            type="file"
+                            accept=".jpg,.jpeg,.png,.webp"
+                            onChange={(e) => programForm.setData('image', e.target.files[0])}
+                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:text-sm file:font-medium file:text-slate-600 hover:file:bg-slate-200"
+                        />
+                        {currentProgramImageUrl && (
+                            <p className="mt-2 text-xs text-slate-500">
+                                Foto saat ini:{' '}
+                                <a href={currentProgramImageUrl} target="_blank" rel="noreferrer" className="font-medium text-violet-600 underline">
+                                    Lihat
+                                </a>
+                            </p>
+                        )}
+                        {programForm.errors.image && <p className="mt-1 text-xs text-rose-500">{programForm.errors.image}</p>}
+                    </div>
                     <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
                         <button
                             type="button"
@@ -503,12 +637,74 @@ export default function Programs() {
                         </button>
                         <button
                             type="submit"
+                            disabled={programForm.processing}
                             className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
                         >
                             {editingProgram ? 'Simpan Perubahan' : 'Tambah Program'}
                         </button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Program Detail Modal */}
+            <Modal
+                isOpen={showProgramDetailModal}
+                onClose={() => setShowProgramDetailModal(false)}
+                title="Detail Program"
+                size="lg"
+            >
+                {programDetail && (
+                    <div className="space-y-4">
+                        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
+                            {programDetail.image_url ? (
+                                <img
+                                    src={programDetail.image_url}
+                                    alt={programDetail.name}
+                                    className="h-56 w-full object-cover"
+                                    loading="lazy"
+                                />
+                            ) : (
+                                <div className="flex h-56 items-center justify-center bg-gradient-to-br from-slate-100 via-white to-violet-50">
+                                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white text-base font-semibold text-violet-600 shadow-sm">
+                                        {getInitials(programDetail.name)}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusStyles[programDetail.is_active ? 'Aktif' : 'Nonaktif']}`}>
+                                {programDetail.is_active ? 'Aktif' : 'Nonaktif'}
+                            </span>
+                            <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600">
+                                {formatModeLabel(programDetail.mode)}
+                            </span>
+                        </div>
+                        <div>
+                            <h4 className="text-lg font-semibold text-slate-800">{programDetail.name}</h4>
+                            <p className="text-sm text-slate-500">{programDetail.level || 'Semua Jenjang'}</p>
+                        </div>
+                        <div className="rounded-xl border border-slate-100 bg-white p-4">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Deskripsi</p>
+                            <p className="mt-2 text-sm text-slate-600">
+                                {programDetail.description || 'Belum ada deskripsi program.'}
+                            </p>
+                        </div>
+                        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Mata Pelajaran</p>
+                            {programDetail.subjects?.length > 0 ? (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {programDetail.subjects.map((subject) => (
+                                        <span key={subject} className="rounded-full bg-white px-2.5 py-1 text-xs text-slate-600">
+                                            {subject}
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="mt-2 text-sm text-slate-500">Belum ada data mata pelajaran.</p>
+                            )}
+                        </div>
+                    </div>
+                )}
             </Modal>
 
             {/* Package Modal */}
@@ -550,7 +746,7 @@ export default function Programs() {
                             label="Mode"
                             value={packageForm.mode}
                             onChange={(v) => setPackageForm({ ...packageForm, mode: v })}
-                            options={modeOptions}
+                            options={packageModeOptions}
                         />
                         <FormInput
                             label="Jadwal"

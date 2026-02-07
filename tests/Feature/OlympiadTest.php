@@ -7,6 +7,8 @@ use App\Models\Role;
 use App\Models\User;
 use App\Support\PermissionCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class OlympiadTest extends TestCase
@@ -30,6 +32,7 @@ class OlympiadTest extends TestCase
     public function test_store_olympiad(): void
     {
         $user = $this->actingAsAdmin();
+        Storage::fake('public');
 
         $payload = [
             'name' => 'Olimpiade Matematika',
@@ -39,6 +42,7 @@ class OlympiadTest extends TestCase
             'category' => 'free',
             'fee' => 0,
             'notes' => 'Catatan test',
+            'image' => UploadedFile::fake()->image('olympiad.jpg'),
             'is_active' => true,
         ];
 
@@ -47,6 +51,9 @@ class OlympiadTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('success');
         $this->assertDatabaseHas('olympiads', ['name' => 'Olimpiade Matematika', 'level' => 'SMP']);
+        $olympiad = Olympiad::where('name', 'Olimpiade Matematika')->first();
+        $this->assertNotNull($olympiad?->image_path);
+        Storage::disk('public')->assertExists($olympiad->image_path);
     }
 
     public function test_store_validates_required_fields(): void
@@ -61,19 +68,25 @@ class OlympiadTest extends TestCase
     public function test_update_olympiad(): void
     {
         $user = $this->actingAsAdmin();
+        Storage::fake('public');
         $olympiad = Olympiad::factory()->create(['name' => 'Old Name']);
 
-        $response = $this->actingAs($user, PermissionCatalog::GUARD)->put("/admin/olimpiade/{$olympiad->id}", [
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post("/admin/olimpiade/{$olympiad->id}", [
+            '_method' => 'put',
             'name' => 'New Name',
             'level' => 'SMA',
             'category' => 'paid',
             'fee' => 150000,
+            'image' => UploadedFile::fake()->image('new-olympiad.jpg'),
             'is_active' => true,
         ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
         $this->assertDatabaseHas('olympiads', ['id' => $olympiad->id, 'name' => 'New Name', 'level' => 'SMA']);
+        $olympiad->refresh();
+        $this->assertNotNull($olympiad->image_path);
+        Storage::disk('public')->assertExists($olympiad->image_path);
     }
 
     public function test_delete_olympiad(): void

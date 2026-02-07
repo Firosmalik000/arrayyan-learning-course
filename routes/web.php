@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AccessMenuController;
 use App\Http\Controllers\Admin\BankSoalController;
 use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\OlympiadController;
+use App\Http\Controllers\Admin\ProgramController;
 use App\Http\Controllers\Admin\RegistrationController as AdminRegistrationController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SeoController;
@@ -14,18 +15,59 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\LandingContentController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SitemapController;
+use App\Models\BankSoal;
+use App\Models\Olympiad;
 use App\Models\Program;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 Route::get('/', [LandingContentController::class, 'show'])->name('home');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/olimpiade', function () {
     return Inertia::render('Public/Olympiad', [
-        'olympiads' => \App\Models\Olympiad::query()->where('is_active', true)->latest()->get(),
+        'olympiads' => Olympiad::query()
+            ->where('is_active', true)
+            ->latest()
+            ->get()
+            ->map(function (Olympiad $olympiad) {
+                return [
+                    'id' => $olympiad->id,
+                    'slug' => $olympiad->slug,
+                    'name' => $olympiad->name,
+                    'level' => $olympiad->level,
+                    'schedule' => $olympiad->schedule,
+                    'selection_system' => $olympiad->selection_system,
+                    'category' => $olympiad->category,
+                    'fee' => $olympiad->fee,
+                    'notes' => $olympiad->notes,
+                    'image_url' => $olympiad->image_path ? Storage::url($olympiad->image_path) : null,
+                ];
+            }),
     ]);
 })->name('olympiad');
-Route::get('/olimpiade/{slug}', fn ($slug) => Inertia::render('Public/Olympiad/Detail', ['slug' => $slug]))->name('olympiad.detail');
+Route::get('/olimpiade/{slug}', function ($slug) {
+    $olympiad = Olympiad::query()
+        ->where('slug', $slug)
+        ->where('is_active', true)
+        ->first();
+
+    return Inertia::render('Public/Olympiad/Detail', [
+        'slug' => $slug,
+        'olympiad' => $olympiad ? [
+            'id' => $olympiad->id,
+            'slug' => $olympiad->slug,
+            'name' => $olympiad->name,
+            'level' => $olympiad->level,
+            'schedule' => $olympiad->schedule,
+            'selection_system' => $olympiad->selection_system,
+            'category' => $olympiad->category,
+            'fee' => $olympiad->fee,
+            'notes' => $olympiad->notes,
+            'image_url' => $olympiad->image_path ? Storage::url($olympiad->image_path) : null,
+        ] : null,
+    ]);
+})->name('olympiad.detail');
 Route::get('/pendaftaran', fn () => Inertia::render('Public/Register', [
     'programs' => Program::query()
         ->where('is_active', true)
@@ -33,7 +75,28 @@ Route::get('/pendaftaran', fn () => Inertia::render('Public/Register', [
         ->get(['id', 'name', 'level']),
 ]))->name('register');
 Route::get('/bank-soal', [LandingContentController::class, 'bankSoal'])->name('banksoal');
-Route::get('/bank-soal/{slug}', fn ($slug) => Inertia::render('Public/BankSoal/Detail', ['slug' => $slug]))->name('banksoal.detail');
+Route::get('/bank-soal/{slug}', function ($slug) {
+    $bankSoal = BankSoal::query()
+        ->where('slug', $slug)
+        ->where('is_active', true)
+        ->first();
+
+    return Inertia::render('Public/BankSoal/Detail', [
+        'slug' => $slug,
+        'bankSoal' => $bankSoal ? [
+            'id' => $bankSoal->id,
+            'slug' => $bankSoal->slug,
+            'name' => $bankSoal->name,
+            'category' => $bankSoal->category,
+            'level' => $bankSoal->level,
+            'format' => $bankSoal->format,
+            'questions' => $bankSoal->questions,
+            'description' => $bankSoal->description,
+            'links' => $bankSoal->links ?? [],
+            'tone' => $bankSoal->tone,
+        ] : null,
+    ]);
+})->name('banksoal.detail');
 
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])
     ->middleware('guest')
@@ -67,6 +130,15 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::get('/program', [MasterDataController::class, 'programs'])
         ->middleware('role_or_permission:administrator|program.view,admin')
         ->name('programs');
+    Route::post('/program', [ProgramController::class, 'store'])
+        ->middleware('role_or_permission:administrator|program.create,admin')
+        ->name('programs.store');
+    Route::put('/program/{program}', [ProgramController::class, 'update'])
+        ->middleware('role_or_permission:administrator|program.edit,admin')
+        ->name('programs.update');
+    Route::delete('/program/{program}', [ProgramController::class, 'destroy'])
+        ->middleware('role_or_permission:administrator|program.delete,admin')
+        ->name('programs.destroy');
     Route::get('/bank-soal', [MasterDataController::class, 'bankSoal'])
         ->middleware('role_or_permission:administrator|bank-soal.view,admin')
         ->name('banksoal');

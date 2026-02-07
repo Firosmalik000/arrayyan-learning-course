@@ -367,6 +367,7 @@ class LandingContentController extends Controller
                 'format' => $item->format,
                 'questions' => $item->questions,
                 'description' => $this->normalizeLocalized($item->description),
+                'links' => $item->links ?? [],
                 'tone' => $item->tone,
                 'is_active' => $item->is_active,
             ];

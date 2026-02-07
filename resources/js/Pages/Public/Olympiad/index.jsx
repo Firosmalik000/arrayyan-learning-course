@@ -5,6 +5,7 @@ import SeoHead from '@/Components/SeoHead';
 import SectionTitle from '@/Components/SectionTitle';
 import PasskeyModal from '@/Components/PasskeyModal';
 import { useI18n } from '@/lib/i18n';
+import { formatDate, parseDateValue } from '@/lib/formatDate';
 
 // Shared data
 import { fadeUp, stagger } from '@/data';
@@ -12,23 +13,16 @@ import { fadeUp, stagger } from '@/data';
 // Page-specific data
 import { pageContent, olympiadLevels, olympiadPasskey } from './data';
 
-const formatCurrency = (value) => {
-    if (!value || value === 0) return null;
+const formatCurrency = (value, lang = 'id') => {
+    if (!value || value === 0) return lang === 'en' ? 'Free' : 'Gratis';
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
-};
-
-const formatDate = (dateStr, lang = 'id') => {
-    if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    if (isNaN(d)) return dateStr;
-    return d.toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
 const getMonth = (dateStr) => {
     if (!dateStr) return null;
-    const d = new Date(dateStr);
-    if (isNaN(d)) return null;
-    return d.getMonth();
+    const date = parseDateValue(dateStr);
+    if (!date) return null;
+    return date.getMonth();
 };
 
 const monthNames = {
@@ -40,6 +34,7 @@ const dbToEvent = (item) => ({
     id: `db-${item.id}`,
     slug: item.slug,
     schedule_raw: item.schedule,
+    image_url: item.image_url || null,
     name: { id: item.name, en: item.name },
     level: { id: item.level, en: item.level },
     schedule: { id: formatDate(item.schedule, 'id'), en: formatDate(item.schedule, 'en') },
@@ -48,7 +43,7 @@ const dbToEvent = (item) => ({
         id: item.category === 'paid' ? 'Berbayar' : 'Gratis',
         en: item.category === 'paid' ? 'Paid' : 'Free',
     },
-    fee: item.fee && item.fee > 0 ? { id: formatCurrency(item.fee), en: formatCurrency(item.fee) } : null,
+    fee: { id: formatCurrency(item.fee, 'id'), en: formatCurrency(item.fee, 'en') },
     description: { id: item.notes || '', en: item.notes || '' },
 });
 
@@ -227,16 +222,14 @@ export default function Olympiad() {
                             whileInView="visible"
                             viewport={{ once: false, amount: 0.2 }}
                             variants={stagger}
-                            className="grid alc-gap-md md:grid-cols-2 lg:grid-cols-3"
+                            className="grid alc-gap-md sm:grid-cols-2 xl:grid-cols-3"
                         >
                             {filteredEvents.map((event) => {
                                 const eventName = event.name[language] || event.name.id;
                                 const eventLevel = event.level[language] || event.level.id;
                                 const eventSchedule = event.schedule[language] || event.schedule.id;
-                                const eventSelection = event.selection[language] || event.selection.id;
                                 const eventCategory = event.category[language] || event.category.id;
                                 const eventFee = event.fee ? (event.fee[language] || event.fee.id) : null;
-                                const eventDesc = event.description[language] || event.description.id;
                                 const isFree = eventCategory.toLowerCase() === 'gratis' || eventCategory.toLowerCase() === 'free';
 
                                 return (
@@ -244,68 +237,64 @@ export default function Olympiad() {
                                         key={event.id}
                                         variants={fadeUp}
                                         whileHover={{ y: -4 }}
-                                        className="group flex flex-col rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-lg hover:border-violet-200"
+                                        className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:shadow-lg hover:border-violet-200"
                                     >
-                                        {/* Header */}
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-                                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" />
-                                                </svg>
-                                            </div>
-                                            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                        <div className="relative">
+                                            {event.image_url ? (
+                                                <img
+                                                    src={event.image_url}
+                                                    alt={eventName}
+                                                    className="h-44 w-full object-cover"
+                                                    loading="lazy"
+                                                />
+                                            ) : (
+                                                <div className="flex h-44 items-center justify-center bg-slate-50 text-slate-300">
+                                                    <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" />
+                                                    </svg>
+                                                </div>
+                                            )}
+                                            <span className={`absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${
                                                 isFree ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
                                             }`}>
                                                 {eventCategory}
                                             </span>
                                         </div>
 
-                                        {/* Content */}
-                                        <h3 className="mt-3 text-base font-semibold text-slate-800 group-hover:text-violet-700 transition-colors">
-                                            {eventName}
-                                        </h3>
-                                        {eventDesc && (
-                                            <p className="mt-1.5 text-sm text-slate-500 line-clamp-2">{eventDesc}</p>
-                                        )}
+                                        <div className="flex flex-1 flex-col gap-3 p-5">
+                                            <div>
+                                                <h3 className="text-base font-semibold text-slate-800 group-hover:text-violet-700 transition-colors">
+                                                    {eventName}
+                                                </h3>
+                                                <p className="mt-1 text-sm text-slate-500">{eventLevel}</p>
+                                            </div>
 
-                                        {/* Meta */}
-                                        <div className="mt-3 space-y-1 text-xs text-slate-500">
-                                            <div className="flex items-center gap-2">
-                                                <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                                                </svg>
-                                                <span>{eventSchedule}</span>
+                                            <div className="space-y-2 text-sm text-slate-600">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-slate-500">{language === 'en' ? 'Schedule' : 'Jadwal'}</span>
+                                                    <span className="font-medium text-slate-700">{eventSchedule}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-slate-500">{language === 'en' ? 'Fee' : 'Biaya'}</span>
+                                                    <span className="font-medium text-slate-700">{eventFee}</span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342" />
-                                                </svg>
-                                                <span>{eventLevel}</span>
-                                            </div>
-                                            {eventFee && (
-                                                <div className="flex items-center gap-2">
-                                                    <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
-                                                    </svg>
-                                                    <span>{eventFee}</span>
+
+                                            {/* Action */}
+                                            {event.slug && (
+                                                <div className="mt-auto pt-2">
+                                                    <Link
+                                                        href={`/olimpiade/${event.slug}`}
+                                                        className="inline-flex w-full items-center justify-center rounded-full bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:bg-violet-800"
+                                                    >
+                                                        {text.viewDetail}
+                                                        <svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                                        </svg>
+                                                    </Link>
                                                 </div>
                                             )}
                                         </div>
-
-                                        {/* Action */}
-                                        {event.slug && (
-                                            <div className="mt-auto pt-4">
-                                                <Link
-                                                    href={`/olimpiade/${event.slug}`}
-                                                    className="inline-flex w-full items-center justify-center rounded-full bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:bg-violet-800"
-                                                >
-                                                    {text.viewDetail}
-                                                    <svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                                    </svg>
-                                                </Link>
-                                            </div>
-                                        )}
                                     </motion.div>
                                 );
                             })}

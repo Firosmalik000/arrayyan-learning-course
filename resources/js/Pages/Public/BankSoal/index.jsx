@@ -49,7 +49,6 @@ export default function BankSoalIndex() {
         category: item.category || { id: '', en: '' },
         level: item.level || { id: '', en: '' },
         format: item.format || '',
-        questions: item.questions || 0,
         description: item.description || { id: '', en: '' },
         tone: item.tone || 'violet',
     }));
@@ -249,9 +248,6 @@ export default function BankSoalIndex() {
                                         </span>
                                         <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
                                             {item.level[language] || item.level.id}
-                                        </span>
-                                        <span className="text-xs text-slate-500">
-                                            {item.questions} {bank.questionCount}
                                         </span>
                                     </div>
 

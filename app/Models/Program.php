@@ -14,11 +14,16 @@ class Program extends Model
         'level',
         'description',
         'subjects',
+        'mode',
+        'image_path',
         'is_active',
     ];
 
-    protected $casts = [
-        'subjects' => 'array',
-        'is_active' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'subjects' => 'array',
+            'is_active' => 'boolean',
+        ];
+    }
 }

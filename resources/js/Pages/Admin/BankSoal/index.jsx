@@ -11,10 +11,17 @@ const normalizeModule = (item, index) => ({
     slug: item?.slug ?? '',
     description: item?.description?.id ?? item?.description ?? '',
     tone: item?.tone ?? 'violet',
+    links: Array.isArray(item?.links) ? item.links : [],
+    is_active: item?.is_active ?? true,
 });
 
 const fallbackLevelOptions = ['Pra TK', 'TK', 'SD', 'SMP', 'SMA'];
 const fallbackFormatOptions = ['Offline', 'Online', 'Hybrid'];
+const statusStyles = {
+    Aktif: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    Nonaktif: 'bg-slate-100 text-slate-600 border-slate-200',
+};
+const statusOptions = ['Aktif', 'Nonaktif'];
 
 // Icons
 const icons = {
@@ -41,6 +48,12 @@ const icons = {
     warning: (
         <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        </svg>
+    ),
+    eye: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
     ),
     search: (
@@ -142,18 +155,27 @@ export default function BankSoal() {
     // Modal states
     const [showModal, setShowModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showDetailModal, setShowDetailModal] = useState(false);
     const [editing, setEditing] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [detailTarget, setDetailTarget] = useState(null);
 
     // Form state
+    const createLinkRow = () => ({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        label: '',
+        link: '',
+    });
+
     const [form, setForm] = useState({
         name: '',
         category: '',
         level: '',
         format: '',
-        questions: '',
         slug: '',
         description: '',
+        is_active: true,
+        links: [createLinkRow()],
     });
 
     // Filtered modules
@@ -170,8 +192,8 @@ export default function BankSoal() {
     // Stats
     const stats = [
         { label: 'Total Modul', value: modules.length, color: 'violet' },
-        { label: 'Total Soal', value: modules.reduce((a, b) => a + b.questions, 0), color: 'emerald' },
         { label: 'Kategori', value: new Set(modules.map((m) => m.category).filter(Boolean)).size, color: 'amber' },
+        { label: 'Total Link', value: modules.reduce((acc, item) => acc + (item.links?.length ?? 0), 0), color: 'emerald' },
     ];
 
     const levelOptions = Array.from(new Set(modules.map((m) => m.level).filter(Boolean)));
@@ -183,6 +205,7 @@ export default function BankSoal() {
 
     const can = (action) => (allowedActions['bank-soal'] ?? []).includes(action);
     const canCreate = can('create');
+    const canView = can('view');
     const canEdit = can('edit');
     const canDelete = can('delete');
 
@@ -195,19 +218,47 @@ export default function BankSoal() {
                 category: item.category,
                 level: item.level,
                 format: item.format,
-                questions: item.questions.toString(),
                 slug: item.slug,
                 description: item.description,
+                is_active: item.is_active ?? true,
+                links: item.links?.length
+                    ? item.links.map((link) => ({
+                        id: link.id ?? createLinkRow().id,
+                        label: link.label ?? '',
+                        link: link.link ?? '',
+                    }))
+                    : [createLinkRow()],
             });
         } else {
             setEditing(null);
-            setForm({ name: '', category: '', level: '', format: '', questions: '', slug: '', description: '' });
+            setForm({
+                name: '',
+                category: '',
+                level: '',
+                format: '',
+                slug: '',
+                description: '',
+                is_active: true,
+                links: [createLinkRow()],
+            });
         }
         setShowModal(true);
     };
 
     const saveForm = () => {
-        const data = { ...form, questions: parseInt(form.questions) || 0 };
+        const cleanedLinks = (form.links || [])
+            .map((link) => ({
+                id: Number(link.id) || createLinkRow().id,
+                label: link.label?.trim() ?? '',
+                link: link.link?.trim() ?? '',
+            }))
+            .filter((link) => link.label || link.link);
+
+        const data = {
+            ...form,
+            is_active: form.is_active ? 1 : 0,
+            links: cleanedLinks,
+        };
         if (editing) {
             router.put(`/admin/bank-soal/${editing.id}`, data, {
                 preserveScroll: true,
@@ -224,6 +275,33 @@ export default function BankSoal() {
     const openDeleteModal = (item) => {
         setDeleteTarget(item);
         setShowDeleteModal(true);
+    };
+
+    const openDetailModal = (item) => {
+        setDetailTarget(item);
+        setShowDetailModal(true);
+    };
+
+    const updateLink = (index, field, value) => {
+        setForm((prev) => {
+            const nextLinks = [...prev.links];
+            nextLinks[index] = { ...nextLinks[index], [field]: value };
+            return { ...prev, links: nextLinks };
+        });
+    };
+
+    const addLinkRow = () => {
+        setForm((prev) => ({
+            ...prev,
+            links: [...prev.links, createLinkRow()],
+        }));
+    };
+
+    const removeLinkRow = (index) => {
+        setForm((prev) => ({
+            ...prev,
+            links: prev.links.filter((_, i) => i !== index),
+        }));
     };
 
     const confirmDelete = () => {
@@ -332,14 +410,18 @@ export default function BankSoal() {
                                     <th className="px-5 py-3 font-medium">Kategori</th>
                                     <th className="px-5 py-3 font-medium">Jenjang</th>
                                     <th className="px-5 py-3 font-medium">Format</th>
-                                    <th className="px-5 py-3 font-medium">Jumlah Soal</th>
+                                    <th className="px-5 py-3 font-medium">Links</th>
+                                    <th className="px-5 py-3 font-medium">Status</th>
                                     <th className="px-5 py-3 font-medium">Slug</th>
                                     <th className="px-5 py-3 font-medium text-right">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filteredModules.map((item) => (
-                                    <tr key={item.id} className="transition hover:bg-slate-50">
+                                {filteredModules.map((item) => {
+                                    const statusLabel = item.is_active ? 'Aktif' : 'Nonaktif';
+
+                                    return (
+                                        <tr key={item.id} className="transition hover:bg-slate-50">
                                         <td className="px-5 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
@@ -351,10 +433,25 @@ export default function BankSoal() {
                                         <td className="px-5 py-4 text-slate-600">{item.category || '-'}</td>
                                         <td className="px-5 py-4 text-slate-600">{item.level || '-'}</td>
                                         <td className="px-5 py-4 text-slate-600">{item.format || '-'}</td>
-                                        <td className="px-5 py-4 text-slate-600">{item.questions} soal</td>
+                                        <td className="px-5 py-4 text-slate-600">{item.links?.length ?? 0}</td>
+                                        <td className="px-5 py-4">
+                                            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[statusLabel]}`}>
+                                                {statusLabel}
+                                            </span>
+                                        </td>
                                         <td className="px-5 py-4 text-slate-500">{item.slug || '-'}</td>
                                         <td className="px-5 py-4">
                                             <div className="flex justify-end gap-1">
+                                                {canView && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openDetailModal(item)}
+                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                                                        title="Detail"
+                                                    >
+                                                        {icons.eye}
+                                                    </button>
+                                                )}
                                                 {canEdit && (
                                                     <button
                                                         type="button"
@@ -378,10 +475,11 @@ export default function BankSoal() {
                                             </div>
                                         </td>
                                     </tr>
-                                ))}
+                                    );
+                                })}
                                 {filteredModules.length === 0 && (
                                     <tr>
-                                        <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
+                                        <td colSpan={8} className="px-5 py-12 text-center text-slate-500">
                                             Tidak ada modul yang ditemukan
                                         </td>
                                     </tr>
@@ -418,20 +516,13 @@ export default function BankSoal() {
                             required
                         />
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="grid gap-4 sm:grid-cols-2">
                         <FormSelect
                             label="Format"
                             value={form.format}
                             onChange={(v) => setForm({ ...form, format: v })}
                             options={resolvedFormatOptions}
                             required
-                        />
-                        <FormInput
-                            label="Jumlah Soal"
-                            type="number"
-                            value={form.questions}
-                            onChange={(v) => setForm({ ...form, questions: v })}
-                            placeholder="100"
                         />
                         <FormInput
                             label="Slug"
@@ -446,6 +537,52 @@ export default function BankSoal() {
                         onChange={(v) => setForm({ ...form, description: v })}
                         placeholder="Deskripsi modul..."
                     />
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">Link Modul</label>
+                        <div className="space-y-2">
+                            {form.links.map((link, index) => (
+                                <div key={link.id} className="grid gap-2 sm:grid-cols-[120px_1fr_1fr_auto]">
+                                    <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                                        ID #{link.id}
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={link.label}
+                                        onChange={(e) => updateLink(index, 'label', e.target.value)}
+                                        placeholder="Label (contoh: Kelas 1)"
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={link.link}
+                                        onChange={(e) => updateLink(index, 'link', e.target.value)}
+                                        placeholder="Link (contoh: https://...)"
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeLinkRow(index)}
+                                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50"
+                                    >
+                                        Hapus
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={addLinkRow}
+                                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                            >
+                                {icons.plus} Tambah Link
+                            </button>
+                        </div>
+                    </div>
+                    <FormSelect
+                        label="Status"
+                        value={form.is_active ? 'Aktif' : 'Nonaktif'}
+                        onChange={(v) => setForm({ ...form, is_active: v === 'Aktif' })}
+                        options={statusOptions}
+                    />
                     <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
                         <button type="button" onClick={() => setShowModal(false)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
                             Batal
@@ -455,6 +592,68 @@ export default function BankSoal() {
                         </button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Detail Modal */}
+            <Modal isOpen={showDetailModal} onClose={() => setShowDetailModal(false)} title="Detail Modul" size="lg">
+                {detailTarget && (
+                    <div className="space-y-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusStyles[detailTarget.is_active ? 'Aktif' : 'Nonaktif']}`}>
+                                {detailTarget.is_active ? 'Aktif' : 'Nonaktif'}
+                            </span>
+                        </div>
+                        <div>
+                            <h4 className="text-lg font-semibold text-slate-800">{detailTarget.name}</h4>
+                            <p className="text-sm text-slate-500">{detailTarget.category || '-'}</p>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Jenjang</p>
+                                <p className="mt-1 text-sm font-medium text-slate-800">{detailTarget.level || '-'}</p>
+                            </div>
+                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Format</p>
+                                <p className="mt-1 text-sm font-medium text-slate-800">{detailTarget.format || '-'}</p>
+                            </div>
+                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 sm:col-span-2">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Slug</p>
+                                <p className="mt-1 text-sm font-medium text-slate-800">{detailTarget.slug || '-'}</p>
+                            </div>
+                        </div>
+                        <div className="rounded-xl border border-slate-100 bg-white p-4">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Deskripsi</p>
+                            <p className="mt-2 text-sm text-slate-600">{detailTarget.description || '-'}</p>
+                        </div>
+                        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Link Modul</p>
+                            {detailTarget.links?.length ? (
+                                <div className="mt-2 space-y-2">
+                                    {detailTarget.links.map((link) => (
+                                        <div key={`${link.id}-${link.label}`} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2">
+                                            <div>
+                                                <p className="text-sm font-medium text-slate-700">{link.label || `Link ${link.id}`}</p>
+                                                <p className="text-xs text-slate-500">{link.link}</p>
+                                            </div>
+                                            {link.link && (
+                                                <a
+                                                    href={link.link}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-xs font-semibold text-violet-600 hover:text-violet-700"
+                                                >
+                                                    Buka
+                                                </a>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="mt-2 text-sm text-slate-500">Belum ada link modul.</p>
+                            )}
+                        </div>
+                    </div>
+                )}
             </Modal>
 
             {/* Delete Modal */}

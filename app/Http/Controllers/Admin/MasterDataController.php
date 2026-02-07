@@ -263,7 +263,22 @@ class MasterDataController extends Controller
     public function programs(): Response
     {
         return Inertia::render('Admin/Programs', [
-            'programs' => Program::query()->latest()->get(),
+            'programs' => Program::query()
+                ->latest()
+                ->get()
+                ->map(function (Program $program) {
+                    return [
+                        'id' => $program->id,
+                        'name' => $program->name,
+                        'level' => $program->level,
+                        'description' => $program->description,
+                        'subjects' => $program->subjects,
+                        'mode' => $program->mode,
+                        'image_path' => $program->image_path,
+                        'image_url' => $program->image_path ? Storage::url($program->image_path) : null,
+                        'is_active' => $program->is_active,
+                    ];
+                }),
             'packages' => Package::query()->latest()->get(),
         ]);
     }
@@ -278,7 +293,25 @@ class MasterDataController extends Controller
     public function olympiads(): Response
     {
         return Inertia::render('Admin/Olympiads', [
-            'olympiads' => Olympiad::query()->latest()->get(),
+            'olympiads' => Olympiad::query()
+                ->latest()
+                ->get()
+                ->map(function (Olympiad $olympiad) {
+                    return [
+                        'id' => $olympiad->id,
+                        'name' => $olympiad->name,
+                        'slug' => $olympiad->slug,
+                        'level' => $olympiad->level,
+                        'schedule' => $olympiad->schedule,
+                        'selection_system' => $olympiad->selection_system,
+                        'category' => $olympiad->category,
+                        'fee' => $olympiad->fee,
+                        'notes' => $olympiad->notes,
+                        'is_active' => $olympiad->is_active,
+                        'image_path' => $olympiad->image_path,
+                        'image_url' => $olympiad->image_path ? Storage::url($olympiad->image_path) : null,
+                    ];
+                }),
         ]);
     }
 

@@ -3,25 +3,21 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreOlympiadRequest;
+use App\Http\Requests\UpdateOlympiadRequest;
 use App\Models\Olympiad;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class OlympiadController extends Controller
 {
-    public function store(Request $request): RedirectResponse
+    public function store(StoreOlympiadRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'level' => ['required', 'string', 'max:100'],
-            'schedule' => ['nullable', 'date'],
-            'selection_system' => ['nullable', 'string', 'max:255'],
-            'category' => ['required', 'string', 'in:free,paid'],
-            'fee' => ['nullable', 'numeric', 'min:0'],
-            'notes' => ['nullable', 'string'],
-            'is_active' => ['nullable'],
-        ]);
+        $data = $request->validated();
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('olympiads', 'public');
+        }
+        unset($data['image']);
 
         $data['is_active'] = filter_var($data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $data['slug'] = Str::slug($data['name']);
@@ -31,18 +27,13 @@ class OlympiadController extends Controller
         return back()->with('success', 'Olimpiade berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Olympiad $olympiad): RedirectResponse
+    public function update(UpdateOlympiadRequest $request, Olympiad $olympiad): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'level' => ['required', 'string', 'max:100'],
-            'schedule' => ['nullable', 'date'],
-            'selection_system' => ['nullable', 'string', 'max:255'],
-            'category' => ['required', 'string', 'in:free,paid'],
-            'fee' => ['nullable', 'numeric', 'min:0'],
-            'notes' => ['nullable', 'string'],
-            'is_active' => ['nullable'],
-        ]);
+        $data = $request->validated();
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('olympiads', 'public');
+        }
+        unset($data['image']);
 
         $data['is_active'] = filter_var($data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $data['slug'] = Str::slug($data['name']);

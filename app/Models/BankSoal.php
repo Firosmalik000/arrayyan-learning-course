@@ -19,6 +19,7 @@ class BankSoal extends Model
         'format',
         'questions',
         'description',
+        'links',
         'tone',
         'is_active',
     ];
@@ -28,6 +29,7 @@ class BankSoal extends Model
         'category' => 'array',
         'level' => 'array',
         'description' => 'array',
+        'links' => 'array',
         'questions' => 'integer',
         'is_active' => 'boolean',
     ];

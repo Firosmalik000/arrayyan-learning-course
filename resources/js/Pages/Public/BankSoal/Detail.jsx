@@ -1,8 +1,7 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import SeoHead from '@/Components/SeoHead';
-import SectionTitle from '@/Components/SectionTitle';
 import { useI18n } from '@/lib/i18n';
 
 // Shared data
@@ -19,9 +18,10 @@ const pageContent = {
         category: 'Kategori',
         level: 'Jenjang',
         format: 'Format',
-        totalQuestions: 'Jumlah Soal',
-        questions: 'soal',
         description: 'Deskripsi',
+        links: 'Link Modul',
+        openLink: 'Buka Modul',
+        noLinks: 'Belum ada link modul.',
         features: 'Fitur Modul',
         featuresList: [
             'Soal disusun oleh tim pengajar berpengalaman',
@@ -41,9 +41,10 @@ const pageContent = {
         category: 'Category',
         level: 'Level',
         format: 'Format',
-        totalQuestions: 'Total Questions',
-        questions: 'questions',
         description: 'Description',
+        links: 'Module Links',
+        openLink: 'Open Module',
+        noLinks: 'No module links available yet.',
         features: 'Module Features',
         featuresList: [
             'Questions prepared by experienced teachers',
@@ -84,11 +85,40 @@ const passkeyContent = {
 
 export default function BankSoalDetail({ slug }) {
     const { language } = useI18n();
+    const { props } = usePage();
     const t = pageContent[language] || pageContent.id;
     const pk = passkeyContent[language] || passkeyContent.id;
 
-    // Find the item by slug
-    const item = bankSoalItems.find((i) => i.slug === slug);
+    const normalizeLocalized = (value) => {
+        if (value && typeof value === 'object') {
+            return {
+                id: value.id ?? value.en ?? '',
+                en: value.en ?? value.id ?? '',
+            };
+        }
+
+        const stringValue = value ?? '';
+
+        return {
+            id: stringValue,
+            en: stringValue,
+        };
+    };
+
+    const dbItem = props.bankSoal
+        ? {
+            ...props.bankSoal,
+            name: normalizeLocalized(props.bankSoal.name),
+            category: normalizeLocalized(props.bankSoal.category),
+            level: normalizeLocalized(props.bankSoal.level),
+            description: normalizeLocalized(props.bankSoal.description),
+            links: Array.isArray(props.bankSoal.links) ? props.bankSoal.links : [],
+            tone: props.bankSoal.tone || 'violet',
+        }
+        : null;
+
+    // Find the item by slug (fallback to static)
+    const item = dbItem || bankSoalItems.find((i) => i.slug === slug);
 
     // Passkey state
     const [hasAccess, setHasAccess] = useState(false);
@@ -335,6 +365,8 @@ export default function BankSoalDetail({ slug }) {
 
     const itemName = item.name[language] || item.name.id;
     const itemDesc = item.description[language] || item.description.id;
+    const moduleLinks = Array.isArray(item.links) ? item.links.filter((link) => link?.link) : [];
+    const primaryLink = moduleLinks[0];
 
     return (
         <>
@@ -410,19 +442,38 @@ export default function BankSoalDetail({ slug }) {
                                 {item.description[language] || item.description.id}
                             </p>
 
-                            {/* Stats */}
-                            <div className="mt-6 flex flex-wrap gap-4">
-                                <div className="flex items-center gap-2 text-slate-600">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
-                                        {icons.list}
+                            {/* Module Links */}
+                            <div className="mt-6">
+                                <h2 className="font-display text-lg sm:text-xl font-semibold text-slate-900 mb-3">
+                                    {t.links}
+                                </h2>
+                                {moduleLinks.length > 0 ? (
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        {moduleLinks.map((link) => (
+                                            <a
+                                                key={`${link.id}-${link.label}`}
+                                                href={link.link}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="group flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:border-violet-200 hover:shadow-md"
+                                            >
+                                                <div>
+                                                    <p className="text-sm font-semibold text-slate-800 group-hover:text-violet-700">
+                                                        {link.label || `Link ${link.id}`}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-slate-500 break-all">
+                                                        {link.link}
+                                                    </p>
+                                                </div>
+                                                <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-600">
+                                                    {t.openLink}
+                                                </span>
+                                            </a>
+                                        ))}
                                     </div>
-                                    <div>
-                                        <p className="alc-caption text-slate-500">{t.totalQuestions}</p>
-                                        <p className="font-semibold text-slate-800">
-                                            {item.questions} {t.questions}
-                                        </p>
-                                    </div>
-                                </div>
+                                ) : (
+                                    <p className="text-sm text-slate-500">{t.noLinks}</p>
+                                )}
                             </div>
                         </motion.div>
 
@@ -458,32 +509,32 @@ export default function BankSoalDetail({ slug }) {
                                     <span className="alc-body-sm text-slate-500">{t.format}</span>
                                     <span className="alc-body-sm font-medium text-slate-800">{item.format}</span>
                                 </div>
-                                <div className="flex justify-between items-center py-2">
-                                    <span className="alc-body-sm text-slate-500">{t.totalQuestions}</span>
-                                    <span className="alc-body-sm font-medium text-slate-800">
-                                        {item.questions} {t.questions}
-                                    </span>
-                                </div>
                             </div>
 
                             <div className="mt-6 space-y-3">
-                                <a
-                                    href={contactInfo.whatsapp.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex w-full items-center justify-center alc-button bg-brand-primary alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:opacity-90 min-h-[44px]"
-                                >
-                                    {t.startPractice}
-                                    <svg
-                                        className="ml-2 h-4 w-4"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        strokeWidth={2}
+                                {primaryLink ? (
+                                    <a
+                                        href={primaryLink.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex w-full items-center justify-center alc-button bg-brand-primary alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:opacity-90 min-h-[44px]"
                                     >
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </a>
+                                        {t.startPractice}
+                                        <svg
+                                            className="ml-2 h-4 w-4"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                            strokeWidth={2}
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </a>
+                                ) : (
+                                    <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                                        {t.noLinks}
+                                    </div>
+                                )}
                                 <a
                                     href={contactInfo.whatsapp.link}
                                     target="_blank"

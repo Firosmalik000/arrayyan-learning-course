@@ -74,7 +74,7 @@ export default function Dashboard() {
         <>
             <Head title="Dashboard Admin" />
             <div className="space-y-6 rounded-3xl bg-gradient-to-br from-violet-50/40 via-white to-amber-50/40 p-4 shadow-sm sm:space-y-8 sm:p-6">
-                <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                     <div className="min-w-0 flex-1">
                         <h2 className="text-xl font-semibold text-slate-800 sm:text-2xl">
                             Dashboard Konten
@@ -84,7 +84,7 @@ export default function Dashboard() {
                             tim ALC.
                         </p>
                     </div>
-                    <div className="flex shrink-0 flex-wrap gap-2 sm:gap-3">
+                    <div className="flex flex-wrap gap-2 sm:gap-3">
                         <button
                             type="button"
                             className="hidden rounded-full border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:border-violet-300 hover:text-violet-800 sm:inline-flex sm:px-4 sm:py-2"
@@ -102,7 +102,7 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
                     {stats.map((item) => (
                         <div
                             key={item.label}
@@ -129,7 +129,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="relative rounded-2xl border border-violet-100/80 bg-gradient-to-br from-white via-white to-violet-50/60 p-4 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.6)] sm:rounded-3xl sm:p-6">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-slate-800">
                                 Grafik Pendaftaran
@@ -199,7 +199,7 @@ export default function Dashboard() {
 
                 <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1.2fr_0.8fr]">
                     <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm font-semibold text-slate-800">
                                     Konten Beranda
@@ -210,7 +210,7 @@ export default function Dashboard() {
                             </div>
                             <button
                                 type="button"
-                                className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-violet-200 hover:text-violet-700 sm:px-3 sm:py-1 sm:text-xs"
+                                className="w-full rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-violet-200 hover:text-violet-700 sm:w-auto sm:px-3 sm:py-1 sm:text-xs"
                             >
                                 Kelola konten
                             </button>
@@ -286,7 +286,7 @@ export default function Dashboard() {
 
                 <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1.3fr_0.7fr]">
                     <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm font-semibold text-slate-800">
                                     Antrian Pendaftaran
@@ -297,7 +297,7 @@ export default function Dashboard() {
                             </div>
                             <button
                                 type="button"
-                                className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-violet-200 hover:text-violet-700 sm:px-3 sm:py-1 sm:text-xs"
+                                className="w-full rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-violet-200 hover:text-violet-700 sm:w-auto sm:px-3 sm:py-1 sm:text-xs"
                             >
                                 Lihat semua
                             </button>

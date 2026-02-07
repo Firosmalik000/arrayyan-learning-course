@@ -70,7 +70,7 @@ export default function Register() {
             />
 
             <section className="bg-gradient-to-br from-violet-50 via-white to-amber-50 py-10 alc-pattern sm:py-16">
-                <div className="mx-auto w-full max-w-xl px-4 sm:px-6">
+                <div className="mx-auto w-full max-w-4xl px-4 sm:px-6">
                     <SectionTitle
                         eyebrow="Join ALC"
                         title={text.title}
@@ -112,7 +112,7 @@ export default function Register() {
                             <h3 className="font-display text-base font-semibold text-slate-800 sm:text-lg">
                                 {text.studentTitle}
                             </h3>
-                            <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-4">
+                            <div className="mt-3 grid gap-3 sm:mt-4 sm:grid-cols-2 sm:gap-4">
                                 <div>
                                     <label className={labelClass}>{studentFields.name}</label>
                                     <input
@@ -126,7 +126,7 @@ export default function Register() {
                                         <p className="mt-1 text-xs text-rose-500">{studentForm.errors.student_name}</p>
                                     )}
                                 </div>
-                                <div>
+                                <div className="sm:col-span-2">
                                     <label className={labelClass}>{studentFields.address}</label>
                                     <textarea
                                         rows="2"
@@ -242,7 +242,7 @@ export default function Register() {
                                         <option value="online">Online</option>
                                     </select>
                                 </div>
-                                <div>
+                                <div className="sm:col-span-2">
                                     <label className={labelClass}>{studentFields.notes}</label>
                                     <textarea
                                         rows="3"
@@ -272,7 +272,7 @@ export default function Register() {
                             <h3 className="font-display text-base font-semibold text-slate-800 sm:text-lg">
                                 {text.teacherTitle}
                             </h3>
-                            <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-4">
+                            <div className="mt-3 grid gap-3 sm:mt-4 sm:grid-cols-2 sm:gap-4">
                                 <div>
                                     <label className={labelClass}>{teacherFields.name}</label>
                                     <input
@@ -286,7 +286,7 @@ export default function Register() {
                                         <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.name}</p>
                                     )}
                                 </div>
-                                <div>
+                                <div className="sm:col-span-2">
                                     <label className={labelClass}>{teacherFields.address}</label>
                                     <textarea
                                         rows="2"
@@ -348,7 +348,7 @@ export default function Register() {
                                         <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.contact}</p>
                                     )}
                                 </div>
-                                <div>
+                                <div className="sm:col-span-2">
                                     <label className={labelClass}>{teacherFields.cv}</label>
                                     <input
                                         type="file"
@@ -360,7 +360,7 @@ export default function Register() {
                                         <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.cv}</p>
                                     )}
                                 </div>
-                                <div>
+                                <div className="sm:col-span-2">
                                     <label className={labelClass}>{teacherFields.notes}</label>
                                     <textarea
                                         rows="3"

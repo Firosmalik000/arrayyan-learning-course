@@ -5,13 +5,14 @@ import SeoHead from '@/Components/SeoHead';
 import SectionTitle from '@/Components/SectionTitle';
 import PasskeyModal from '@/Components/PasskeyModal';
 import { useI18n } from '@/lib/i18n';
+import { formatDate } from '@/lib/formatDate';
 
 // Shared data
-import { fadeUp, stagger, toneStyles } from '@/data';
+import { fadeUp, stagger } from '@/data';
 import { contactInfo } from '@/data/content/site';
 
 // Page-specific data
-import { events, pageContent, olympiadPasskey } from './data';
+import { pageContent, olympiadPasskey } from './data';
 
 const detailContent = {
     id: {
@@ -60,9 +61,14 @@ const detailContent = {
     },
 };
 
-export default function OlympiadDetail({ slug }) {
+const formatCurrency = (value, lang = 'id') => {
+    if (!value || value === 0) return lang === 'en' ? 'Free' : 'Gratis';
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+};
+
+export default function OlympiadDetail() {
     const { language } = useI18n();
-    const { url } = usePage();
+    const { url, props } = usePage();
     const t = detailContent[language] || detailContent.id;
     const text = pageContent[language] || pageContent.id;
     const [hasAccess, setHasAccess] = useState(false);
@@ -81,8 +87,22 @@ export default function OlympiadDetail({ slug }) {
         }
     }, []);
 
-    // Find the event by slug
-    const event = events.find((e) => e.slug === slug);
+    const olympiad = props.olympiad;
+    const event = olympiad
+        ? {
+            name: olympiad.name,
+            level: olympiad.level || '-',
+            schedule_raw: olympiad.schedule,
+            schedule: formatDate(olympiad.schedule, language),
+            selection: olympiad.selection_system || '-',
+            category: olympiad.category === 'paid'
+                ? (language === 'en' ? 'Paid' : 'Berbayar')
+                : (language === 'en' ? 'Free' : 'Gratis'),
+            fee: formatCurrency(olympiad.fee, language),
+            description: olympiad.notes || text.subtitle,
+            image_url: olympiad.image_url || null,
+        }
+        : null;
 
     if (!event) {
         return (
@@ -128,14 +148,15 @@ export default function OlympiadDetail({ slug }) {
         );
     }
 
-    const toneClass = toneStyles[event.tone] || toneStyles.violet;
-    const eventName = event.name[language] || event.name.id;
-    const eventLevel = event.level[language] || event.level.id;
-    const eventSchedule = event.schedule[language] || event.schedule.id;
-    const eventSelection = event.selection[language] || event.selection.id;
-    const eventCategory = event.category[language] || event.category.id;
-    const eventFee = event.fee ? (event.fee[language] || event.fee.id) : t.free;
-    const eventDesc = event.description[language] || event.description.id;
+    const isPaid = event.category.toLowerCase() === 'paid' || event.category.toLowerCase() === 'berbayar';
+    const toneClass = isPaid ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
+    const eventName = event.name;
+    const eventLevel = event.level;
+    const eventSchedule = event.schedule;
+    const eventSelection = event.selection;
+    const eventCategory = event.category;
+    const eventFee = event.fee;
+    const eventDesc = event.description;
 
     return (
         <>
@@ -148,6 +169,7 @@ export default function OlympiadDetail({ slug }) {
                     name: eventName,
                     description: eventDesc,
                     startDate: event.schedule_raw,
+                    image: event.image_url || undefined,
                 }}
             />
 
@@ -246,6 +268,16 @@ export default function OlympiadDetail({ slug }) {
                             transition={{ duration: 0.5, delay: 0.1 }}
                             className="alc-card border border-slate-100 bg-white shadow-lg"
                         >
+                            {event.image_url && (
+                                <div className="mb-4 overflow-hidden rounded-xl border border-slate-100">
+                                    <img
+                                        src={event.image_url}
+                                        alt={eventName}
+                                        className="h-40 w-full object-cover"
+                                        loading="lazy"
+                                    />
+                                </div>
+                            )}
                             <div className={`flex alc-icon items-center justify-center ${toneClass} mb-4`}>
                                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" />
