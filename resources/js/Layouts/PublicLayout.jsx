@@ -3,6 +3,23 @@ import { useState } from 'react';
 import LanguageSelector from '../Components/LanguageSelector';
 import { useI18n } from '../lib/i18n';
 
+const localizeField = (value, lang) => {
+    if (!value) {
+        return '';
+    }
+
+    if (typeof value === 'string') {
+        return value;
+    }
+
+    const localized = value[lang] ?? value.id ?? value.en ?? '';
+    if (localized && typeof localized === 'object') {
+        return localized[lang] ?? localized.id ?? localized.en ?? '';
+    }
+
+    return localized;
+};
+
 export default function PublicLayout({ children }) {
     const { t, language } = useI18n();
     const { props } = usePage();
@@ -11,10 +28,15 @@ export default function PublicLayout({ children }) {
 
     // Get contact info from SEO settings (centralized source)
     const seoContact = props.seoSettings?.contact || {};
-    const socials = seoContact.socials || [];
-    const phone = seoContact.phone || '';
-    const email = seoContact.email || '';
-    const address = seoContact.address?.full?.[language] || seoContact.address?.full?.id || '';
+    const socials = (seoContact.socials || []).map((social) => ({
+        ...social,
+        label: localizeField(social.label, language) || social.label || '',
+        value: localizeField(social.value, language) || social.value || '',
+        link: localizeField(social.link, language) || social.link || '',
+    }));
+    const phone = localizeField(seoContact.phone, language) || '';
+    const email = localizeField(seoContact.email, language) || '';
+    const address = localizeField(seoContact.address?.full, language) || '';
 
     // Helper to get social link by key
     const getSocial = (key) => socials.find((s) => s.key === key) || {};

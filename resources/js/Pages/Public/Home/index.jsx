@@ -165,7 +165,7 @@ export default function Home({ landingContent }) {
     const landing = mergeContent(defaultContent, landingContent || {});
 
     // Use social media from SEO settings (centralized source)
-    const socialCards = seoContact.socials?.length ? seoContact.socials : [];
+    const socialCards = localizeList(seoContact.socials?.length ? seoContact.socials : [], language);
 
     // Get localized content
     const t = localizeDeep(landing.sectionTitles[language] || landing.sectionTitles.id, language);
@@ -1135,7 +1135,8 @@ export default function Home({ landingContent }) {
                             const icon = icons[item.icon] || icons.mail;
                             const toneClass = toneStyles[item.tone] || toneStyles.violet;
                             const label = localizeField(item.label, language) || item.label || '';
-                            const link = item.link || '#';
+                            const value = localizeField(item.value, language) || item.value || '';
+                            const link = localizeField(item.link, language) || item.link || '#';
                             const isExternal = link.startsWith('http');
                             return (
                                 <motion.a
@@ -1156,7 +1157,7 @@ export default function Home({ landingContent }) {
                                         {label}
                                     </p>
                                     <p className="mt-1 alc-body-sm text-slate-500">
-                                        {item.value}
+                                        {value}
                                     </p>
                                 </motion.a>
                             );
