@@ -99,10 +99,32 @@ export default function Home({ landingContent }) {
         return localized;
     };
 
+    const localizeDeep = (value, lang) => {
+        if (Array.isArray(value)) {
+            return value.map((item) => localizeDeep(item, lang));
+        }
+
+        if (!value || typeof value !== 'object') {
+            return value;
+        }
+
+        const keys = Object.keys(value);
+        const isLocalizedLeaf = keys.length > 0 && keys.every((key) => key === 'id' || key === 'en');
+
+        if (isLocalizedLeaf) {
+            return localizeDeep(value[lang] ?? value.id ?? value.en ?? '', lang);
+        }
+
+        return keys.reduce((result, key) => {
+            result[key] = localizeDeep(value[key], lang);
+            return result;
+        }, {});
+    };
+
     const localizeList = (value, lang) => {
         if (!value) return [];
-        if (Array.isArray(value)) return value;
-        return value[lang] || value.id || [];
+        if (Array.isArray(value)) return value.map((item) => localizeDeep(item, lang));
+        return localizeDeep(value[lang] || value.id || [], lang);
     };
 
     const formatModeLabel = (value) => {
@@ -146,34 +168,34 @@ export default function Home({ landingContent }) {
     const socialCards = seoContact.socials?.length ? seoContact.socials : [];
 
     // Get localized content
-    const t = landing.sectionTitles[language] || landing.sectionTitles.id;
-    const cta = landing.ctaButtons[language] || landing.ctaButtons.id;
-    const about = landing.aboutContent[language] || landing.aboutContent.id;
-    const vm = landing.visionMission[language] || landing.visionMission.id;
-    const levels = landing.educationLevels[language] || landing.educationLevels.id;
-    const subj = landing.subjects[language] || landing.subjects.id;
-    const programContentText = landing.programContent[language] || landing.programContent.id;
-    const bank = landing.bankSoalContent[language] || landing.bankSoalContent.id;
-    const olympiad = landing.olympiadContent[language] || landing.olympiadContent.id;
+    const t = localizeDeep(landing.sectionTitles[language] || landing.sectionTitles.id, language);
+    const cta = localizeDeep(landing.ctaButtons[language] || landing.ctaButtons.id, language);
+    const about = localizeDeep(landing.aboutContent[language] || landing.aboutContent.id, language);
+    const vm = localizeDeep(landing.visionMission[language] || landing.visionMission.id, language);
+    const levels = localizeDeep(landing.educationLevels[language] || landing.educationLevels.id, language);
+    const subj = localizeDeep(landing.subjects[language] || landing.subjects.id, language);
+    const programContentText = localizeDeep(landing.programContent[language] || landing.programContent.id, language);
+    const bank = localizeDeep(landing.bankSoalContent[language] || landing.bankSoalContent.id, language);
+    const olympiad = localizeDeep(landing.olympiadContent[language] || landing.olympiadContent.id, language);
 
     // Use operating hours from SEO settings (centralized source)
     const hours = {
-        weekday: seoContact.operatingHours?.weekday?.[language] || seoContact.operatingHours?.weekday?.id || '',
-        weekend: seoContact.operatingHours?.weekend?.[language] || seoContact.operatingHours?.weekend?.id || '',
+        weekday: localizeField(seoContact.operatingHours?.weekday, language) || '',
+        weekend: localizeField(seoContact.operatingHours?.weekend, language) || '',
     };
 
     // Use address from SEO settings (centralized source)
     const contactAddress = {
-        text: seoContact.address?.full?.[language] || seoContact.address?.full?.id || '',
+        text: localizeField(seoContact.address?.full, language) || '',
         mapLink: seoContact.address?.mapLink || '',
     };
-    const badges = landing.heroContent.badges[language] || landing.heroContent.badges.id;
+    const badges = localizeList(landing.heroContent.badges[language] || landing.heroContent.badges.id, language);
     const heroPanel = {
-        left: landing.heroContent.panels.left[language] || landing.heroContent.panels.left.id,
-        right: landing.heroContent.panels.right[language] || landing.heroContent.panels.right.id,
+        left: localizeDeep(landing.heroContent.panels.left[language] || landing.heroContent.panels.left.id, language),
+        right: localizeDeep(landing.heroContent.panels.right[language] || landing.heroContent.panels.right.id, language),
     };
-    const features = landing.featureCards[language] || landing.featureCards.id;
-    const statItems = landing.stats[language] || landing.stats.id;
+    const features = localizeList(landing.featureCards[language] || landing.featureCards.id, language);
+    const statItems = localizeList(landing.stats[language] || landing.stats.id, language);
     const programSource = Array.isArray(landing.programs) ? landing.programs : [];
     const siteTitle = localizeField(landing.siteConfig?.name, language) || siteConfig.name;
 
