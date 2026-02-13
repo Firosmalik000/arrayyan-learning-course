@@ -7,6 +7,23 @@ import { useI18n } from '@/lib/i18n';
 // Page-specific data
 import { pageContent, formFields, initialStudentForm, initialTeacherForm, packageOptions } from './data';
 
+const localizeField = (value, lang) => {
+    if (!value) {
+        return '';
+    }
+
+    if (typeof value === 'string') {
+        return value;
+    }
+
+    const localized = value[lang] ?? value.id ?? value.en ?? '';
+    if (localized && typeof localized === 'object') {
+        return localized[lang] ?? localized.id ?? localized.en ?? '';
+    }
+
+    return localized;
+};
+
 export default function Register() {
     const { props } = usePage();
     const programs = props.programs ?? [];
@@ -28,10 +45,15 @@ export default function Register() {
 
     const studentForm = useForm(initialStudentForm);
     const teacherForm = useForm(initialTeacherForm);
-    const programOptions = programs.map((program) => ({
-        value: program.id,
-        label: program.level ? `${program.name} • ${program.level}` : program.name,
-    }));
+    const programOptions = programs.map((program) => {
+        const programName = localizeField(program.name, language);
+        const programLevel = localizeField(program.level, language);
+
+        return {
+            value: program.id,
+            label: programLevel ? `${programName} - ${programLevel}` : programName,
+        };
+    });
     const hasPrograms = programOptions.length > 0;
 
     const handleStudentSubmit = (event) => {
@@ -385,3 +407,4 @@ export default function Register() {
         </>
     );
 }
+

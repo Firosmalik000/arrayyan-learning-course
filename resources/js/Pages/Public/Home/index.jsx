@@ -92,7 +92,11 @@ export default function Home({ landingContent }) {
     const localizeField = (value, lang) => {
         if (!value) return '';
         if (typeof value === 'string') return value;
-        return value[lang] || value.id || '';
+        const localized = value[lang] ?? value.id ?? value.en ?? '';
+        if (localized && typeof localized === 'object') {
+            return localized[lang] ?? localized.id ?? localized.en ?? '';
+        }
+        return localized;
     };
 
     const localizeList = (value, lang) => {
@@ -171,6 +175,7 @@ export default function Home({ landingContent }) {
     const features = landing.featureCards[language] || landing.featureCards.id;
     const statItems = landing.stats[language] || landing.stats.id;
     const programSource = Array.isArray(landing.programs) ? landing.programs : [];
+    const siteTitle = localizeField(landing.siteConfig?.name, language) || siteConfig.name;
 
     const programItems = programSource.map((item) => {
         if (item?.name && typeof item.name === 'object') {
@@ -242,7 +247,7 @@ export default function Home({ landingContent }) {
                             variants={fadeUp}
                             className="font-hero alc-hero-title font-bold leading-snug text-violet-700"
                         >
-                            {landing.siteConfig.name}
+                            {siteTitle}
                         </motion.h1>
                         <motion.p
                             variants={fadeUp}

@@ -243,6 +243,19 @@ class LandingContentController extends Controller
             }
         }
 
+        $siteConfig = $content['siteConfig'] ?? null;
+        if (is_array($siteConfig)) {
+            if (array_key_exists('name', $siteConfig)) {
+                $siteConfig['name'] = $this->normalizeTextValue($siteConfig['name']);
+            }
+
+            if (array_key_exists('shortName', $siteConfig)) {
+                $siteConfig['shortName'] = $this->normalizeTextValue($siteConfig['shortName']);
+            }
+
+            $content['siteConfig'] = $siteConfig;
+        }
+
         return $content;
     }
 
@@ -373,6 +386,25 @@ class LandingContentController extends Controller
             'id' => $stringValue,
             'en' => $stringValue,
         ];
+    }
+
+    private function normalizeTextValue(null|array|string $value): string
+    {
+        if (is_array($value)) {
+            $localized = $value['id'] ?? ($value['en'] ?? '');
+
+            if (is_scalar($localized)) {
+                return (string) $localized;
+            }
+
+            return '';
+        }
+
+        if (is_scalar($value) || $value === null) {
+            return (string) ($value ?? '');
+        }
+
+        return '';
     }
 
     private function getBankSoalItems(bool $onlyActive = false): array
