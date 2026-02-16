@@ -39,6 +39,41 @@ const localizeField = (value, lang) => {
     return value[lang] || value.id || value.en || '';
 };
 
+const normalizeFormatValue = (value) => (value || '').toString().trim().toLowerCase();
+
+const matchesFormat = (value, selectedFormat) => {
+    if (!selectedFormat) {
+        return true;
+    }
+
+    const normalized = normalizeFormatValue(value);
+    if (!normalized) {
+        return false;
+    }
+
+    if (normalized === selectedFormat) {
+        return true;
+    }
+
+    const hasOffline = /offline|luring|tatap/.test(normalized);
+    const hasOnline = /online|daring/.test(normalized);
+    const hasHybrid = /hybrid/.test(normalized) || (hasOffline && hasOnline);
+
+    if (selectedFormat === 'offline') {
+        return hasOffline;
+    }
+
+    if (selectedFormat === 'online') {
+        return hasOnline;
+    }
+
+    if (selectedFormat === 'hybrid') {
+        return hasHybrid;
+    }
+
+    return false;
+};
+
 export default function BankSoalIndex() {
     const { language } = useI18n();
     const { url, props } = usePage();
@@ -62,6 +97,7 @@ export default function BankSoalIndex() {
     const [searchQuery, setSearchQuery] = useState('');
     const [hasAccess, setHasAccess] = useState(false);
     const [showPasskeyModal, setShowPasskeyModal] = useState(false);
+    const [isFiltering, setIsFiltering] = useState(true);
     const shouldReduceMotion = useReducedMotion();
     const floatSlow = shouldReduceMotion ? undefined : { y: [0, -16, 0] };
     const floatFast = shouldReduceMotion ? undefined : { y: [0, -10, 0] };
@@ -90,9 +126,19 @@ export default function BankSoalIndex() {
         if (!access) setShowPasskeyModal(true);
     }, []);
 
+    useEffect(() => {
+        setIsFiltering(true);
+
+        const timeoutId = window.setTimeout(() => {
+            setIsFiltering(false);
+        }, 220);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [activeCategory, activeFormat, searchQuery, dbItems.length]);
+
     const filteredItems = dbItems.filter((item) => {
         const matchCategory = !activeCategory || localizeField(item.category, language) === activeCategory;
-        const matchFormat = !activeFormat || item.format.toLowerCase() === activeFormat;
+        const matchFormat = matchesFormat(item.format, activeFormat);
         const matchSearch =
             !searchQuery ||
             item.name[language]?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -209,7 +255,27 @@ export default function BankSoalIndex() {
                     </div>
 
                     {/* Results Grid */}
-                    {filteredItems.length > 0 ? (
+                    {isFiltering ? (
+                        <div className="grid alc-gap-md md:grid-cols-2 lg:grid-cols-3">
+                            {Array.from({ length: 6 }).map((_, index) => (
+                                <div
+                                    key={index}
+                                    className="overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"
+                                >
+                                    <div className="h-40 animate-pulse rounded-2xl bg-slate-100" />
+                                    <div className="mt-4 h-4 w-1/4 animate-pulse rounded bg-slate-100" />
+                                    <div className="mt-3 h-5 w-4/5 animate-pulse rounded bg-slate-100" />
+                                    <div className="mt-2 h-4 w-full animate-pulse rounded bg-slate-100" />
+                                    <div className="mt-2 h-4 w-3/4 animate-pulse rounded bg-slate-100" />
+                                    <div className="mt-5 flex gap-2">
+                                        <div className="h-6 w-20 animate-pulse rounded-full bg-slate-100" />
+                                        <div className="h-6 w-20 animate-pulse rounded-full bg-slate-100" />
+                                    </div>
+                                    <div className="mt-6 h-10 w-full animate-pulse rounded-full bg-slate-100" />
+                                </div>
+                            ))}
+                        </div>
+                    ) : filteredItems.length > 0 ? (
                         <motion.div
                             initial="hidden"
                             whileInView="visible"
