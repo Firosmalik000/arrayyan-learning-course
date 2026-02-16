@@ -8,6 +8,8 @@ use App\Models\Role;
 use App\Models\User;
 use App\Support\PermissionCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class BankSoalTest extends TestCase
@@ -31,6 +33,7 @@ class BankSoalTest extends TestCase
     public function test_store_bank_soal(): void
     {
         $user = $this->actingAsAdmin();
+        Storage::fake('public');
 
         $response = $this->actingAs($user, PermissionCatalog::GUARD)->post('/admin/bank-soal', [
             'name' => 'Matematika SD',
@@ -40,11 +43,15 @@ class BankSoalTest extends TestCase
             'questions' => 50,
             'slug' => 'matematika-sd',
             'description' => 'Soal latihan matematika',
+            'image' => UploadedFile::fake()->image('bank-soal.jpg'),
         ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('success');
         $this->assertDatabaseHas('bank_soals', ['slug' => 'matematika-sd']);
+        $bankSoal = BankSoal::where('slug', 'matematika-sd')->first();
+        $this->assertNotNull($bankSoal?->image_path);
+        Storage::disk('public')->assertExists($bankSoal->image_path);
     }
 
     public function test_store_validates_required_fields(): void
@@ -130,6 +137,7 @@ class BankSoalTest extends TestCase
                 ['id' => 1, 'label' => 'Kelas 1', 'link' => 'https://example.com/kelas-1'],
                 ['id' => 2, 'label' => 'Kelas 2', 'link' => 'https://example.com/kelas-2'],
             ],
+            'image_path' => 'bank-soals/matematika-sd-paket-1.jpg',
             'tone' => 'violet',
             'is_active' => true,
         ]);
@@ -142,6 +150,7 @@ class BankSoalTest extends TestCase
             ->where('bankSoal.slug', 'matematika-sd-paket-1')
             ->where('bankSoal.links.0.label', 'Kelas 1')
             ->where('bankSoal.links.1.label', 'Kelas 2')
+            ->where('bankSoal.image_url', '/storage/bank-soals/matematika-sd-paket-1.jpg')
         );
     }
 

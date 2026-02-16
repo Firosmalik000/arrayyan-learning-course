@@ -425,6 +425,7 @@ class LandingContentController extends Controller
                 'questions' => $item->questions,
                 'description' => $this->normalizeLocalized($item->description),
                 'links' => $item->links ?? [],
+                'image_url' => $item->image_path ? Storage::url($item->image_path) : null,
                 'tone' => $item->tone,
                 'is_active' => $item->is_active,
             ];

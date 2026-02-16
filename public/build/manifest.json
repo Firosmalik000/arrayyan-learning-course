@@ -18,7 +18,7 @@
     "name": "vendor-react"
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-CsyL-gEJ.js",
+    "file": "assets/app-Ck6SssAy.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -28,7 +28,7 @@
       "_vendor-motion-BfRiiKiu.js"
     ],
     "css": [
-      "assets/app-CLP4XjHQ.css"
+      "assets/app-BtnobBUr.css"
     ]
   }
 }

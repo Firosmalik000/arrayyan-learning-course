@@ -12,6 +12,7 @@ const normalizeModule = (item, index) => ({
     description: item?.description?.id ?? item?.description ?? '',
     tone: item?.tone ?? 'violet',
     links: Array.isArray(item?.links) ? item.links : [],
+    image_url: item?.image_url ?? null,
     is_active: item?.is_active ?? true,
 });
 
@@ -144,8 +145,18 @@ function FormTextarea({ label, value, onChange, placeholder, rows = 3 }) {
     );
 }
 
+const getInitials = (value) => {
+    if (!value) {
+        return 'ALC';
+    }
+
+    const chars = value.trim().split(/\s+/).map((part) => part[0]).join('');
+
+    return chars.slice(0, 2).toUpperCase();
+};
+
 export default function BankSoal() {
-    const { bankSoalItems: bankSoalData = [], flash, allowedActions = {} } = usePage().props;
+    const { bankSoalItems: bankSoalData = [], flash, allowedActions = {}, errors = {} } = usePage().props;
     const modules = bankSoalData.map((item, index) => normalizeModule(item, index));
     const [search, setSearch] = useState('');
     const [filterLevel, setFilterLevel] = useState('');
@@ -159,6 +170,7 @@ export default function BankSoal() {
     const [editing, setEditing] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [detailTarget, setDetailTarget] = useState(null);
+    const [currentImageUrl, setCurrentImageUrl] = useState(null);
 
     // Form state
     const createLinkRow = () => ({
@@ -174,6 +186,7 @@ export default function BankSoal() {
         format: '',
         slug: '',
         description: '',
+        image: null,
         is_active: true,
         links: [createLinkRow()],
     });
@@ -220,6 +233,7 @@ export default function BankSoal() {
                 format: item.format,
                 slug: item.slug,
                 description: item.description,
+                image: null,
                 is_active: item.is_active ?? true,
                 links: item.links?.length
                     ? item.links.map((link) => ({
@@ -229,6 +243,7 @@ export default function BankSoal() {
                     }))
                     : [createLinkRow()],
             });
+            setCurrentImageUrl(item.image_url ?? null);
         } else {
             setEditing(null);
             setForm({
@@ -238,9 +253,11 @@ export default function BankSoal() {
                 format: '',
                 slug: '',
                 description: '',
+                image: null,
                 is_active: true,
                 links: [createLinkRow()],
             });
+            setCurrentImageUrl(null);
         }
         setShowModal(true);
     };
@@ -260,13 +277,15 @@ export default function BankSoal() {
             links: cleanedLinks,
         };
         if (editing) {
-            router.put(`/admin/bank-soal/${editing.id}`, data, {
+            router.post(`/admin/bank-soal/${editing.id}`, { ...data, _method: 'put' }, {
                 preserveScroll: true,
+                forceFormData: true,
                 onSuccess: () => setShowModal(false),
             });
         } else {
             router.post('/admin/bank-soal', data, {
                 preserveScroll: true,
+                forceFormData: true,
                 onSuccess: () => setShowModal(false),
             });
         }
@@ -424,9 +443,18 @@ export default function BankSoal() {
                                         <tr key={item.id} className="transition hover:bg-slate-50">
                                         <td className="px-5 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-                                                    {icons.file}
-                                                </div>
+                                                {item.image_url ? (
+                                                    <img
+                                                        src={item.image_url}
+                                                        alt={item.name}
+                                                        className="h-10 w-10 rounded-xl object-cover"
+                                                        loading="lazy"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                                                        {icons.file}
+                                                    </div>
+                                                )}
                                                 <span className="font-medium text-slate-800">{item.name}</span>
                                             </div>
                                         </td>
@@ -538,6 +566,24 @@ export default function BankSoal() {
                         placeholder="Deskripsi modul..."
                     />
                     <div>
+                        <label className="mb-1.5 block text-sm font-medium text-slate-700">Upload Foto</label>
+                        <input
+                            type="file"
+                            accept=".jpg,.jpeg,.png,.webp"
+                            onChange={(e) => setForm({ ...form, image: e.target.files?.[0] ?? null })}
+                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:text-sm file:font-medium file:text-slate-600 hover:file:bg-slate-200"
+                        />
+                        {currentImageUrl && (
+                            <p className="mt-2 text-xs text-slate-500">
+                                Foto saat ini:{' '}
+                                <a href={currentImageUrl} target="_blank" rel="noreferrer" className="font-medium text-violet-600 underline">
+                                    Lihat
+                                </a>
+                            </p>
+                        )}
+                        {errors.image && <p className="mt-1 text-xs text-rose-500">{errors.image}</p>}
+                    </div>
+                    <div>
                         <label className="mb-2 block text-sm font-medium text-slate-700">Link Modul</label>
                         <div className="space-y-2">
                             {form.links.map((link, index) => (
@@ -598,6 +644,22 @@ export default function BankSoal() {
             <Modal isOpen={showDetailModal} onClose={() => setShowDetailModal(false)} title="Detail Modul" size="lg">
                 {detailTarget && (
                     <div className="space-y-4">
+                        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
+                            {detailTarget.image_url ? (
+                                <img
+                                    src={detailTarget.image_url}
+                                    alt={detailTarget.name}
+                                    className="h-56 w-full object-cover"
+                                    loading="lazy"
+                                />
+                            ) : (
+                                <div className="flex h-56 items-center justify-center bg-gradient-to-br from-slate-100 via-white to-violet-50">
+                                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white text-base font-semibold text-violet-600 shadow-sm">
+                                        {getInitials(detailTarget.name)}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                         <div className="flex flex-wrap items-center gap-2">
                             <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusStyles[detailTarget.is_active ? 'Aktif' : 'Nonaktif']}`}>
                                 {detailTarget.is_active ? 'Aktif' : 'Nonaktif'}

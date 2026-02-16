@@ -286,7 +286,26 @@ class MasterDataController extends Controller
     public function bankSoal(): Response
     {
         return Inertia::render('Admin/BankSoal', [
-            'bankSoalItems' => BankSoal::query()->latest()->get(),
+            'bankSoalItems' => BankSoal::query()
+                ->latest()
+                ->get()
+                ->map(function (BankSoal $item) {
+                    return [
+                        'id' => $item->id,
+                        'slug' => $item->slug,
+                        'name' => $item->name,
+                        'category' => $item->category,
+                        'level' => $item->level,
+                        'format' => $item->format,
+                        'questions' => $item->questions,
+                        'description' => $item->description,
+                        'links' => $item->links ?? [],
+                        'image_path' => $item->image_path,
+                        'image_url' => $item->image_path ? Storage::url($item->image_path) : null,
+                        'tone' => $item->tone,
+                        'is_active' => $item->is_active,
+                    ];
+                }),
         ]);
     }
 

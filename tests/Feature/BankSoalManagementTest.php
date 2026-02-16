@@ -7,6 +7,8 @@ use App\Models\Role;
 use App\Models\User;
 use App\Support\PermissionCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class BankSoalManagementTest extends TestCase
@@ -30,6 +32,7 @@ class BankSoalManagementTest extends TestCase
     public function test_store_bank_soal_with_links(): void
     {
         $user = $this->actingAsAdmin();
+        Storage::fake('public');
 
         $payload = [
             'name' => 'Matematika SD - Paket 1',
@@ -42,6 +45,7 @@ class BankSoalManagementTest extends TestCase
                 ['id' => 1, 'label' => 'Kelas 1', 'link' => 'https://example.com/kelas-1'],
                 ['id' => 2, 'label' => 'Kelas 2', 'link' => 'https://example.com/kelas-2'],
             ],
+            'image' => UploadedFile::fake()->image('bank-soal.jpg'),
             'is_active' => 1,
         ];
 
@@ -56,6 +60,8 @@ class BankSoalManagementTest extends TestCase
         $this->assertNotNull($bankSoal);
         $this->assertCount(2, $bankSoal->links);
         $this->assertSame('Kelas 1', $bankSoal->links[0]['label']);
+        $this->assertNotNull($bankSoal->image_path);
+        Storage::disk('public')->assertExists($bankSoal->image_path);
     }
 
     public function test_store_validates_required_fields(): void

@@ -20,6 +20,7 @@ class BankSoal extends Model
         'questions',
         'description',
         'links',
+        'image_path',
         'tone',
         'is_active',
     ];

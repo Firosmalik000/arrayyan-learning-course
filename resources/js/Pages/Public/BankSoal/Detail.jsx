@@ -113,6 +113,7 @@ export default function BankSoalDetail({ slug }) {
             level: normalizeLocalized(props.bankSoal.level),
             description: normalizeLocalized(props.bankSoal.description),
             links: Array.isArray(props.bankSoal.links) ? props.bankSoal.links : [],
+            image_url: props.bankSoal.image_url || null,
             tone: props.bankSoal.tone || 'violet',
         }
         : null;
@@ -442,6 +443,17 @@ export default function BankSoalDetail({ slug }) {
                                 {item.description[language] || item.description.id}
                             </p>
 
+                            {item.image_url && (
+                                <div className="mt-6 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+                                    <img
+                                        src={item.image_url}
+                                        alt={item.name[language] || item.name.id}
+                                        className="h-64 w-full object-cover sm:h-72"
+                                        loading="lazy"
+                                    />
+                                </div>
+                            )}
+
                             {/* Module Links */}
                             <div className="mt-6">
                                 <h2 className="font-display text-lg sm:text-xl font-semibold text-slate-900 mb-3">
@@ -484,8 +496,19 @@ export default function BankSoalDetail({ slug }) {
                             transition={{ duration: 0.5, delay: 0.1 }}
                             className="alc-card border border-slate-100 bg-white shadow-lg"
                         >
-                            <div className={`flex alc-icon items-center justify-center ${toneClass} mb-4`}>
-                                {icons.book}
+                            <div className="mb-4 overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
+                                {item.image_url ? (
+                                    <img
+                                        src={item.image_url}
+                                        alt={item.name[language] || item.name.id}
+                                        className="h-44 w-full object-cover"
+                                        loading="lazy"
+                                    />
+                                ) : (
+                                    <div className={`flex h-44 items-center justify-center ${toneClass}`}>
+                                        {icons.book}
+                                    </div>
+                                )}
                             </div>
 
                             <h3 className="font-display alc-card-title font-semibold text-slate-800 text-center">

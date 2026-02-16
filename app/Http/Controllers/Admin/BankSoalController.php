@@ -14,7 +14,12 @@ class BankSoalController extends Controller
 {
     public function store(StoreBankSoalRequest $request): RedirectResponse
     {
-        $data = $this->normalizePayload($request->validated());
+        $data = $request->validated();
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('bank-soals', 'public');
+        }
+        unset($data['image']);
+        $data = $this->normalizePayload($data);
 
         BankSoal::create($data);
 
@@ -23,7 +28,12 @@ class BankSoalController extends Controller
 
     public function update(UpdateBankSoalRequest $request, BankSoal $bankSoal): RedirectResponse
     {
-        $data = $this->normalizePayload($request->validated());
+        $data = $request->validated();
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('bank-soals', 'public');
+        }
+        unset($data['image']);
+        $data = $this->normalizePayload($data);
 
         $bankSoal->update($data);
 

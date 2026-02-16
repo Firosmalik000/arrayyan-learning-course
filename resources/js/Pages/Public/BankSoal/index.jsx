@@ -50,6 +50,7 @@ export default function BankSoalIndex() {
         level: item.level || { id: '', en: '' },
         format: item.format || '',
         description: item.description || { id: '', en: '' },
+        image_url: item.image_url || null,
         tone: item.tone || 'violet',
     }));
 
@@ -223,11 +224,25 @@ export default function BankSoalIndex() {
                                     whileHover={{ y: -4 }}
                                     className="group flex flex-col rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-lg hover:border-violet-200"
                                 >
+                                    <div className="mb-4 overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
+                                        {item.image_url ? (
+                                            <img
+                                                src={item.image_url}
+                                                alt={item.name[language] || item.name.id}
+                                                className="h-40 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <div className="flex h-40 items-center justify-center bg-gradient-to-br from-slate-100 via-white to-violet-50">
+                                                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-violet-600 shadow-sm">
+                                                    {icons.book}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {/* Header */}
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-                                            {icons.book}
-                                        </div>
+                                    <div className="flex justify-end">
                                         <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                                             {item.format}
                                         </span>

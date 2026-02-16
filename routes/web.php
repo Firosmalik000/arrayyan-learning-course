@@ -96,6 +96,7 @@ Route::get('/bank-soal/{slug}', function ($slug) {
             'questions' => $bankSoal->questions,
             'description' => $bankSoal->description,
             'links' => $bankSoal->links ?? [],
+            'image_url' => $bankSoal->image_path ? Storage::url($bankSoal->image_path) : null,
             'tone' => $bankSoal->tone,
         ] : null,
     ]);
