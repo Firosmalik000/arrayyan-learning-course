@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Olympiad;
 use App\Models\PageContent;
+use Database\Seeders\LandingContentSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -36,5 +38,15 @@ class LandingContentTest extends TestCase
             ->where('landingContent.siteConfig.name', 'Ar Rayyan Learning Course')
             ->where('landingContent.siteConfig.shortName', 'ALC')
         );
+    }
+
+    public function test_landing_content_seeder_creates_valid_olympiad_schedule_dates(): void
+    {
+        $this->seed(LandingContentSeeder::class);
+
+        $olympiad = Olympiad::query()->where('name', 'Olimpiade Sains Nasional')->first();
+
+        $this->assertNotNull($olympiad);
+        $this->assertSame('2026-03-15', $olympiad?->schedule?->toDateString());
     }
 }

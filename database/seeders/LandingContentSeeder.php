@@ -559,8 +559,8 @@ class LandingContentSeeder extends Seeder
                         'en' => 'Elementary - Senior High',
                     ],
                     'schedule' => [
-                        'id' => 'Februari - April',
-                        'en' => 'February - April',
+                        'id' => '2026-03-15',
+                        'en' => '2026-03-15',
                     ],
                     'category' => [
                         'id' => 'Gratis',
@@ -578,8 +578,8 @@ class LandingContentSeeder extends Seeder
                         'en' => 'Elementary / Junior High',
                     ],
                     'schedule' => [
-                        'id' => 'Mei - Juni',
-                        'en' => 'May - June',
+                        'id' => '2026-05-20',
+                        'en' => '2026-05-20',
                     ],
                     'category' => [
                         'id' => 'Berbayar',
@@ -597,8 +597,8 @@ class LandingContentSeeder extends Seeder
                         'en' => 'Junior High / Senior High',
                     ],
                     'schedule' => [
-                        'id' => 'Agustus',
-                        'en' => 'August',
+                        'id' => '2026-08-10',
+                        'en' => '2026-08-10',
                     ],
                     'category' => [
                         'id' => 'Gratis',
