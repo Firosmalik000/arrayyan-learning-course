@@ -11,6 +11,15 @@ class StoreTeacherRegistrationRequest extends FormRequest
         return true;
     }
 
+    public function prepareForValidation(): void
+    {
+        if ($this->has('contact')) {
+            $this->merge([
+                'contact' => (string) preg_replace('/[\s\-.\(\)]/', '', (string) $this->input('contact')),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -19,7 +28,7 @@ class StoreTeacherRegistrationRequest extends FormRequest
             'education' => ['required', 'string', 'max:255'],
             'subjects' => ['required', 'string', 'max:255'],
             'experience' => ['nullable', 'string', 'max:500'],
-            'contact' => ['required', 'string', 'max:255'],
+            'contact' => ['required', 'string', 'max:20', 'regex:/^(?:\+62|62|0)8[0-9]{5,13}$/'],
             'cv' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:5120'],
             'notes' => ['nullable', 'string', 'max:500'],
         ];
@@ -33,6 +42,7 @@ class StoreTeacherRegistrationRequest extends FormRequest
             'education.required' => 'Pendidikan wajib diisi.',
             'subjects.required' => 'Mata pelajaran wajib diisi.',
             'contact.required' => 'Kontak wajib diisi.',
+            'contact.regex' => 'Kontak harus nomor WhatsApp Indonesia yang valid (contoh: 081234567890).',
             'cv.required' => 'CV wajib diunggah.',
             'cv.mimes' => 'Format CV harus PDF atau DOC.',
             'cv.max' => 'Ukuran CV maksimal 5MB.',

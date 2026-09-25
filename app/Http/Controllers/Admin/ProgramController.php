@@ -7,6 +7,7 @@ use App\Http\Requests\StoreProgramRequest;
 use App\Http\Requests\UpdateProgramRequest;
 use App\Models\Program;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Str;
 
 class ProgramController extends Controller
 {
@@ -19,6 +20,8 @@ class ProgramController extends Controller
         unset($data['image']);
 
         $data['is_active'] = filter_var($data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $data['is_featured'] = filter_var($data['is_featured'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $data['slug'] = $this->uniqueSlug($data['slug'] ?? null, $data['name']);
 
         Program::create($data);
 
@@ -34,6 +37,8 @@ class ProgramController extends Controller
         unset($data['image']);
 
         $data['is_active'] = filter_var($data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $data['is_featured'] = filter_var($data['is_featured'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $data['slug'] = $this->uniqueSlug($data['slug'] ?? null, $data['name'], $program->id);
 
         $program->update($data);
 
@@ -45,5 +50,23 @@ class ProgramController extends Controller
         $program->delete();
 
         return back()->with('success', 'Program berhasil dihapus.');
+    }
+
+    private function uniqueSlug(?string $slug, string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($slug ?: $name);
+        $base = $base !== '' ? $base : 'program';
+        $candidate = $base;
+        $counter = 2;
+
+        while (Program::query()
+            ->where('slug', $candidate)
+            ->when($ignoreId, fn ($query) => $query->where('id', '<>', $ignoreId))
+            ->exists()) {
+            $candidate = $base.'-'.$counter;
+            $counter++;
+        }
+
+        return $candidate;
     }
 }

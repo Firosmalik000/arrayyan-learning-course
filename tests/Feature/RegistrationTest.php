@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\NotificationLog;
 use App\Models\Program;
 use App\Models\Role;
+use App\Models\Student;
 use App\Models\StudentRegistration;
+use App\Models\Teacher;
 use App\Models\TeacherRegistration;
 use App\Models\User;
 use App\Support\PermissionCatalog;
@@ -215,8 +218,8 @@ class RegistrationTest extends TestCase
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
             ->component('Admin/Registrations', false)
-            ->has('studentRegistrations', 1)
-            ->where('studentRegistrations.0.student_name', 'Test Student')
+            ->has('studentRegistrations.data', 1)
+            ->where('studentRegistrations.data.0.student_name', 'Test Student')
         );
     }
 
@@ -230,8 +233,8 @@ class RegistrationTest extends TestCase
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
             ->component('Admin/Registrations', false)
-            ->has('teacherRegistrations', 1)
-            ->where('teacherRegistrations.0.name', 'Test Teacher')
+            ->has('teacherRegistrations.data', 1)
+            ->where('teacherRegistrations.data.0.name', 'Test Teacher')
         );
     }
 
@@ -246,7 +249,7 @@ class RegistrationTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('Admin/Registrations', false)
             ->where('initialTab', 'student')
-            ->has('studentRegistrations', 1)
+            ->has('studentRegistrations.data', 1)
         );
     }
 
@@ -261,7 +264,7 @@ class RegistrationTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('Admin/Registrations', false)
             ->where('initialTab', 'teacher')
-            ->has('teacherRegistrations', 1)
+            ->has('teacherRegistrations.data', 1)
         );
     }
 
@@ -284,13 +287,16 @@ class RegistrationTest extends TestCase
             'rejected_by' => $rejector->id,
         ]);
 
-        $response = $this->actingAs($user, PermissionCatalog::GUARD)->get(route('admin.registrations'));
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->get(route('admin.registrations', [
+            'student_status' => 'rejected',
+            'teacher_status' => 'rejected',
+        ]));
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
             ->component('Admin/Registrations', false)
-            ->where('studentRegistrations.0.rejected_by_name', $rejector->name)
-            ->where('teacherRegistrations.0.rejected_by_name', $rejector->name)
+            ->where('studentRegistrations.data.0.rejected_by_name', $rejector->name)
+            ->where('teacherRegistrations.data.0.rejected_by_name', $rejector->name)
         );
     }
 
@@ -392,5 +398,375 @@ class RegistrationTest extends TestCase
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('teacher_registrations', ['id' => $reg->id]);
+    }
+
+    // ── M0: Idempotency & Anti-Duplikat ────────────────────────────
+
+    public function test_approve_student_twice_does_not_duplicate_student(): void
+    {
+        $user = $this->actingAsAdmin();
+        $reg = StudentRegistration::factory()->create(['status' => 'pending']);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.student.approve', $reg));
+        $second = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.student.approve', $reg->fresh()));
+
+        $second->assertSessionHas('error');
+        $this->assertEquals(1, Student::query()->where('name', $reg->student_name)->count());
+    }
+
+    public function test_reject_student_after_approve_is_blocked(): void
+    {
+        $user = $this->actingAsAdmin();
+        $reg = StudentRegistration::factory()->create(['status' => 'pending']);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.student.approve', $reg));
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.student.reject', $reg->fresh()));
+
+        $response->assertSessionHas('error');
+        $this->assertDatabaseHas('student_registrations', [
+            'id' => $reg->id,
+            'status' => 'approved',
+            'rejected_at' => null,
+        ]);
+    }
+
+    public function test_approve_student_skips_duplicate_student_record(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = Program::create(['name' => 'Reguler', 'level' => 'SMP', 'is_active' => true]);
+        Student::create([
+            'name' => 'Anak Kembar',
+            'parent_contact' => '081234567890',
+            'program_id' => $program->id,
+            'is_active' => true,
+        ]);
+        $reg = StudentRegistration::factory()->create([
+            'student_name' => 'Anak Kembar',
+            'parent_contact' => '081234567890',
+            'program_id' => $program->id,
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.student.approve', $reg));
+
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('student_registrations', ['id' => $reg->id, 'status' => 'approved']);
+        $this->assertEquals(1, Student::query()
+            ->where('name', 'Anak Kembar')
+            ->where('parent_contact', '081234567890')
+            ->where('program_id', $program->id)
+            ->count());
+    }
+
+    public function test_approve_teacher_twice_does_not_duplicate_teacher(): void
+    {
+        $user = $this->actingAsAdmin();
+        $reg = TeacherRegistration::factory()->create(['status' => 'pending']);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.teacher.approve', $reg));
+        $second = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.teacher.approve', $reg->fresh()));
+
+        $second->assertSessionHas('error');
+        $this->assertEquals(1, Teacher::query()->where('name', $reg->name)->count());
+    }
+
+    public function test_approve_teacher_skips_duplicate_teacher_record(): void
+    {
+        $user = $this->actingAsAdmin();
+        Teacher::create(['name' => 'Guru Kembar', 'contact' => '081298765432', 'is_active' => true]);
+        $reg = TeacherRegistration::factory()->create([
+            'name' => 'Guru Kembar',
+            'contact' => '081298765432',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.teacher.approve', $reg));
+
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('teacher_registrations', ['id' => $reg->id, 'status' => 'approved']);
+        $this->assertEquals(1, Teacher::query()
+            ->where('name', 'Guru Kembar')
+            ->where('contact', '081298765432')
+            ->count());
+    }
+
+    // ── M0: Validasi WhatsApp ──────────────────────────────────────
+
+    public function test_student_registration_rejects_invalid_whatsapp_number(): void
+    {
+        $program = Program::create(['name' => 'Reguler', 'level' => 'SMP', 'is_active' => true]);
+
+        $response = $this->post(route('registrations.student'), [
+            'student_name' => 'Ahmad',
+            'address' => 'Jl. Test',
+            'school_name' => 'SMP Test',
+            'level' => 'SMP',
+            'subjects' => 'Matematika',
+            'program_id' => $program->id,
+            'package' => '8 Sesi/Bulan',
+            'parent_contact' => 'bukan-nomor',
+        ]);
+
+        $response->assertSessionHasErrors('parent_contact');
+    }
+
+    public function test_student_registration_normalizes_whatsapp_separator(): void
+    {
+        $program = Program::create(['name' => 'Reguler', 'level' => 'SMP', 'is_active' => true]);
+
+        $response = $this->post(route('registrations.student'), [
+            'student_name' => 'Ahmad Rapi',
+            'address' => 'Jl. Test',
+            'school_name' => 'SMP Test',
+            'level' => 'SMP',
+            'subjects' => 'Matematika',
+            'program_id' => $program->id,
+            'package' => '8 Sesi/Bulan',
+            'parent_contact' => '0812-3456-7890',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('student_registrations', [
+            'student_name' => 'Ahmad Rapi',
+            'parent_contact' => '081234567890',
+        ]);
+    }
+
+    public function test_teacher_registration_rejects_invalid_contact_number(): void
+    {
+        Storage::fake('public');
+
+        $response = $this->post(route('registrations.teacher'), [
+            'name' => 'Guru Test',
+            'address' => 'Jl. Test',
+            'education' => 'S1',
+            'subjects' => 'Math',
+            'contact' => '12345',
+            'cv' => UploadedFile::fake()->create('cv.pdf', 100, 'application/pdf'),
+        ]);
+
+        $response->assertSessionHasErrors('contact');
+    }
+
+    // ── M0: Filter & Pagination Server-Side ────────────────────────
+
+    public function test_admin_registrations_supports_status_filter_and_stats(): void
+    {
+        $user = $this->actingAsAdmin();
+        StudentRegistration::factory()->create(['student_name' => 'Pending Kid', 'status' => 'pending']);
+        StudentRegistration::factory()->create([
+            'student_name' => 'Approved Kid',
+            'status' => 'approved',
+            'approved_at' => now(),
+            'approved_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->get(route('admin.registrations', [
+            'student_status' => 'approved',
+        ]));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Admin/Registrations', false)
+            ->has('studentRegistrations.data', 1)
+            ->where('studentRegistrations.data.0.student_name', 'Approved Kid')
+            ->where('studentStats.total', 2)
+            ->where('studentStats.pending', 1)
+            ->where('studentStats.approved', 1)
+        );
+    }
+
+    public function test_admin_registrations_supports_search_filter(): void
+    {
+        $user = $this->actingAsAdmin();
+        StudentRegistration::factory()->create(['student_name' => 'Cari Saya Unik', 'status' => 'pending']);
+        StudentRegistration::factory()->create(['student_name' => 'Anak Lain', 'status' => 'pending']);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->get(route('admin.registrations', [
+            'student_search' => 'Unik',
+            'student_status' => '',
+        ]));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Admin/Registrations', false)
+            ->has('studentRegistrations.data', 1)
+            ->where('studentRegistrations.data.0.student_name', 'Cari Saya Unik')
+        );
+    }
+
+    // ── M1: Tiket & Notifikasi ───────────────────────────────────
+
+    public function test_student_registration_generates_ticket_and_received_notification(): void
+    {
+        $program = Program::create(['name' => 'Reguler', 'level' => 'SMP', 'is_active' => true]);
+
+        $response = $this->post(route('registrations.student'), [
+            'student_name' => 'Anak Tiket',
+            'address' => 'Jl. Test',
+            'school_name' => 'SMP Test',
+            'level' => 'SMP',
+            'subjects' => 'Matematika',
+            'program_id' => $program->id,
+            'package' => '8 Sesi/Bulan',
+            'parent_contact' => '081234567890',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('ticket');
+
+        $ticket = session('ticket');
+        $this->assertMatchesRegularExpression('/^ALC-\d{4}-\d{5}$/', $ticket);
+        $this->assertDatabaseHas('student_registrations', [
+            'student_name' => 'Anak Tiket',
+            'registration_no' => $ticket,
+        ]);
+        $this->assertDatabaseHas('notification_logs', [
+            'event' => 'received',
+            'channel' => 'whatsapp',
+            'recipient' => '081234567890',
+            'status' => 'sent',
+            'registration_type' => 'student',
+        ]);
+    }
+
+    public function test_teacher_registration_generates_ticket_and_received_notification(): void
+    {
+        Storage::fake('public');
+
+        $response = $this->post(route('registrations.teacher'), [
+            'name' => 'Guru Tiket',
+            'address' => 'Jl. Test',
+            'education' => 'S1',
+            'subjects' => 'Math',
+            'contact' => '081298765432',
+            'cv' => UploadedFile::fake()->create('cv.pdf', 100, 'application/pdf'),
+        ]);
+
+        $response->assertRedirect();
+        $ticket = session('ticket');
+        $this->assertMatchesRegularExpression('/^ALC-\d{4}-\d{5}$/', $ticket);
+        $this->assertDatabaseHas('teacher_registrations', [
+            'name' => 'Guru Tiket',
+            'registration_no' => $ticket,
+        ]);
+        $this->assertDatabaseHas('notification_logs', [
+            'event' => 'received',
+            'recipient' => '081298765432',
+            'status' => 'sent',
+            'registration_type' => 'teacher',
+        ]);
+    }
+
+    public function test_approve_student_sends_approved_notification(): void
+    {
+        $user = $this->actingAsAdmin();
+        $reg = StudentRegistration::factory()->create([
+            'student_name' => 'Anak Setuju',
+            'parent_contact' => '081234567890',
+            'registration_no' => 'ALC-2026-00100',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.student.approve', $reg));
+
+        $this->assertDatabaseHas('notification_logs', [
+            'event' => 'approved',
+            'recipient' => '081234567890',
+            'status' => 'sent',
+            'registration_type' => 'student',
+            'registration_id' => $reg->id,
+        ]);
+        $this->assertNotNull($reg->fresh()->notified_at);
+    }
+
+    public function test_reject_student_with_reason_stores_note_and_notifies(): void
+    {
+        $user = $this->actingAsAdmin();
+        $reg = StudentRegistration::factory()->create([
+            'parent_contact' => '081234567890',
+            'registration_no' => 'ALC-2026-00101',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.registrations.student.reject', $reg),
+            ['admin_note' => 'Kuota penuh.']
+        );
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('student_registrations', [
+            'id' => $reg->id,
+            'status' => 'rejected',
+            'admin_note' => 'Kuota penuh.',
+        ]);
+
+        $log = NotificationLog::query()
+            ->where('event', 'rejected')
+            ->where('registration_id', $reg->id)
+            ->first();
+        $this->assertNotNull($log);
+        $this->assertEquals('sent', $log->status);
+        $this->assertStringContainsString('Kuota penuh.', $log->message);
+    }
+
+    public function test_bulk_approve_students_processes_pending_only(): void
+    {
+        $user = $this->actingAsAdmin();
+        $pending1 = StudentRegistration::factory()->create(['student_name' => 'Bulk Satu', 'status' => 'pending']);
+        $pending2 = StudentRegistration::factory()->create(['student_name' => 'Bulk Dua', 'status' => 'pending']);
+        $approved = StudentRegistration::factory()->create(['student_name' => 'Sudah Setuju', 'status' => 'approved']);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.registrations.student.bulk-approve'),
+            ['ids' => [$pending1->id, $pending2->id, $approved->id]]
+        );
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'Berhasil menyetujui 2 pendaftaran murid.');
+        $this->assertEquals('approved', $pending1->fresh()->status);
+        $this->assertEquals('approved', $pending2->fresh()->status);
+        $this->assertEquals(1, Student::query()->where('name', 'Bulk Satu')->count());
+        $this->assertEquals(1, Student::query()->where('name', 'Bulk Dua')->count());
+    }
+
+    public function test_bulk_approve_teachers_requires_ids(): void
+    {
+        $user = $this->actingAsAdmin();
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.registrations.teacher.bulk-approve'),
+            ['ids' => []]
+        );
+
+        $response->assertSessionHasErrors('ids');
+    }
+
+    public function test_notification_failure_does_not_break_registration_flow(): void
+    {
+        config(['services.whatsapp.driver' => 'fonnte']);
+        config(['services.whatsapp.token' => null]);
+
+        $program = Program::create(['name' => 'Reguler', 'level' => 'SMP', 'is_active' => true]);
+
+        $response = $this->post(route('registrations.student'), [
+            'student_name' => 'Anak Gagal Notif',
+            'address' => 'Jl. Test',
+            'school_name' => 'SMP Test',
+            'level' => 'SMP',
+            'subjects' => 'Matematika',
+            'program_id' => $program->id,
+            'package' => '8 Sesi/Bulan',
+            'parent_contact' => '081234567890',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('ticket');
+        $this->assertDatabaseHas('student_registrations', ['student_name' => 'Anak Gagal Notif']);
+        $this->assertDatabaseHas('notification_logs', [
+            'event' => 'received',
+            'recipient' => '081234567890',
+            'status' => 'failed',
+        ]);
     }
 }

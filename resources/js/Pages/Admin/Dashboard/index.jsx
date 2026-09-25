@@ -1,4 +1,4 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 
 const toneStyles = {
     violet: 'bg-violet-50 text-violet-700',
@@ -85,12 +85,13 @@ export default function Dashboard() {
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2 sm:gap-3">
-                        <button
-                            type="button"
+                        <Link
+                            href="/"
+                            target="_blank"
                             className="hidden rounded-full border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:border-violet-300 hover:text-violet-800 sm:inline-flex sm:px-4 sm:py-2"
                         >
                             Preview Website
-                        </button>
+                        </Link>
                         {canExport && (
                             <button
                                 type="button"
@@ -208,12 +209,12 @@ export default function Dashboard() {
                                     Pantau status konten utama website ALC.
                                 </p>
                             </div>
-                            <button
-                                type="button"
-                                className="w-full rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-violet-200 hover:text-violet-700 sm:w-auto sm:px-3 sm:py-1 sm:text-xs"
+                            <Link
+                                href="/admin/landing"
+                                className="w-full rounded-full border border-slate-200 bg-white px-2 py-1 text-center text-[10px] font-semibold text-slate-600 transition hover:border-violet-200 hover:text-violet-700 sm:w-auto sm:px-3 sm:py-1 sm:text-xs"
                             >
                                 Kelola konten
-                            </button>
+                            </Link>
                         </div>
                         <div className="mt-4 space-y-2 sm:mt-5 sm:space-y-3">
                             {contentSections.length > 0 ? (
@@ -295,12 +296,12 @@ export default function Dashboard() {
                                     Data terbaru pendaftar murid dan pengajar.
                                 </p>
                             </div>
-                            <button
-                                type="button"
-                                className="w-full rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-violet-200 hover:text-violet-700 sm:w-auto sm:px-3 sm:py-1 sm:text-xs"
+                            <Link
+                                href="/admin/pendaftaran"
+                                className="w-full rounded-full border border-slate-200 bg-white px-2 py-1 text-center text-[10px] font-semibold text-slate-600 transition hover:border-violet-200 hover:text-violet-700 sm:w-auto sm:px-3 sm:py-1 sm:text-xs"
                             >
                                 Lihat semua
-                            </button>
+                            </Link>
                         </div>
                         <div className="-mx-4 mt-4 overflow-x-auto px-4 sm:-mx-6 sm:mt-5 sm:px-6">
                             <table className="min-w-full text-left text-xs text-slate-600 sm:text-sm">

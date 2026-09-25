@@ -12,6 +12,15 @@ class StoreStudentRegistrationRequest extends FormRequest
         return true;
     }
 
+    public function prepareForValidation(): void
+    {
+        if ($this->has('parent_contact')) {
+            $this->merge([
+                'parent_contact' => $this->normalizePhone((string) $this->input('parent_contact')),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -26,8 +35,8 @@ class StoreStudentRegistrationRequest extends FormRequest
                 Rule::exists('programs', 'id')->where('is_active', true),
             ],
             'package' => ['required', 'string', 'max:100'],
-            'parent_contact' => ['required', 'string', 'max:255'],
-            'preferred_mode' => ['nullable', 'string', 'max:100'],
+            'parent_contact' => ['required', 'string', 'max:20', 'regex:/^(?:\+62|62|0)8[0-9]{5,13}$/'],
+            'preferred_mode' => ['nullable', 'string', Rule::in(['online', 'offline', 'Online', 'Offline'])],
             'notes' => ['nullable', 'string', 'max:500'],
         ];
     }
@@ -44,6 +53,13 @@ class StoreStudentRegistrationRequest extends FormRequest
             'program_id.exists' => 'Program tidak ditemukan atau tidak aktif.',
             'package.required' => 'Paket wajib dipilih.',
             'parent_contact.required' => 'Kontak orang tua wajib diisi.',
+            'parent_contact.regex' => 'Kontak orang tua harus nomor WhatsApp Indonesia yang valid (contoh: 081234567890).',
+            'preferred_mode.in' => 'Mode belajar harus Online atau Offline.',
         ];
+    }
+
+    private function normalizePhone(string $value): string
+    {
+        return (string) preg_replace('/[\s\-.\(\)]/', '', $value);
     }
 }

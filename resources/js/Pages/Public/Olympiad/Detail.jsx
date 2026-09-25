@@ -1,426 +1,380 @@
 import { Link, usePage } from '@inertiajs/react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { useEffect, useState } from 'react';
 import SeoHead from '@/Components/SeoHead';
-import SectionTitle from '@/Components/SectionTitle';
-import PasskeyModal from '@/Components/PasskeyModal';
 import { useI18n } from '@/lib/i18n';
 import { formatDate } from '@/lib/formatDate';
-
-// Shared data
-import { fadeUp, stagger } from '@/data';
-import { contactInfo } from '@/data/content/site';
-
-// Page-specific data
-import { pageContent, olympiadPasskey } from './data';
-
-const detailContent = {
-    id: {
-        backToList: 'Kembali ke Info Olimpiade',
-        eventInfo: 'Informasi Olimpiade',
-        schedule: 'Jadwal',
-        level: 'Jenjang',
-        category: 'Kategori',
-        fee: 'Biaya',
-        selection: 'Sistem Seleksi',
-        benefits: 'Keuntungan Mengikuti',
-        benefitsList: [
-            'Pembinaan oleh mentor berpengalaman',
-            'Materi persiapan yang komprehensif',
-            'Simulasi dan latihan soal berkala',
-            'Sertifikat keikutsertaan',
-        ],
-        register: 'Daftar Sekarang',
-        contact: 'Hubungi Kami',
-        contactDesc: 'Butuh informasi lebih lanjut? Hubungi kami melalui WhatsApp.',
-        notFound: 'Olimpiade tidak ditemukan',
-        notFoundDesc: 'Maaf, olimpiade yang Anda cari tidak tersedia.',
-        free: 'Gratis',
-    },
-    en: {
-        backToList: 'Back to Olympiad Info',
-        eventInfo: 'Olympiad Information',
-        schedule: 'Schedule',
-        level: 'Level',
-        category: 'Category',
-        fee: 'Fee',
-        selection: 'Selection System',
-        benefits: 'Benefits of Joining',
-        benefitsList: [
-            'Coaching by experienced mentors',
-            'Comprehensive preparation materials',
-            'Regular simulations and practice',
-            'Participation certificate',
-        ],
-        register: 'Register Now',
-        contact: 'Contact Us',
-        contactDesc: 'Need more information? Contact us via WhatsApp.',
-        notFound: 'Olympiad not found',
-        notFoundDesc: 'Sorry, the olympiad you are looking for is not available.',
-        free: 'Free',
-    },
-};
+import {
+    Container,
+    Badge,
+    Button,
+    SectionHeader,
+} from '@/Components/Public';
 
 const formatCurrency = (value, lang = 'id') => {
     if (!value || value === 0) return lang === 'en' ? 'Free' : 'Gratis';
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+    }).format(value);
 };
 
 export default function OlympiadDetail() {
     const { language } = useI18n();
-    const { url, props } = usePage();
-    const t = detailContent[language] || detailContent.id;
-    const text = pageContent[language] || pageContent.id;
-    const [hasAccess, setHasAccess] = useState(false);
-    const shouldReduceMotion = useReducedMotion();
-    const floatSlow = shouldReduceMotion ? undefined : { y: [0, -16, 0] };
-    const floatFast = shouldReduceMotion ? undefined : { y: [0, -10, 0] };
-    const floatSlowTransition = shouldReduceMotion ? undefined : { duration: 8, repeat: Infinity, ease: 'easeInOut' };
-    const floatFastTransition = shouldReduceMotion ? undefined : { duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 };
-    const [showPasskeyModal, setShowPasskeyModal] = useState(false);
-
-    useEffect(() => {
-        const access = sessionStorage.getItem('olympiad_access') === 'granted';
-        setHasAccess(access);
-        if (!access) {
-            setShowPasskeyModal(true);
-        }
-    }, []);
+    const { props } = usePage();
 
     const olympiad = props.olympiad;
-    const event = olympiad
-        ? {
-            name: olympiad.name,
-            level: olympiad.level || '-',
-            schedule_raw: olympiad.schedule,
-            schedule: formatDate(olympiad.schedule, language),
-            selection: olympiad.selection_system || '-',
-            category: olympiad.category === 'paid'
-                ? (language === 'en' ? 'Paid' : 'Berbayar')
-                : (language === 'en' ? 'Free' : 'Gratis'),
-            fee: formatCurrency(olympiad.fee, language),
-            description: olympiad.notes || text.subtitle,
-            image_url: olympiad.image_url || null,
-        }
-        : null;
+    const isEnglish = language === 'en';
 
-    if (!event) {
+    if (!olympiad) {
         return (
-            <>
-                <SeoHead title={t.notFound} noIndex />
-                <section className="bg-gradient-to-br from-violet-50 via-white to-amber-50 min-h-screen flex items-center justify-center">
-                    <div className="alc-container text-center">
-                        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                            <svg
-                                className="h-10 w-10"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={1.5}
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-                                />
+            <div className="py-24 bg-slate-50 min-h-[60vh] flex items-center justify-center">
+                <Container>
+                    <div className="mx-auto max-w-md text-center">
+                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
                         </div>
-                        <h1 className="text-2xl font-bold text-slate-800 mb-2">{t.notFound}</h1>
-                        <p className="text-slate-600 mb-6">{t.notFoundDesc}</p>
-                        <Link
-                            href="/olimpiade"
-                            className="inline-flex items-center gap-2 alc-button bg-brand-primary text-white font-semibold"
-                        >
-                            <svg
-                                className="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                            </svg>
-                            {t.backToList}
-                        </Link>
+                        <h2 className="text-xl font-bold text-slate-900">
+                            {isEnglish ? 'Olympiad Not Found' : 'Olimpiade Tidak Ditemukan'}
+                        </h2>
+                        <p className="mt-2 text-sm text-slate-600">
+                            {isEnglish
+                                ? 'Sorry, the olympiad you are looking for is not available or has been removed.'
+                                : 'Maaf, informasi kompetisi atau olimpiade yang Anda cari tidak tersedia.'}
+                        </p>
+                        <div className="mt-6">
+                            <Button href="/olimpiade" variant="primary">
+                                {isEnglish ? 'Back to Olympiads' : 'Kembali ke Info Olimpiade'}
+                            </Button>
+                        </div>
                     </div>
-                </section>
-            </>
+                </Container>
+            </div>
         );
     }
 
-    const isPaid = event.category.toLowerCase() === 'paid' || event.category.toLowerCase() === 'berbayar';
-    const toneClass = isPaid ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
-    const eventName = event.name;
-    const eventLevel = event.level;
-    const eventSchedule = event.schedule;
-    const eventSelection = event.selection;
-    const eventCategory = event.category;
-    const eventFee = event.fee;
-    const eventDesc = event.description;
+    const name = olympiad.name;
+    const level = olympiad.level || '-';
+    const scheduleFormatted = formatDate(olympiad.schedule, language);
+    const selection = olympiad.selection_system || '-';
+    const isPaid =
+        String(olympiad.category).toLowerCase() === 'paid' ||
+        String(olympiad.category).toLowerCase() === 'berbayar';
+    const feeText = isPaid ? formatCurrency(olympiad.fee, language) : (isEnglish ? 'Free' : 'Gratis');
+    const description = olympiad.notes || 'Informasi lengkap kompetisi dan olimpiade berprestasi ALC.';
+    const imageUrl = olympiad.image_url;
+
+    const quota = olympiad.quota ?? null;
+    const quotaFilled = olympiad.quota_filled ?? 0;
+    const quotaRemaining = olympiad.quota_remaining ?? null;
+    const isFull = quota != null && (quotaRemaining ?? 1) <= 0;
+    const closedReason = olympiad.closed_reason || (isFull ? 'Kuota peserta sudah penuh.' : null);
+    const canRegister = !closedReason;
+    const winners = Array.isArray(olympiad.winners) ? olympiad.winners : [];
+    const deadline = olympiad.registration_deadline || null;
+
+    const daysUntil = (() => {
+        if (!olympiad.schedule) return null;
+        const diff = Math.ceil((new Date(olympiad.schedule) - new Date()) / 86400000);
+        return diff;
+    })();
+
+    const waRegistrationLink = `https://wa.me/6281234567890?text=${encodeURIComponent(
+        `Halo Admin ALC, saya ingin mendaftar / berkonsultasi mengenai persiapan lomba: ${name}`
+    )}`;
 
     return (
         <>
             <SeoHead
-                title={eventName}
-                description={eventDesc}
+                title={name}
+                description={description}
                 type="event"
                 structuredData={{
                     '@type': 'Event',
-                    name: eventName,
-                    description: eventDesc,
-                    startDate: event.schedule_raw,
-                    image: event.image_url || undefined,
+                    name: name,
+                    description: description,
+                    startDate: olympiad.schedule,
+                    image: imageUrl || undefined,
                 }}
             />
 
-            {/* Hero Section */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-amber-50 alc-pattern alc-section">
-                <motion.div
-                    aria-hidden
-                    animate={floatSlow}
-                    transition={floatSlowTransition}
-                    className="absolute -left-24 top-10 h-32 w-32 sm:h-52 sm:w-52 rounded-full bg-violet-200/60 blur-3xl"
-                />
-                <motion.div
-                    aria-hidden
-                    animate={floatFast}
-                    transition={floatFastTransition}
-                    className="absolute right-0 top-20 h-40 w-40 sm:h-64 sm:w-64 rounded-full bg-amber-200/70 blur-3xl"
-                />
+            {/* Header Hero */}
+            <section className="relative overflow-hidden bg-gradient-to-b from-amber-50/70 via-white to-slate-50/40 pt-10 pb-12 border-b border-slate-200/60">
+                <Container>
+                    <nav className="mb-6 flex items-center gap-2 text-xs font-semibold text-slate-500">
+                        <Link href="/" className="hover:text-brand-primary transition">
+                            Beranda
+                        </Link>
+                        <span>/</span>
+                        <Link href="/olimpiade" className="hover:text-brand-primary transition">
+                            Pusat Olimpiade
+                        </Link>
+                        <span>/</span>
+                        <span className="text-amber-700 font-bold line-clamp-1">{name}</span>
+                    </nav>
 
-                <div className="alc-container max-w-6xl relative">
-                    <Link
-                        href="/olimpiade"
-                        className="inline-flex items-center gap-2 alc-body-sm text-violet-600 hover:text-violet-700 transition mb-6"
-                    >
-                        <svg
-                            className="h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        {t.backToList}
-                    </Link>
-
-                    <div className="grid lg:grid-cols-[1.2fr_0.8fr] alc-gap-lg items-start">
-                        {/* Main Content */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            {/* Badges */}
-                            <div className="flex flex-wrap items-center gap-2 mb-4">
-                                <span className={`alc-pill alc-caption font-medium ${
-                                    eventCategory.toLowerCase() === 'gratis' || eventCategory.toLowerCase() === 'free'
-                                        ? 'bg-emerald-100 text-emerald-700'
-                                        : 'bg-amber-100 text-amber-700'
-                                }`}>
-                                    {eventCategory}
+                    <div className="max-w-4xl">
+                        <div className="flex flex-wrap items-center gap-2 mb-4">
+                            <Badge variant={isPaid ? 'warning' : 'accent'} size="md">
+                                {feeText}
+                            </Badge>
+                            {level && <Badge variant="primary" size="md">Jenjang {level}</Badge>}
+                            {daysUntil != null && daysUntil >= 0 && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
+                                    {daysUntil === 0 ? 'Hari ini!' : `${daysUntil} hari lagi`}
                                 </span>
-                                <span className="alc-pill bg-violet-100 alc-caption font-medium text-violet-700">
-                                    {eventLevel}
+                            )}
+                            {quota != null && (
+                                <Badge variant={isFull ? 'rose' : 'secondary'} size="md">
+                                    {isFull ? 'Kuota Penuh' : `Sisa ${quotaRemaining} kursi`}
+                                </Badge>
+                            )}
+                            {scheduleFormatted && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                                    <svg className="h-3.5 w-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span>{scheduleFormatted}</span>
                                 </span>
-                            </div>
+                            )}
+                        </div>
 
-                            <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900">
-                                {eventName}
-                            </h1>
+                        <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                            {name}
+                        </h1>
 
-                            <p className="mt-4 alc-body text-slate-600 max-w-2xl">
-                                {eventDesc}
-                            </p>
+                        <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed max-w-3xl">
+                            {description}
+                        </p>
+                    </div>
+                </Container>
+            </section>
 
-                            {/* Info Grid */}
-                            <div className="mt-6 grid grid-cols-2 gap-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
-                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p className="alc-caption text-slate-500">{t.schedule}</p>
-                                        <p className="font-semibold text-slate-800">{eventSchedule}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p className="alc-caption text-slate-500">{t.fee}</p>
-                                        <p className="font-semibold text-slate-800">{eventFee}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        {/* Sidebar Card */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.1 }}
-                            className="alc-card border border-slate-100 bg-white shadow-lg"
-                        >
-                            {event.image_url && (
-                                <div className="mb-4 overflow-hidden rounded-xl border border-slate-100">
+            {/* Detail Content */}
+            <section className="py-12 sm:py-16 bg-white">
+                <Container>
+                    <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12 items-start">
+                        {/* Left Main (8 cols) */}
+                        <div className="lg:col-span-8 space-y-10">
+                            {/* Poster / Media Area */}
+                            <div className="aspect-16/9 w-full overflow-hidden rounded-3xl border border-slate-200/90 bg-gradient-to-br from-amber-100 via-orange-50 to-violet-50 shadow-xs">
+                                {imageUrl ? (
                                     <img
-                                        src={event.image_url}
-                                        alt={eventName}
-                                        className="h-40 w-full object-cover"
-                                        loading="lazy"
+                                        src={imageUrl}
+                                        alt={name}
+                                        className="h-full w-full object-cover"
                                     />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-amber-600">
+                                        <div className="text-center p-8">
+                                            <svg className="mx-auto h-16 w-16 opacity-40 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.504-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.982-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.25h13.5v1.986m-13.5 0A23.515 23.515 0 0112 3.75c2.617 0 5.12.395 7.5 1.125m-1.125.361c.982.143 1.954.317 2.916.52a6.003 6.003 0 01-5.396 4.972m2.48-5.492V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.01 6.01 0 01-4.75 0" />
+                                            </svg>
+                                            <p className="text-xl font-bold text-slate-900">{name}</p>
+                                            <p className="text-xs text-slate-500 mt-1">Pusat Prestasi Ar Rayyan Learning Course</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Sistem Seleksi & Mekanisme */}
+                            <div className="rounded-3xl border border-slate-200/90 bg-slate-50/60 p-6 sm:p-8">
+                                <h3 className="font-display text-xl font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                                        </svg>
+                                    </span>
+                                    <span>Sistem Seleksi & Alur Kompetisi</span>
+                                </h3>
+                                <p className="text-sm text-slate-600 leading-relaxed">
+                                    {selection !== '-' ? selection : 'Seleksi dilakukan secara terbuka dengan pembinaan intensif dari tutor ALC.'}
+                                </p>
+
+                                <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                        <span className="font-bold text-amber-600">Tahap 1</span>
+                                        <p className="font-bold text-slate-900 mt-1">Pendaftaran & Seleksi</p>
+                                        <p className="text-slate-500 mt-0.5">Asesmen kemampuan awal siswa</p>
+                                    </div>
+                                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                        <span className="font-bold text-amber-600">Tahap 2</span>
+                                        <p className="font-bold text-slate-900 mt-1">Pembinaan Intensif</p>
+                                        <p className="text-slate-500 mt-0.5">Latihan soal olimpiade terpadu</p>
+                                    </div>
+                                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                        <span className="font-bold text-amber-600">Tahap 3</span>
+                                        <p className="font-bold text-slate-900 mt-1">Pelaksanaan Lomba</p>
+                                        <p className="text-slate-500 mt-0.5">Pendampingan saat hari kejuaraan</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Winners announcement */}
+                            {winners.length > 0 && (
+                                <div className="rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-6 sm:p-8">
+                                    <h3 className="font-display text-xl font-bold text-slate-900 mb-1 flex items-center gap-2">
+                                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 5h8v4a4 4 0 01-8 0V5Zm-2 0H5a1 1 0 00-1 1c0 2.5 2 4.5 4.5 4.5M18 5h1a1 1 0 011 1c0 2.5-2 4.5-4.5 4.5M12 13v4m-3 4h6m-6 0-1 3m7-3-1 3" />
+                                            </svg>
+                                        </span>
+                                        <span>Pengumuman Pemenang</span>
+                                    </h3>
+                                    <p className="text-xs text-slate-500 mb-4">
+                                        Selamat kepada para juara! Klik nama untuk melihat sertifikat.
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {winners.map((w, idx) => (
+                                            <Link
+                                                key={idx}
+                                                href={`/olimpiade/${olympiad.slug}/sertifikat?name=${encodeURIComponent(w)}`}
+                                                className="rounded-full border border-amber-300 bg-white px-3.5 py-1.5 text-xs font-bold text-amber-800 transition hover:bg-amber-100"
+                                            >
+                                                {idx + 1}. {w}
+                                            </Link>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
-                            <div className={`flex alc-icon items-center justify-center ${toneClass} mb-4`}>
-                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" />
-                                </svg>
-                            </div>
 
-                            <h3 className="font-display alc-card-title font-semibold text-slate-800 text-center">
-                                {t.eventInfo}
-                            </h3>
+                            {/* Keuntungan Mengikuti */}
+                            <div>
+                                <h3 className="font-display text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-brand-primary">
+                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </span>
+                                    <span>Fasilitas Pembinaan ALC</span>
+                                </h3>
 
-                            <div className="mt-4 space-y-3">
-                                <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                                    <span className="alc-body-sm text-slate-500">{t.category}</span>
-                                    <span className="alc-body-sm font-medium text-slate-800">{eventCategory}</span>
-                                </div>
-                                <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                                    <span className="alc-body-sm text-slate-500">{t.level}</span>
-                                    <span className="alc-body-sm font-medium text-slate-800">{eventLevel}</span>
-                                </div>
-                                <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                                    <span className="alc-body-sm text-slate-500">{t.schedule}</span>
-                                    <span className="alc-body-sm font-medium text-slate-800">{eventSchedule}</span>
-                                </div>
-                                <div className="flex justify-between items-center py-2">
-                                    <span className="alc-body-sm text-slate-500">{t.fee}</span>
-                                    <span className="alc-body-sm font-medium text-slate-800">{eventFee}</span>
-                                </div>
-                            </div>
-
-                            <div className="mt-4 p-3 rounded-xl bg-slate-50">
-                                <p className="alc-caption font-medium text-slate-700">{t.selection}</p>
-                                <p className="mt-1 alc-caption text-slate-600">{eventSelection}</p>
-                            </div>
-
-                            <div className="mt-6 space-y-3">
-                                <a
-                                    href={contactInfo.whatsapp.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex w-full items-center justify-center alc-button bg-brand-primary alc-body-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:opacity-90 min-h-[44px]"
-                                >
-                                    {t.register}
-                                    <svg
-                                        className="ml-2 h-4 w-4"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        strokeWidth={2}
-                                    >
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </a>
-                                <a
-                                    href={contactInfo.whatsapp.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex w-full items-center justify-center alc-button border border-green-200 bg-white alc-body-sm font-semibold text-green-700 transition hover:bg-green-50 hover:border-green-300 min-h-[44px]"
-                                >
-                                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                                    </svg>
-                                    <span className="ml-2">{t.contact}</span>
-                                </a>
-                            </div>
-                        </motion.div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Benefits Section */}
-            <section className="bg-white alc-section">
-                <div className="alc-container max-w-6xl">
-                    <motion.div
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={{ once: false, amount: 0.2 }}
-                        variants={stagger}
-                        className="grid md:grid-cols-2 alc-gap-lg"
-                    >
-                        <motion.div variants={fadeUp}>
-                            <h2 className="font-display text-xl sm:text-2xl font-semibold text-slate-900 mb-4">
-                                {t.benefits}
-                            </h2>
-                            <ul className="space-y-3">
-                                {t.benefitsList.map((benefit, index) => (
-                                    <li
-                                        key={index}
-                                        className="flex items-start gap-3 alc-body-sm text-slate-600"
-                                    >
-                                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-green-600 flex-shrink-0 mt-0.5">
-                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    {[
+                                        'Mentor berprestasi dan berpengalaman membimbing lomba',
+                                        'Kumpulan paket soal olimpiade tahun-tahun sebelumnya',
+                                        'Simulasi try out berkala dengan sistem penilaian standar',
+                                        'Sertifikat keikutsertaan dan pendampingan psikologis bertanding',
+                                    ].map((benefit, idx) => (
+                                        <div key={idx} className="flex items-start gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs">
+                                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-100 text-brand-primary text-xs font-bold mt-0.5">
+                                                ✓
+                                            </span>
+                                            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">{benefit}</p>
                                         </div>
-                                        {benefit}
-                                    </li>
-                                ))}
-                            </ul>
-                        </motion.div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
 
-                        <motion.div
-                            variants={fadeUp}
-                            className="alc-card border border-violet-100 bg-gradient-to-br from-violet-50 to-white"
-                        >
-                            <h3 className="font-display alc-card-title font-semibold text-slate-800 mb-3">
-                                {t.contact}
-                            </h3>
-                            <p className="alc-body-sm text-slate-600 mb-4">{t.contactDesc}</p>
-                            <a
-                                href={contactInfo.whatsapp.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 alc-body-sm font-semibold text-green-700 hover:text-green-800 transition"
-                            >
-                                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                                </svg>
-                                <span>{contactInfo.whatsapp.number}</span>
-                            </a>
-                        </motion.div>
-                    </motion.div>
-                </div>
+                        {/* Right Sidebar (4 cols - Sticky Card) */}
+                        <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
+                            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-xl">
+                                <h4 className="font-bold text-slate-900 text-base pb-3 border-b border-slate-100">
+                                    Ringkasan Event
+                                </h4>
+
+                                <div className="my-4 space-y-3.5 text-xs">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-slate-500 font-medium">Jadwal Event</span>
+                                        <span className="font-bold text-slate-900">{scheduleFormatted || '-'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-slate-500 font-medium">Jenjang Peserta</span>
+                                        <span className="font-bold text-slate-900">{level}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-slate-500 font-medium">Biaya Lomba</span>
+                                        <span className={`font-bold ${isPaid ? 'text-amber-700' : 'text-emerald-700'}`}>
+                                            {feeText}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-slate-500 font-medium">Sistem Seleksi</span>
+                                        <span className="font-bold text-slate-900 truncate max-w-[140px] text-right">{selection}</span>
+                                    </div>
+                                    {quota != null && (
+                                        <div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-slate-500 font-medium">Kuota Peserta</span>
+                                                <span className="font-bold text-slate-900">{quotaFilled}/{quota}</span>
+                                            </div>
+                                            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                                                <div
+                                                    className={`h-full rounded-full transition-all ${isFull ? 'bg-red-500' : 'bg-amber-500'}`}
+                                                    style={{ width: `${Math.min(100, Math.round((quotaFilled / quota) * 100))}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                    {deadline && (
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-slate-500 font-medium">Batas Daftar</span>
+                                            <span className="font-bold text-slate-900">{formatDate(deadline, language)}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-3 pt-2">
+                                    {canRegister ? (
+                                        <Button
+                                            href={`/olimpiade/${olympiad.slug}/daftar`}
+                                            variant="secondary"
+                                            size="lg"
+                                            className="w-full"
+                                            iconRight={
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                                </svg>
+                                            }
+                                        >
+                                            Daftar Sekarang
+                                        </Button>
+                                    ) : (
+                                        <Button variant="outline" size="lg" className="w-full opacity-60" disabled>
+                                            {closedReason || 'Pendaftaran Ditutup'}
+                                        </Button>
+                                    )}
+                                    <Button
+                                        href={waRegistrationLink}
+                                        variant="outline"
+                                        size="md"
+                                        className="w-full"
+                                    >
+                                        Tanya via WhatsApp
+                                    </Button>
+
+                                    <Button
+                                        href="/olimpiade"
+                                        variant="outline"
+                                        size="md"
+                                        className="w-full"
+                                    >
+                                        ← Kembali ke Semua Lomba
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Assistance Info */}
+                            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-center">
+                                <h5 className="text-sm font-bold text-slate-900">Ingin Mengajukan Lomba Baru?</h5>
+                                <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                                    Hubungi tim ALC jika ada informasi lomba dari sekolah atau universitas yang ingin didampingi.
+                                </p>
+                                <a
+                                    href="https://wa.me/6281234567890?text=Halo%20Admin%20ALC,%20saya%20ingin%20mengajukan%20pendampingan%20lomba"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition"
+                                >
+                                    <span>Hubungi Koordinator Lomba</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </Container>
             </section>
-
-            <PasskeyModal
-                isOpen={showPasskeyModal}
-                onClose={() => {
-                    if (!hasAccess) {
-                        window.location.href = '/';
-                    } else {
-                        setShowPasskeyModal(false);
-                    }
-                }}
-                targetUrl={url}
-                correctPasskey={olympiadPasskey}
-                language={language}
-                onSuccess={() => {
-                    sessionStorage.setItem('olympiad_access', 'granted');
-                    setHasAccess(true);
-                    setShowPasskeyModal(false);
-                }}
-            />
         </>
     );
 }
-

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\BankSoal;
 use App\Models\Olympiad;
+use App\Models\Post;
+use App\Models\Program;
 use Illuminate\Http\Response;
 
 class SitemapController extends Controller
@@ -41,8 +43,22 @@ class SitemapController extends Controller
             'priority' => '0.7',
         ]);
 
+        $urls->push([
+            'url' => route('blog'),
+            'lastmod' => now()->toDateString(),
+            'changefreq' => 'weekly',
+            'priority' => '0.7',
+        ]);
+
+        $urls->push([
+            'url' => route('faq'),
+            'lastmod' => now()->toDateString(),
+            'changefreq' => 'monthly',
+            'priority' => '0.6',
+        ]);
+
         // Dynamic: Olympiads
-        Olympiad::where('is_active', true)->each(function (Olympiad $item) use ($urls) {
+        Olympiad::where('is_active', true)->whereNotNull('slug')->each(function (Olympiad $item) use ($urls) {
             $urls->push([
                 'url' => route('olympiad.detail', $item->slug),
                 'lastmod' => $item->updated_at->toDateString(),
@@ -52,11 +68,31 @@ class SitemapController extends Controller
         });
 
         // Dynamic: Bank Soal
-        BankSoal::where('is_active', true)->each(function (BankSoal $item) use ($urls) {
+        BankSoal::where('is_active', true)->whereNotNull('slug')->each(function (BankSoal $item) use ($urls) {
             $urls->push([
                 'url' => route('banksoal.detail', $item->slug),
                 'lastmod' => $item->updated_at->toDateString(),
                 'changefreq' => 'monthly',
+                'priority' => '0.6',
+            ]);
+        });
+
+        // Dynamic: Programs
+        Program::where('is_active', true)->each(function (Program $item) use ($urls) {
+            $urls->push([
+                'url' => route('programs.detail', $item->slug ?: $item->id),
+                'lastmod' => $item->updated_at->toDateString(),
+                'changefreq' => 'monthly',
+                'priority' => '0.6',
+            ]);
+        });
+
+        // Dynamic: Posts
+        Post::where('is_active', true)->each(function (Post $item) use ($urls) {
+            $urls->push([
+                'url' => route('blog.detail', $item->slug),
+                'lastmod' => $item->updated_at->toDateString(),
+                'changefreq' => 'weekly',
                 'priority' => '0.6',
             ]);
         });

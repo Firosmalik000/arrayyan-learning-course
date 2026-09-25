@@ -12,6 +12,7 @@ use App\Models\Student;
 use App\Models\StudentRegistration;
 use App\Models\Teacher;
 use App\Models\TeacherRegistration;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -264,22 +265,38 @@ class MasterDataController extends Controller
     {
         return Inertia::render('Admin/Programs', [
             'programs' => Program::query()
+                ->with('teacher:id,name')
                 ->latest()
                 ->get()
                 ->map(function (Program $program) {
                     return [
                         'id' => $program->id,
+                        'slug' => $program->slug,
                         'name' => $program->name,
                         'level' => $program->level,
                         'description' => $program->description,
+                        'price' => $program->price,
+                        'duration' => $program->duration,
+                        'quota' => $program->quota,
+                        'quota_filled' => $program->quotaFilled(),
+                        'quota_remaining' => $program->quotaRemaining(),
+                        'schedule_info' => $program->schedule_info,
+                        'syllabus' => $program->syllabus ?? [],
+                        'teacher_id' => $program->teacher_id,
+                        'teacher_name' => $program->teacher?->name,
                         'subjects' => $program->subjects,
                         'mode' => $program->mode,
                         'image_path' => $program->image_path,
                         'image_url' => $program->image_path ? Storage::url($program->image_path) : null,
                         'is_active' => $program->is_active,
+                        'is_featured' => $program->is_featured,
                     ];
                 }),
             'packages' => Package::query()->latest()->get(),
+            'teachers' => Teacher::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name']),
         ]);
     }
 
@@ -300,6 +317,9 @@ class MasterDataController extends Controller
                         'questions' => $item->questions,
                         'description' => $item->description,
                         'links' => $item->links ?? [],
+                        'has_passkey' => ! empty($item->passkey),
+                        'view_count' => $item->view_count ?? 0,
+                        'download_count' => $item->download_count ?? 0,
                         'image_path' => $item->image_path,
                         'image_url' => $item->image_path ? Storage::url($item->image_path) : null,
                         'tone' => $item->tone,
@@ -325,6 +345,11 @@ class MasterDataController extends Controller
                         'selection_system' => $olympiad->selection_system,
                         'category' => $olympiad->category,
                         'fee' => $olympiad->fee,
+                        'quota' => $olympiad->quota,
+                        'quota_filled' => $olympiad->quotaFilled(),
+                        'registration_deadline' => $olympiad->registration_deadline,
+                        'winners' => $olympiad->winners ?? [],
+                        'is_registration_open' => $olympiad->is_registration_open,
                         'notes' => $olympiad->notes,
                         'is_active' => $olympiad->is_active,
                         'image_path' => $olympiad->image_path,
@@ -334,19 +359,19 @@ class MasterDataController extends Controller
         ]);
     }
 
-    public function registrations(): Response
+    public function registrations(Request $request): Response
     {
-        return $this->renderRegistrations('student');
+        return $this->renderRegistrations($request, 'student');
     }
 
-    public function registrationsStudents(): Response
+    public function registrationsStudents(Request $request): Response
     {
-        return $this->renderRegistrations('student');
+        return $this->renderRegistrations($request, 'student');
     }
 
-    public function registrationsTeachers(): Response
+    public function registrationsTeachers(Request $request): Response
     {
-        return $this->renderRegistrations('teacher');
+        return $this->renderRegistrations($request, 'teacher');
     }
 
     public function teachers(): Response
@@ -412,80 +437,182 @@ class MasterDataController extends Controller
         ]);
     }
 
-    private function renderRegistrations(string $initialTab): Response
+    private const REGISTRATION_STATUSES = ['pending', 'approved', 'rejected'];
+
+    private function renderRegistrations(Request $request, string $initialTab): Response
     {
-        $payload = $this->registrationPayload();
+        $studentFilters = [
+            'search' => trim((string) $request->query('student_search', '')),
+            'level' => trim((string) $request->query('student_level', '')),
+            'status' => $request->filled('student_status')
+                ? (string) $request->query('student_status')
+                : 'pending',
+        ];
+
+        $teacherFilters = [
+            'search' => trim((string) $request->query('teacher_search', '')),
+            'status' => $request->filled('teacher_status')
+                ? (string) $request->query('teacher_status')
+                : 'pending',
+        ];
+
+        $students = StudentRegistration::query()
+            ->with(['approver:id,name', 'rejector:id,name', 'programItem:id,name'])
+            ->tap(fn ($query) => $this->applyStudentFilters($query, $studentFilters, true))
+            ->latest()
+            ->paginate(15, ['*'], 'students_page')
+            ->withQueryString();
+        $students->through(fn (StudentRegistration $student) => $this->formatStudentRegistration($student));
+
+        $teachers = TeacherRegistration::query()
+            ->with(['approver:id,name', 'rejector:id,name'])
+            ->tap(fn ($query) => $this->applyTeacherFilters($query, $teacherFilters, true))
+            ->latest()
+            ->paginate(15, ['*'], 'teachers_page')
+            ->withQueryString();
+        $teachers->through(fn (TeacherRegistration $teacher) => $this->formatTeacherRegistration($teacher));
 
         return Inertia::render('Admin/Registrations', [
-            'studentRegistrations' => $payload['studentRegistrations'],
-            'teacherRegistrations' => $payload['teacherRegistrations'],
+            'studentRegistrations' => $students,
+            'teacherRegistrations' => $teachers,
+            'studentStats' => $this->registrationStats(StudentRegistration::query(), $studentFilters, 'student'),
+            'teacherStats' => $this->registrationStats(TeacherRegistration::query(), $teacherFilters, 'teacher'),
+            'levelOptions' => StudentRegistration::query()
+                ->select('level')
+                ->whereNotNull('level')
+                ->where('level', '<>', '')
+                ->distinct()
+                ->orderBy('level')
+                ->pluck('level')
+                ->values()
+                ->all(),
+            'filters' => [
+                'student_search' => $studentFilters['search'],
+                'student_level' => $studentFilters['level'],
+                'student_status' => $studentFilters['status'],
+                'teacher_search' => $teacherFilters['search'],
+                'teacher_status' => $teacherFilters['status'],
+            ],
             'initialTab' => $initialTab,
         ]);
     }
 
-    /**
-     * @return array{studentRegistrations: \Illuminate\Support\Collection<int, array<string, mixed>>, teacherRegistrations: \Illuminate\Support\Collection<int, array<string, mixed>>}
-     */
-    private function registrationPayload(): array
+    private function applyStudentFilters($query, array $filters, bool $withStatus): void
     {
-        $students = StudentRegistration::query()
-            ->with(['approver:id,name', 'rejector:id,name', 'programItem:id,name'])
-            ->latest()
-            ->get()
-            ->map(function (StudentRegistration $student) {
-                return [
-                    'id' => $student->id,
-                    'student_name' => $student->student_name,
-                    'address' => $student->address,
-                    'school_name' => $student->school_name,
-                    'level' => $student->level,
-                    'subjects' => $student->subjects,
-                    'program' => $student->programItem?->name ?? $student->program,
-                    'package' => $student->package,
-                    'parent_contact' => $student->parent_contact,
-                    'preferred_mode' => $student->preferred_mode,
-                    'notes' => $student->notes,
-                    'status' => $student->status,
-                    'approved_at' => $student->approved_at,
-                    'approved_by' => $student->approved_by,
-                    'approved_by_name' => $student->approver?->name,
-                    'rejected_at' => $student->rejected_at,
-                    'rejected_by' => $student->rejected_by,
-                    'rejected_by_name' => $student->rejector?->name,
-                    'created_at' => $student->created_at,
-                ];
+        if ($filters['search'] !== '') {
+            $search = $filters['search'];
+            $query->where(function ($inner) use ($search): void {
+                $inner->where('student_name', 'like', "%{$search}%")
+                    ->orWhere('school_name', 'like', "%{$search}%")
+                    ->orWhere('parent_contact', 'like', "%{$search}%");
             });
+        }
 
-        $teachers = TeacherRegistration::query()
-            ->with(['approver:id,name', 'rejector:id,name'])
-            ->latest()
-            ->get()
-            ->map(function (TeacherRegistration $teacher) {
-                return [
-                    'id' => $teacher->id,
-                    'name' => $teacher->name,
-                    'address' => $teacher->address,
-                    'education' => $teacher->education,
-                    'subjects' => $teacher->subjects,
-                    'experience' => $teacher->experience,
-                    'contact' => $teacher->contact,
-                    'cv_path' => $teacher->cv_path,
-                    'cv_url' => $teacher->cv_path ? Storage::url($teacher->cv_path) : null,
-                    'notes' => $teacher->notes,
-                    'status' => $teacher->status,
-                    'approved_at' => $teacher->approved_at,
-                    'approved_by' => $teacher->approved_by,
-                    'approved_by_name' => $teacher->approver?->name,
-                    'rejected_at' => $teacher->rejected_at,
-                    'rejected_by' => $teacher->rejected_by,
-                    'rejected_by_name' => $teacher->rejector?->name,
-                    'created_at' => $teacher->created_at,
-                ];
+        if ($filters['level'] !== '') {
+            $query->where('level', $filters['level']);
+        }
+
+        if ($withStatus && in_array($filters['status'], self::REGISTRATION_STATUSES, true)) {
+            $query->where('status', $filters['status']);
+        }
+    }
+
+    private function applyTeacherFilters($query, array $filters, bool $withStatus): void
+    {
+        if ($filters['search'] !== '') {
+            $search = $filters['search'];
+            $query->where(function ($inner) use ($search): void {
+                $inner->where('name', 'like', "%{$search}%")
+                    ->orWhere('subjects', 'like', "%{$search}%")
+                    ->orWhere('contact', 'like', "%{$search}%");
             });
+        }
+
+        if ($withStatus && in_array($filters['status'], self::REGISTRATION_STATUSES, true)) {
+            $query->where('status', $filters['status']);
+        }
+    }
+
+    /**
+     * @return array{total: int, pending: int, approved: int, rejected: int}
+     */
+    private function registrationStats($query, array $filters, string $type): array
+    {
+        if ($type === 'student') {
+            $this->applyStudentFilters($query, $filters, false);
+        } else {
+            $this->applyTeacherFilters($query, $filters, false);
+        }
+
+        $counts = $query
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
 
         return [
-            'studentRegistrations' => $students,
-            'teacherRegistrations' => $teachers,
+            'total' => (int) $counts->sum(),
+            'pending' => (int) ($counts['pending'] ?? 0),
+            'approved' => (int) ($counts['approved'] ?? 0),
+            'rejected' => (int) ($counts['rejected'] ?? 0),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formatStudentRegistration(StudentRegistration $student): array
+    {
+        return [
+            'id' => $student->id,
+            'registration_no' => $student->registration_no,
+            'student_name' => $student->student_name,
+            'address' => $student->address,
+            'school_name' => $student->school_name,
+            'level' => $student->level,
+            'subjects' => $student->subjects,
+            'program' => $student->programItem?->name ?? $student->program,
+            'package' => $student->package,
+            'parent_contact' => $student->parent_contact,
+            'preferred_mode' => $student->preferred_mode,
+            'notes' => $student->notes,
+            'admin_note' => $student->admin_note,
+            'status' => $student->status,
+            'approved_at' => $student->approved_at,
+            'approved_by' => $student->approved_by,
+            'approved_by_name' => $student->approver?->name,
+            'rejected_at' => $student->rejected_at,
+            'rejected_by' => $student->rejected_by,
+            'rejected_by_name' => $student->rejector?->name,
+            'created_at' => $student->created_at,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formatTeacherRegistration(TeacherRegistration $teacher): array
+    {
+        return [
+            'id' => $teacher->id,
+            'registration_no' => $teacher->registration_no,
+            'name' => $teacher->name,
+            'address' => $teacher->address,
+            'education' => $teacher->education,
+            'subjects' => $teacher->subjects,
+            'experience' => $teacher->experience,
+            'contact' => $teacher->contact,
+            'cv_path' => $teacher->cv_path,
+            'cv_url' => $teacher->cv_path ? Storage::url($teacher->cv_path) : null,
+            'notes' => $teacher->notes,
+            'admin_note' => $teacher->admin_note,
+            'status' => $teacher->status,
+            'approved_at' => $teacher->approved_at,
+            'approved_by' => $teacher->approved_by,
+            'approved_by_name' => $teacher->approver?->name,
+            'rejected_at' => $teacher->rejected_at,
+            'rejected_by' => $teacher->rejected_by,
+            'rejected_by_name' => $teacher->rejector?->name,
+            'created_at' => $teacher->created_at,
         ];
     }
 }

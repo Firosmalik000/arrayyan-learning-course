@@ -1,5 +1,5 @@
 import { Head, usePage, router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // Icons
 const icons = {
@@ -77,68 +77,133 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }) {
     );
 }
 
+// Pagination
+function Pagination({ meta, onPage }) {
+    if (!meta || meta.last_page <= 1) return null;
+    const btnClass = 'rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-violet-300 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50';
+    return (
+        <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
+            <p className="text-xs text-slate-500">
+                Hal {meta.current_page} dari {meta.last_page} — {meta.total} data
+            </p>
+            <div className="flex gap-2">
+                <button
+                    type="button"
+                    disabled={meta.current_page <= 1}
+                    onClick={() => onPage(meta.current_page - 1)}
+                    className={btnClass}
+                >
+                    Sebelumnya
+                </button>
+                <button
+                    type="button"
+                    disabled={meta.current_page >= meta.last_page}
+                    onClick={() => onPage(meta.current_page + 1)}
+                    className={btnClass}
+                >
+                    Berikutnya
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function Registrations() {
     const {
-        studentRegistrations = [],
-        teacherRegistrations = [],
+        studentRegistrations,
+        teacherRegistrations,
+        studentStats = { total: 0, pending: 0, approved: 0, rejected: 0 },
+        teacherStats = { total: 0, pending: 0, approved: 0, rejected: 0 },
+        levelOptions = [],
+        filters = {},
         flash,
         initialTab = 'student',
         allowedActions = {},
     } = usePage().props;
+
+    const studentRows = studentRegistrations?.data ?? [];
+    const teacherRows = teacherRegistrations?.data ?? [];
+    const studentMeta = studentRegistrations?.meta ?? null;
+    const teacherMeta = teacherRegistrations?.meta ?? null;
+
     const [activeTab, setActiveTab] = useState(initialTab);
-    const [studentSearch, setStudentSearch] = useState('');
-    const [teacherSearch, setTeacherSearch] = useState('');
-    const [filterLevel, setFilterLevel] = useState('');
-    const [filterStatus, setFilterStatus] = useState('pending');
-    const [teacherFilterStatus, setTeacherFilterStatus] = useState('pending');
+    const [studentSearch, setStudentSearch] = useState(filters.student_search ?? '');
+    const [teacherSearch, setTeacherSearch] = useState(filters.teacher_search ?? '');
+    const [filterLevel, setFilterLevel] = useState(filters.student_level ?? '');
+    const [filterStatus, setFilterStatus] = useState(filters.student_status ?? 'pending');
+    const [teacherFilterStatus, setTeacherFilterStatus] = useState(filters.teacher_status ?? 'pending');
 
     useEffect(() => {
         setActiveTab(initialTab);
     }, [initialTab]);
 
+    const fetchPage = (overrides = {}) => {
+        router.get('/admin/pendaftaran', {
+            student_search: studentSearch,
+            student_level: filterLevel,
+            student_status: filterStatus,
+            teacher_search: teacherSearch,
+            teacher_status: teacherFilterStatus,
+            students_page: studentMeta?.current_page ?? 1,
+            teachers_page: teacherMeta?.current_page ?? 1,
+            ...overrides,
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    };
+
+    // Debounced server-side filtering (reset to page 1 on filter change)
+    const isFirstRender = useRef(true);
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        const timer = setTimeout(() => {
+            fetchPage({ students_page: 1, teachers_page: 1 });
+        }, 500);
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [studentSearch, filterLevel, filterStatus, teacherSearch, teacherFilterStatus]);
+
     // Detail modal
     const [detailModal, setDetailModal] = useState(null);
     // Delete modal
     const [deleteModal, setDeleteModal] = useState(null);
+    // Reject modal (with optional admin note)
+    const [rejectModal, setRejectModal] = useState(null);
+    const [adminNote, setAdminNote] = useState('');
+    // Bulk selection (pending rows on current page)
+    const [selectedStudents, setSelectedStudents] = useState([]);
+    const [selectedTeachers, setSelectedTeachers] = useState([]);
 
     const can = (action) => (allowedActions.pendaftaran ?? []).includes(action);
     const canView = can('view');
     const canApprove = can('approve');
     const canReject = can('reject');
     const canDelete = can('delete');
+    const canExport = can('export');
+    const canCreateInvoice = (allowedActions.keuangan ?? []).includes('create');
 
-    // Student filtering
-    const filteredStudents = studentRegistrations.filter((r) => {
-        const name = r.student_name || '';
-        const matchSearch = name.toLowerCase().includes(studentSearch.toLowerCase());
-        const matchLevel = !filterLevel || r.level === filterLevel;
-        const matchStatus = !filterStatus || r.status === filterStatus;
-        return matchSearch && matchLevel && matchStatus;
-    });
+    const handleCreateInvoice = (registrationId) => {
+        router.post(`/admin/keuangan/from-registration/${registrationId}`, {}, { preserveScroll: true });
+    };
 
-    // Teacher filtering
-    const filteredTeachers = teacherRegistrations.filter((t) => {
-        const name = t.name || '';
-        const matchSearch = name.toLowerCase().includes(teacherSearch.toLowerCase());
-        const matchStatus = !teacherFilterStatus || t.status === teacherFilterStatus;
-        return matchSearch && matchStatus;
-    });
-
-    const levelOptions = [...new Set(studentRegistrations.map((r) => r.level).filter(Boolean))];
-
-    // Stats
-    const studentStats = [
-        { label: 'Total', value: studentRegistrations.length, color: 'bg-violet-50 text-violet-700 border-violet-200' },
-        { label: 'Pending', value: studentRegistrations.filter((r) => r.status === 'pending').length, color: 'bg-amber-50 text-amber-700 border-amber-200' },
-        { label: 'Disetujui', value: studentRegistrations.filter((r) => r.status === 'approved').length, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-        { label: 'Ditolak', value: studentRegistrations.filter((r) => r.status === 'rejected').length, color: 'bg-red-50 text-red-700 border-red-200' },
+    // Stats (computed server-side so numbers stay correct with pagination)
+    const studentStatCards = [
+        { label: 'Total', value: studentStats.total ?? 0, color: 'bg-violet-50 text-violet-700 border-violet-200' },
+        { label: 'Pending', value: studentStats.pending ?? 0, color: 'bg-amber-50 text-amber-700 border-amber-200' },
+        { label: 'Disetujui', value: studentStats.approved ?? 0, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+        { label: 'Ditolak', value: studentStats.rejected ?? 0, color: 'bg-red-50 text-red-700 border-red-200' },
     ];
 
-    const teacherStats = [
-        { label: 'Total', value: teacherRegistrations.length, color: 'bg-violet-50 text-violet-700 border-violet-200' },
-        { label: 'Pending', value: teacherRegistrations.filter((t) => t.status === 'pending').length, color: 'bg-amber-50 text-amber-700 border-amber-200' },
-        { label: 'Disetujui', value: teacherRegistrations.filter((t) => t.status === 'approved').length, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-        { label: 'Ditolak', value: teacherRegistrations.filter((t) => t.status === 'rejected').length, color: 'bg-red-50 text-red-700 border-red-200' },
+    const teacherStatCards = [
+        { label: 'Total', value: teacherStats.total ?? 0, color: 'bg-violet-50 text-violet-700 border-violet-200' },
+        { label: 'Pending', value: teacherStats.pending ?? 0, color: 'bg-amber-50 text-amber-700 border-amber-200' },
+        { label: 'Disetujui', value: teacherStats.approved ?? 0, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+        { label: 'Ditolak', value: teacherStats.rejected ?? 0, color: 'bg-red-50 text-red-700 border-red-200' },
     ];
 
     const typeSlug = { student: 'murid', teacher: 'pengajar' };
@@ -147,9 +212,51 @@ export default function Registrations() {
         router.post(`/admin/pendaftaran/${typeSlug[type]}/${id}/approve`, {}, { preserveScroll: true });
     };
 
-    const handleReject = (type, id) => {
-        router.post(`/admin/pendaftaran/${typeSlug[type]}/${id}/reject`, {}, { preserveScroll: true });
+    const handleReject = (type, item) => {
+        setRejectModal({
+            type,
+            id: item.id,
+            name: type === 'student' ? item.student_name : item.name,
+            ticket: item.registration_no || '-',
+        });
+        setAdminNote('');
     };
+
+    const confirmReject = () => {
+        if (!rejectModal) return;
+        router.post(`/admin/pendaftaran/${typeSlug[rejectModal.type]}/${rejectModal.id}/reject`, {
+            admin_note: adminNote,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => { setRejectModal(null); setAdminNote(''); },
+        });
+    };
+
+    const toggleSelect = (type, id) => {
+        if (type === 'student') {
+            setSelectedStudents((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
+        } else {
+            setSelectedTeachers((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
+        }
+    };
+
+    const handleBulkApprove = (type) => {
+        const ids = type === 'student' ? selectedStudents : selectedTeachers;
+        if (ids.length === 0) return;
+        // eslint-disable-next-line no-alert
+        if (!window.confirm(`Setujui ${ids.length} pendaftaran terpilih?`)) return;
+        router.post(`/admin/pendaftaran/${typeSlug[type]}/bulk-approve`, { ids }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                if (type === 'student') setSelectedStudents([]);
+                else setSelectedTeachers([]);
+            },
+        });
+    };
+
+    const waRejectPreview = rejectModal
+        ? `Halo ${rejectModal.name}, mohon maaf pendaftaran Anda (${rejectModal.ticket}) di Ar Rayyan Learning Course BELUM dapat kami setujui.${adminNote ? `\nAlasan: ${adminNote}` : ''}\nSilakan hubungi admin untuk informasi lebih lanjut.`
+        : '';
 
     const handleDelete = () => {
         if (!deleteModal) return;
@@ -160,8 +267,8 @@ export default function Registrations() {
     };
 
     const tabs = [
-        { key: 'student', label: 'Pendaftaran Murid', count: studentRegistrations.length },
-        { key: 'teacher', label: 'Pendaftaran Pengajar', count: teacherRegistrations.length },
+        { key: 'student', label: 'Pendaftaran Murid', count: studentStats.total ?? 0 },
+        { key: 'teacher', label: 'Pendaftaran Pengajar', count: teacherStats.total ?? 0 },
     ];
 
     return (
@@ -170,14 +277,38 @@ export default function Registrations() {
 
             <div className="space-y-6">
                 {/* Header */}
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800">Pendaftaran</h1>
-                    <p className="mt-1 text-sm text-slate-600">Kelola pendaftaran murid dan pengajar yang masuk</p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800">Pendaftaran</h1>
+                        <p className="mt-1 text-sm text-slate-600">Kelola pendaftaran murid dan pengajar yang masuk</p>
+                    </div>
+                    {canExport && (
+                        <div className="flex gap-2">
+                            <a
+                                href="/admin/pendaftaran/export/murid"
+                                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-violet-300 hover:text-violet-700"
+                            >
+                                Export Murid CSV
+                            </a>
+                            <a
+                                href="/admin/pendaftaran/export/pengajar"
+                                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-violet-300 hover:text-violet-700"
+                            >
+                                Export Pengajar CSV
+                            </a>
+                        </div>
+                    )}
                 </div>
 
                 {flash?.success && (
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                         {flash.success}
+                    </div>
+                )}
+
+                {flash?.error && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        {flash.error}
                     </div>
                 )}
 
@@ -209,7 +340,7 @@ export default function Registrations() {
                     <div className="space-y-4">
                         {/* Stats */}
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                            {studentStats.map((stat) => (
+                            {studentStatCards.map((stat) => (
                                 <div key={stat.label} className={`rounded-2xl border p-4 ${stat.color}`}>
                                     <p className="text-sm font-medium">{stat.label}</p>
                                     <p className="mt-1 text-2xl font-bold">{stat.value}</p>
@@ -244,10 +375,35 @@ export default function Registrations() {
                                 </div>
                             </div>
                             <div className="overflow-x-auto">
+                                {selectedStudents.length > 0 && canApprove && (
+                                    <div className="flex items-center justify-between gap-3 border-b border-emerald-100 bg-emerald-50/70 px-4 py-2.5">
+                                        <p className="text-xs font-semibold text-emerald-800">
+                                            {selectedStudents.length} dipilih
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedStudents([])}
+                                                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                                            >
+                                                Batal
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleBulkApprove('student')}
+                                                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                                            >
+                                                Setujui Terpilih
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                                 <table className="w-full text-left text-sm">
                                     <thead>
                                         <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                            {canApprove && <th className="w-10 px-3 py-3"><span className="sr-only">Pilih</span></th>}
                                             <th className="px-5 py-3 font-medium">Nama</th>
+                                            <th className="px-5 py-3 font-medium">Tiket</th>
                                             <th className="px-5 py-3 font-medium">Jenjang</th>
                                             <th className="px-5 py-3 font-medium">Program</th>
                                             <th className="px-5 py-3 font-medium">Kontak</th>
@@ -259,9 +415,22 @@ export default function Registrations() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {filteredStudents.map((item) => (
+                                        {studentRows.map((item) => (
                                             <tr key={item.id} className="transition hover:bg-slate-50">
+                                                {canApprove && (
+                                                    <td className="px-3 py-4">
+                                                        {item.status === 'pending' ? (
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedStudents.includes(item.id)}
+                                                                onChange={() => toggleSelect('student', item.id)}
+                                                                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                                            />
+                                                        ) : null}
+                                                    </td>
+                                                )}
                                                 <td className="px-5 py-4 font-medium text-slate-800">{item.student_name}</td>
+                                                <td className="px-5 py-4 font-mono text-xs text-slate-600">{item.registration_no || '-'}</td>
                                                 <td className="px-5 py-4 text-slate-600">{item.level}</td>
                                                 <td className="px-5 py-4 text-slate-600">{item.program}</td>
                                                 <td className="px-5 py-4 text-slate-600">{item.parent_contact}</td>
@@ -288,7 +457,7 @@ export default function Registrations() {
                                                             </button>
                                                         )}
                                                         {item.status === 'pending' && canReject && (
-                                                            <button type="button" onClick={() => handleReject('student', item.id)} className="rounded-lg p-2 text-slate-400 transition hover:bg-amber-100 hover:text-amber-600" title="Tolak">
+                                                            <button type="button" onClick={() => handleReject('student', item)} className="rounded-lg p-2 text-slate-400 transition hover:bg-amber-100 hover:text-amber-600" title="Tolak">
                                                                 {icons.x}
                                                             </button>
                                                         )}
@@ -301,12 +470,13 @@ export default function Registrations() {
                                                 </td>
                                             </tr>
                                         ))}
-                                        {filteredStudents.length === 0 && (
-                                            <tr><td colSpan={9} className="px-5 py-12 text-center text-slate-500">Tidak ada data yang ditemukan</td></tr>
+                                        {studentRows.length === 0 && (
+                                            <tr><td colSpan={11} className="px-5 py-12 text-center text-slate-500">Tidak ada data yang ditemukan</td></tr>
                                         )}
                                     </tbody>
                                 </table>
                             </div>
+                            <Pagination meta={studentMeta} onPage={(page) => fetchPage({ students_page: page })} />
                         </div>
                     </div>
                 )}
@@ -316,7 +486,7 @@ export default function Registrations() {
                     <div className="space-y-4">
                         {/* Stats */}
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                            {teacherStats.map((stat) => (
+                            {teacherStatCards.map((stat) => (
                                 <div key={stat.label} className={`rounded-2xl border p-4 ${stat.color}`}>
                                     <p className="text-sm font-medium">{stat.label}</p>
                                     <p className="mt-1 text-2xl font-bold">{stat.value}</p>
@@ -345,10 +515,35 @@ export default function Registrations() {
                                 </select>
                             </div>
                             <div className="overflow-x-auto">
+                                {selectedTeachers.length > 0 && canApprove && (
+                                    <div className="flex items-center justify-between gap-3 border-b border-emerald-100 bg-emerald-50/70 px-4 py-2.5">
+                                        <p className="text-xs font-semibold text-emerald-800">
+                                            {selectedTeachers.length} dipilih
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedTeachers([])}
+                                                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                                            >
+                                                Batal
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleBulkApprove('teacher')}
+                                                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                                            >
+                                                Setujui Terpilih
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                                 <table className="w-full text-left text-sm">
                                     <thead>
                                         <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                            {canApprove && <th className="w-10 px-3 py-3"><span className="sr-only">Pilih</span></th>}
                                             <th className="px-5 py-3 font-medium">Nama</th>
+                                            <th className="px-5 py-3 font-medium">Tiket</th>
                                             <th className="px-5 py-3 font-medium">Pendidikan</th>
                                             <th className="px-5 py-3 font-medium">Mata Pelajaran</th>
                                             <th className="px-5 py-3 font-medium">Kontak</th>
@@ -361,9 +556,22 @@ export default function Registrations() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {filteredTeachers.map((item) => (
+                                        {teacherRows.map((item) => (
                                             <tr key={item.id} className="transition hover:bg-slate-50">
+                                                {canApprove && (
+                                                    <td className="px-3 py-4">
+                                                        {item.status === 'pending' ? (
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedTeachers.includes(item.id)}
+                                                                onChange={() => toggleSelect('teacher', item.id)}
+                                                                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                                            />
+                                                        ) : null}
+                                                    </td>
+                                                )}
                                                 <td className="px-5 py-4 font-medium text-slate-800">{item.name}</td>
+                                                <td className="px-5 py-4 font-mono text-xs text-slate-600">{item.registration_no || '-'}</td>
                                                 <td className="px-5 py-4 text-slate-600">{item.education}</td>
                                                 <td className="px-5 py-4 text-slate-600">{item.subjects}</td>
                                                 <td className="px-5 py-4 text-slate-600">{item.contact}</td>
@@ -395,7 +603,7 @@ export default function Registrations() {
                                                             </button>
                                                         )}
                                                         {item.status === 'pending' && canReject && (
-                                                            <button type="button" onClick={() => handleReject('teacher', item.id)} className="rounded-lg p-2 text-slate-400 transition hover:bg-amber-100 hover:text-amber-600" title="Tolak">
+                                                            <button type="button" onClick={() => handleReject('teacher', item)} className="rounded-lg p-2 text-slate-400 transition hover:bg-amber-100 hover:text-amber-600" title="Tolak">
                                                                 {icons.x}
                                                             </button>
                                                         )}
@@ -408,12 +616,13 @@ export default function Registrations() {
                                                 </td>
                                             </tr>
                                         ))}
-                                        {filteredTeachers.length === 0 && (
-                                            <tr><td colSpan={10} className="px-5 py-12 text-center text-slate-500">Tidak ada data yang ditemukan</td></tr>
+                                        {teacherRows.length === 0 && (
+                                            <tr><td colSpan={12} className="px-5 py-12 text-center text-slate-500">Tidak ada data yang ditemukan</td></tr>
                                         )}
                                     </tbody>
                                 </table>
                             </div>
+                            <Pagination meta={teacherMeta} onPage={(page) => fetchPage({ teachers_page: page })} />
                         </div>
                     </div>
                 )}
@@ -428,6 +637,7 @@ export default function Registrations() {
                                 {detailModal.type === 'student' ? (
                                     <>
                                         <div><p className="text-xs text-slate-500">Nama</p><p className="font-medium text-slate-800">{detailModal.data.student_name}</p></div>
+                                        <div><p className="text-xs text-slate-500">No. Tiket</p><p className="font-mono font-medium text-slate-800">{detailModal.data.registration_no || '-'}</p></div>
                                         <div><p className="text-xs text-slate-500">Jenjang</p><p className="font-medium text-slate-800">{detailModal.data.level || '-'}</p></div>
                                         <div><p className="text-xs text-slate-500">Alamat</p><p className="font-medium text-slate-800">{detailModal.data.address || '-'}</p></div>
                                         <div><p className="text-xs text-slate-500">Sekolah</p><p className="font-medium text-slate-800">{detailModal.data.school_name || '-'}</p></div>
@@ -442,6 +652,7 @@ export default function Registrations() {
                                 ) : (
                                     <>
                                         <div><p className="text-xs text-slate-500">Nama</p><p className="font-medium text-slate-800">{detailModal.data.name}</p></div>
+                                        <div><p className="text-xs text-slate-500">No. Tiket</p><p className="font-mono font-medium text-slate-800">{detailModal.data.registration_no || '-'}</p></div>
                                         <div><p className="text-xs text-slate-500">Pendidikan</p><p className="font-medium text-slate-800">{detailModal.data.education || '-'}</p></div>
                                         <div><p className="text-xs text-slate-500">Alamat</p><p className="font-medium text-slate-800">{detailModal.data.address || '-'}</p></div>
                                         <div><p className="text-xs text-slate-500">Mata Pelajaran</p><p className="font-medium text-slate-800">{detailModal.data.subjects || '-'}</p></div>
@@ -465,12 +676,18 @@ export default function Registrations() {
                                 <p className="mt-2">{detailModal.data.notes}</p>
                             </div>
                         )}
+                        {detailModal.data.admin_note && (
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-amber-500">Catatan Admin (dikirim ke pendaftar)</p>
+                                <p className="mt-2">{detailModal.data.admin_note}</p>
+                            </div>
+                        )}
                         {detailModal.data.status === 'pending' && (canApprove || canReject) && (
                             <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
                                 {canReject && (
                                     <button
                                         type="button"
-                                        onClick={() => { handleReject(detailModal.type, detailModal.data.id); setDetailModal(null); }}
+                                        onClick={() => { handleReject(detailModal.type, detailModal.data); setDetailModal(null); }}
                                         className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100"
                                     >
                                         {icons.x} Tolak
@@ -487,6 +704,61 @@ export default function Registrations() {
                                 )}
                             </div>
                         )}
+                        {detailModal.type === 'student' && detailModal.data.status === 'approved' && canCreateInvoice && (
+                            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => { handleCreateInvoice(detailModal.data.id); setDetailModal(null); }}
+                                    className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
+                                >
+                                    Buatkan Invoice
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </Modal>
+
+            {/* Reject Modal */}
+            <Modal isOpen={!!rejectModal} onClose={() => setRejectModal(null)} title="Tolak Pendaftaran" size="md">
+                {rejectModal && (
+                    <div className="space-y-4">
+                        <p className="text-sm text-slate-600">
+                            Tolak pendaftaran <span className="font-semibold text-slate-800">{rejectModal.name}</span>{' '}
+                            <span className="font-mono text-xs">({rejectModal.ticket})</span>? Pendaftar akan menerima notifikasi WhatsApp otomatis.
+                        </p>
+                        <div>
+                            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Alasan Penolakan (opsional, terkirim ke pendaftar)
+                            </label>
+                            <textarea
+                                rows="3"
+                                value={adminNote}
+                                onChange={(e) => setAdminNote(e.target.value)}
+                                placeholder="Contoh: Kuota program sudah penuh, silakan pilih program lain."
+                                className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-red-300 focus:ring-2 focus:ring-red-100"
+                            />
+                        </div>
+                        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Preview Pesan WhatsApp</p>
+                            <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{waRejectPreview}</p>
+                        </div>
+                        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+                            <button
+                                type="button"
+                                onClick={() => setRejectModal(null)}
+                                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmReject}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+                            >
+                                {icons.x} Ya, Tolak
+                            </button>
+                        </div>
                     </div>
                 )}
             </Modal>

@@ -189,6 +189,8 @@ export default function BankSoal() {
         image: null,
         is_active: true,
         links: [createLinkRow()],
+        passkey: '',
+        passkey_clear: false,
     });
 
     // Filtered modules
@@ -242,6 +244,8 @@ export default function BankSoal() {
                         link: link.link ?? '',
                     }))
                     : [createLinkRow()],
+                passkey: '',
+                passkey_clear: false,
             });
             setCurrentImageUrl(item.image_url ?? null);
         } else {
@@ -256,6 +260,8 @@ export default function BankSoal() {
                 image: null,
                 is_active: true,
                 links: [createLinkRow()],
+                passkey: '',
+                passkey_clear: false,
             });
             setCurrentImageUrl(null);
         }
@@ -275,6 +281,8 @@ export default function BankSoal() {
             ...form,
             is_active: form.is_active ? 1 : 0,
             links: cleanedLinks,
+            passkey: form.passkey?.trim() || null,
+            passkey_clear: editing ? !!form.passkey_clear : false,
         };
         if (editing) {
             router.post(`/admin/bank-soal/${editing.id}`, { ...data, _method: 'put' }, {
@@ -430,6 +438,7 @@ export default function BankSoal() {
                                     <th className="px-5 py-3 font-medium">Jenjang</th>
                                     <th className="px-5 py-3 font-medium">Format</th>
                                     <th className="px-5 py-3 font-medium">Links</th>
+                                    <th className="px-5 py-3 font-medium">Akses</th>
                                     <th className="px-5 py-3 font-medium">Status</th>
                                     <th className="px-5 py-3 font-medium">Slug</th>
                                     <th className="px-5 py-3 font-medium text-right">Aksi</th>
@@ -462,6 +471,14 @@ export default function BankSoal() {
                                         <td className="px-5 py-4 text-slate-600">{item.level || '-'}</td>
                                         <td className="px-5 py-4 text-slate-600">{item.format || '-'}</td>
                                         <td className="px-5 py-4 text-slate-600">{item.links?.length ?? 0}</td>
+                                        <td className="px-5 py-4">
+                                            <div className="flex flex-col gap-1 text-xs">
+                                                {item.has_passkey
+                                                    ? <span className="inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">🔒 Passkey</span>
+                                                    : <span className="inline-flex w-fit rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">Terbuka</span>}
+                                                <span className="text-slate-400">{item.view_count ?? 0} dilihat • {item.download_count ?? 0} unduhan</span>
+                                            </div>
+                                        </td>
                                         <td className="px-5 py-4">
                                             <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[statusLabel]}`}>
                                                 {statusLabel}
@@ -507,7 +524,7 @@ export default function BankSoal() {
                                 })}
                                 {filteredModules.length === 0 && (
                                     <tr>
-                                        <td colSpan={8} className="px-5 py-12 text-center text-slate-500">
+                                        <td colSpan={9} className="px-5 py-12 text-center text-slate-500">
                                             Tidak ada modul yang ditemukan
                                         </td>
                                     </tr>
@@ -629,6 +646,29 @@ export default function BankSoal() {
                         onChange={(v) => setForm({ ...form, is_active: v === 'Aktif' })}
                         options={statusOptions}
                     />
+                    <div>
+                        <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                            Passkey Modul (kosongkan = mengikuti passkey global / terbuka)
+                        </label>
+                        <input
+                            type="text"
+                            value={form.passkey}
+                            onChange={(e) => setForm({ ...form, passkey: e.target.value })}
+                            placeholder={editing?.has_passkey ? 'Terpasang — isi untuk mengganti' : 'cth: SOAL2026'}
+                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                        />
+                        {editing?.has_passkey && (
+                            <label className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+                                <input
+                                    type="checkbox"
+                                    checked={!!form.passkey_clear}
+                                    onChange={(e) => setForm({ ...form, passkey_clear: e.target.checked })}
+                                    className="h-4 w-4 rounded border-slate-300"
+                                />
+                                Hapus passkey modul ini
+                            </label>
+                        )}
+                    </div>
                     <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
                         <button type="button" onClick={() => setShowModal(false)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
                             Batal

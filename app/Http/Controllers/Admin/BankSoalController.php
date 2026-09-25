@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateBankSoalRequest;
 use App\Models\BankSoal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class BankSoalController extends Controller
@@ -20,6 +21,12 @@ class BankSoalController extends Controller
         }
         unset($data['image']);
         $data = $this->normalizePayload($data);
+
+        if (! empty($data['passkey'])) {
+            $data['passkey'] = Hash::make(trim($data['passkey']));
+        } else {
+            unset($data['passkey']);
+        }
 
         BankSoal::create($data);
 
@@ -34,6 +41,15 @@ class BankSoalController extends Controller
         }
         unset($data['image']);
         $data = $this->normalizePayload($data);
+
+        if (filter_var($data['passkey_clear'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $data['passkey'] = null;
+        } elseif (! empty($data['passkey'])) {
+            $data['passkey'] = Hash::make(trim($data['passkey']));
+        } else {
+            unset($data['passkey']);
+        }
+        unset($data['passkey_clear']);
 
         $bankSoal->update($data);
 

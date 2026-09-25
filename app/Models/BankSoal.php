@@ -20,6 +20,9 @@ class BankSoal extends Model
         'questions',
         'description',
         'links',
+        'passkey',
+        'view_count',
+        'download_count',
         'image_path',
         'tone',
         'is_active',
@@ -32,6 +35,12 @@ class BankSoal extends Model
         'description' => 'array',
         'links' => 'array',
         'questions' => 'integer',
+        'view_count' => 'integer',
+        'download_count' => 'integer',
         'is_active' => 'boolean',
+    ];
+
+    protected $hidden = [
+        'passkey',
     ];
 }

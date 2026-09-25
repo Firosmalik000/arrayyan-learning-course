@@ -6,8 +6,8 @@
       "_vendor-react-ZwENbJqZ.js"
     ]
   },
-  "_vendor-motion-BfRiiKiu.js": {
-    "file": "assets/vendor-motion-BfRiiKiu.js",
+  "_vendor-motion-F5vWgioE.js": {
+    "file": "assets/vendor-motion-F5vWgioE.js",
     "name": "vendor-motion",
     "imports": [
       "_vendor-react-ZwENbJqZ.js"
@@ -18,17 +18,17 @@
     "name": "vendor-react"
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-Bmtdh-RT.js",
+    "file": "assets/app-BiYwo3hJ.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
     "imports": [
       "_vendor-react-ZwENbJqZ.js",
       "_vendor-inertia-k7FJVHLV.js",
-      "_vendor-motion-BfRiiKiu.js"
+      "_vendor-motion-F5vWgioE.js"
     ],
     "css": [
-      "assets/app-ou0YCHzF.css"
+      "assets/app-BGc_rQT3.css"
     ]
   }
 }

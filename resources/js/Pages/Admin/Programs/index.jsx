@@ -171,7 +171,7 @@ const getInitials = (value) => {
 };
 
 export default function Programs() {
-    const { programs: programsData = [], packages: packagesData = [], allowedActions = {}, flash } = usePage().props;
+    const { programs: programsData = [], packages: packagesData = [], teachers: teachersData = [], allowedActions = {}, flash } = usePage().props;
     const programs = useMemo(() => programsData.map((program) => ({
         ...program,
         subjects: normalizeSubjects(program.subjects),
@@ -206,12 +206,20 @@ export default function Programs() {
     // Program form state
     const programForm = useForm({
         name: '',
+        slug: '',
         level: '',
         description: '',
+        price: '',
+        duration: '',
+        quota: '',
+        schedule_info: '',
+        syllabus: '',
+        teacher_id: '',
         subjects: '',
         mode: '',
         image: null,
         is_active: true,
+        is_featured: false,
     });
 
     // Package form state
@@ -231,24 +239,40 @@ export default function Programs() {
             setEditingProgram(program);
             programForm.setData({
                 name: program.name || '',
+                slug: program.slug || '',
                 level: program.level || '',
                 description: program.description || '',
+                price: program.price ?? '',
+                duration: program.duration || '',
+                quota: program.quota ?? '',
+                schedule_info: program.schedule_info || '',
+                syllabus: normalizeSubjects(program.syllabus).join('\n'),
+                teacher_id: program.teacher_id ? String(program.teacher_id) : '',
                 subjects: normalizeSubjects(program.subjects).join(', '),
                 mode: normalizeModeValue(program.mode),
                 image: null,
                 is_active: Number(program.is_active ?? 1) === 1,
+                is_featured: Number(program.is_featured ?? 0) === 1,
             });
             setCurrentProgramImageUrl(program.image_url || null);
         } else {
             setEditingProgram(null);
             programForm.setData({
                 name: '',
+                slug: '',
                 level: '',
                 description: '',
+                price: '',
+                duration: '',
+                quota: '',
+                schedule_info: '',
+                syllabus: '',
+                teacher_id: '',
                 subjects: '',
                 mode: '',
                 image: null,
                 is_active: true,
+                is_featured: false,
             });
             setCurrentProgramImageUrl(null);
         }
@@ -264,8 +288,16 @@ export default function Programs() {
     const saveProgramForm = () => {
         const payload = {
             ...programForm.data,
+            slug: programForm.data.slug || null,
+            price: programForm.data.price === '' ? null : Number(programForm.data.price),
+            quota: programForm.data.quota === '' ? null : Number(programForm.data.quota),
+            teacher_id: programForm.data.teacher_id === '' ? null : Number(programForm.data.teacher_id),
+            syllabus: normalizeSubjects(
+                String(programForm.data.syllabus || '').split(/[\n,]/).map((item) => item.trim())
+            ),
             subjects: normalizeSubjects(programForm.data.subjects),
             is_active: programForm.data.is_active ? 1 : 0,
+            is_featured: programForm.data.is_featured ? 1 : 0,
             mode: programForm.data.mode || null,
         };
 
@@ -422,6 +454,29 @@ export default function Programs() {
                                 <p className="mt-3 text-sm text-slate-600 line-clamp-2">
                                     {program.description || 'Belum ada deskripsi program.'}
                                 </p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {program.price != null && (
+                                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                                            Rp {Number(program.price).toLocaleString('id-ID')}
+                                        </span>
+                                    )}
+                                    {program.quota != null ? (
+                                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${Number(program.quota_remaining ?? 0) <= 0 ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-800'}`}>
+                                            {Number(program.quota_remaining ?? 0) <= 0
+                                                ? 'Kuota penuh'
+                                                : `Sisa ${program.quota_remaining}/${program.quota}`}
+                                        </span>
+                                    ) : (
+                                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
+                                            Tanpa batas kuota
+                                        </span>
+                                    )}
+                                    {Number(program.is_featured ?? 0) === 1 && (
+                                        <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">
+                                            Unggulan
+                                        </span>
+                                    )}
+                                </div>
                                 {program.subjects?.length > 0 && (
                                     <div className="mt-3 flex flex-wrap gap-2">
                                         {program.subjects.map((subject) => (
@@ -609,6 +664,79 @@ export default function Programs() {
                         onChange={(v) => programForm.setData('subjects', v)}
                         placeholder="contoh: Matematika, IPA, Bahasa Inggris"
                     />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1">
+                            <FormInput
+                                label="Slug URL (otomatis bila kosong)"
+                                value={programForm.data.slug}
+                                onChange={(v) => programForm.setData('slug', v)}
+                                placeholder="contoh: reguler-smp"
+                            />
+                            {programForm.errors.slug && <p className="text-xs text-rose-500">{programForm.errors.slug}</p>}
+                        </div>
+                        <div className="space-y-1">
+                            <FormInput
+                                label="Harga (Rp)"
+                                type="number"
+                                value={programForm.data.price}
+                                onChange={(v) => programForm.setData('price', v)}
+                                placeholder="contoh: 350000"
+                            />
+                            {programForm.errors.price && <p className="text-xs text-rose-500">{programForm.errors.price}</p>}
+                        </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1">
+                            <FormInput
+                                label="Durasi"
+                                value={programForm.data.duration}
+                                onChange={(v) => programForm.setData('duration', v)}
+                                placeholder="contoh: 3 bulan / 12 pertemuan"
+                            />
+                            {programForm.errors.duration && <p className="text-xs text-rose-500">{programForm.errors.duration}</p>}
+                        </div>
+                        <div className="space-y-1">
+                            <FormInput
+                                label="Kuota Peserta (kosong = tanpa batas)"
+                                type="number"
+                                value={programForm.data.quota}
+                                onChange={(v) => programForm.setData('quota', v)}
+                                placeholder="contoh: 30"
+                            />
+                            {programForm.errors.quota && <p className="text-xs text-rose-500">{programForm.errors.quota}</p>}
+                        </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormSelect
+                            label="Pengajar Penanggung Jawab"
+                            value={programForm.data.teacher_id}
+                            onChange={(v) => programForm.setData('teacher_id', v)}
+                            options={[{ value: '', label: 'Tanpa pengajar khusus' }, ...teachersData.map((t) => ({ value: String(t.id), label: t.name }))]}
+                        />
+                        <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700">
+                            <input
+                                type="checkbox"
+                                checked={programForm.data.is_featured}
+                                onChange={(e) => programForm.setData('is_featured', e.target.checked)}
+                                className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+                            />
+                            Tampilkan sebagai program unggulan
+                        </label>
+                    </div>
+                    <FormTextarea
+                        label="Info Jadwal"
+                        value={programForm.data.schedule_info}
+                        onChange={(v) => programForm.setData('schedule_info', v)}
+                        placeholder="contoh: Senin & Kamis, 16.00–17.30"
+                        rows={2}
+                    />
+                    <FormTextarea
+                        label="Silabus (satu baris per materi)"
+                        value={programForm.data.syllabus}
+                        onChange={(v) => programForm.setData('syllabus', v)}
+                        placeholder={'contoh:\nPecahan dan desimal\nAljabar dasar\nGeometri bangun datar'}
+                        rows={4}
+                    />
                     <div>
                         <label className="mb-1.5 block text-sm font-medium text-slate-700">Upload Foto</label>
                         <input
@@ -689,6 +817,46 @@ export default function Programs() {
                                 {programDetail.description || 'Belum ada deskripsi program.'}
                             </p>
                         </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Harga</p>
+                                <p className="mt-1 font-semibold text-slate-800">
+                                    {programDetail.price != null ? `Rp ${Number(programDetail.price).toLocaleString('id-ID')}` : '-'}
+                                </p>
+                            </div>
+                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Durasi</p>
+                                <p className="mt-1 font-semibold text-slate-800">{programDetail.duration || '-'}</p>
+                            </div>
+                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Kuota</p>
+                                <p className="mt-1 font-semibold text-slate-800">
+                                    {programDetail.quota != null
+                                        ? `${programDetail.quota_filled ?? 0}/${programDetail.quota} terisi`
+                                        : 'Tanpa batas'}
+                                </p>
+                            </div>
+                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pengajar</p>
+                                <p className="mt-1 font-semibold text-slate-800">{programDetail.teacher_name || '-'}</p>
+                            </div>
+                        </div>
+                        {programDetail.schedule_info && (
+                            <div className="rounded-xl border border-slate-100 bg-white p-4">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Info Jadwal</p>
+                                <p className="mt-2 text-sm text-slate-600">{programDetail.schedule_info}</p>
+                            </div>
+                        )}
+                        {programDetail.syllabus?.length > 0 && (
+                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Silabus</p>
+                                <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-600">
+                                    {programDetail.syllabus.map((item, idx) => (
+                                        <li key={idx}>{item}</li>
+                                    ))}
+                                </ol>
+                            </div>
+                        )}
                         <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Mata Pelajaran</p>
                             {programDetail.subjects?.length > 0 ? (

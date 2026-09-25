@@ -11,6 +11,7 @@ const getMenu = (pendingCounts, allowedMenus) => {
             icon: 'layout',
             children: [
                 { href: '/admin/landing', label: 'Landing Page', icon: 'layout', menuId: 'landing' },
+                { href: '/admin/konten', label: 'Konten (Blog/FAQ)', icon: 'book', menuId: 'konten' },
                 { href: '/admin/seo', label: 'SEO', icon: 'search', menuId: 'seo' },
             ],
         },
@@ -21,6 +22,7 @@ const getMenu = (pendingCounts, allowedMenus) => {
                 { href: '/admin/program', label: 'Program', icon: 'book', menuId: 'program' },
                 { href: '/admin/bank-soal', label: 'Bank Soal', icon: 'layers', menuId: 'bank-soal' },
                 { href: '/admin/olimpiade', label: 'Olimpiade', icon: 'trophy', menuId: 'olimpiade' },
+                { href: '/admin/olimpiade/pendaftaran', label: 'Pendaftar Lomba', icon: 'users', menuId: 'olimpiade' },
             ],
         },
         {
@@ -43,6 +45,14 @@ const getMenu = (pendingCounts, allowedMenus) => {
                 },
                 { href: '/admin/pelajar', label: 'Pelajar', icon: 'users', menuId: 'pelajar' },
                 { href: '/admin/pengajar', label: 'Pengajar', icon: 'user', menuId: 'pengajar' },
+                { href: '/admin/keuangan', label: 'Keuangan', icon: 'wallet', menuId: 'keuangan' },
+            ],
+        },
+        {
+            label: 'Akademik',
+            icon: 'academic',
+            children: [
+                { href: '/admin/akademik', label: 'Kelas & Jadwal', icon: 'academic', menuId: 'akademik' },
             ],
         },
         {
@@ -250,6 +260,22 @@ const icons = {
             <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
         </svg>
     ),
+    wallet: (
+        <svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+        >
+            <path d="M20 7H5a2 2 0 0 1 0-4h14v4" />
+            <path d="M20 7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5" />
+            <circle cx="17" cy="14" r="1" fill="currentColor" stroke="none" />
+        </svg>
+    ),
     logout: (
         <svg
             viewBox="0 0 24 24"
@@ -386,6 +412,22 @@ const icons = {
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
             <polyline points="15 3 21 3 21 9" />
             <line x1="10" y1="14" x2="21" y2="3" />
+        </svg>
+    ),
+    academic: (
+        <svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+        >
+            <path d="m22 10-10-5L2 10l10 5 10-5Z" />
+            <path d="M6 12.5V17c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5" />
+            <line x1="22" y1="10" x2="22" y2="16" />
         </svg>
     ),
 };
@@ -653,6 +695,22 @@ export default function AdminLayout({ children }) {
                             {/* Right: Actions + Profile */}
                             <div className="flex items-center gap-2 sm:gap-3">
                                 {/* Search & Notification buttons removed */}
+
+                                <Link
+                                    href="/admin/notifikasi"
+                                    title="Pusat Notifikasi"
+                                    className="relative rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 shadow-sm transition hover:border-brand-soft hover:text-slate-700"
+                                >
+                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                                        <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+                                    </svg>
+                                    {(pendingRegistrationCounts?.total ?? 0) > 0 && (
+                                        <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                                            {pendingRegistrationCounts.total > 99 ? '99+' : pendingRegistrationCounts.total}
+                                        </span>
+                                    )}
+                                </Link>
 
                                 {/* Profile Dropdown */}
                                 <div className="relative" ref={profileRef}>

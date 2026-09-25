@@ -1,32 +1,27 @@
 import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LanguageSelector from '../Components/LanguageSelector';
 import { useI18n } from '../lib/i18n';
 
 const localizeField = (value, lang) => {
-    if (!value) {
-        return '';
-    }
-
-    if (typeof value === 'string') {
-        return value;
-    }
-
+    if (!value) return '';
+    if (typeof value === 'string') return value;
     const localized = value[lang] ?? value.id ?? value.en ?? '';
     if (localized && typeof localized === 'object') {
         return localized[lang] ?? localized.id ?? localized.en ?? '';
     }
-
     return localized;
 };
 
 export default function PublicLayout({ children }) {
     const { t, language } = useI18n();
-    const { props } = usePage();
+    const { props, url } = usePage();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
+
     const logoSrc = props.appLogo || '/images/logo.jpeg';
 
-    // Get contact info from SEO settings (centralized source)
+    // Get contact info from SEO settings
     const seoContact = props.seoSettings?.contact || {};
     const socials = (seoContact.socials || []).map((social) => ({
         ...social,
@@ -34,74 +29,161 @@ export default function PublicLayout({ children }) {
         value: localizeField(social.value, language) || social.value || '',
         link: localizeField(social.link, language) || social.link || '',
     }));
-    const phone = localizeField(seoContact.phone, language) || '';
-    const email = localizeField(seoContact.email, language) || '';
-    const address = localizeField(seoContact.address?.full, language) || '';
+    const phone = localizeField(seoContact.phone, language) || '+62 812-3456-7890';
+    const email = localizeField(seoContact.email, language) || 'info@alclearning.id';
+    const address =
+        localizeField(seoContact.address?.full, language) ||
+        'Jl. Pendidikan Islami No. 8, Bandung, Jawa Barat 40123';
+    const mapLink = seoContact.address?.mapLink || 'https://maps.google.com';
 
     // Helper to get social link by key
     const getSocial = (key) => socials.find((s) => s.key === key) || {};
+    const waLink =
+        getSocial('whatsapp').link ||
+        `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
 
     const navItems = [
-        { href: '/', label: t('navHome') },
-        { href: '/#profil', label: t('navProfile') },
-        { href: '/#program', label: t('navPrograms') },
-        { href: '/olimpiade', label: t('navOlympiad') },
-        { href: '/pendaftaran', label: t('navRegister') },
-        { href: '/#kontak', label: t('navContact') },
+        { href: '/', label: t('navHome', 'Beranda') },
+        { href: '/program', label: t('navPrograms', 'Program Belajar') },
+        { href: '/bank-soal', label: t('navBankSoal', 'Bank Soal') },
+        { href: '/olimpiade', label: t('navOlympiad', 'Olimpiade') },
+        { href: '/#profil', label: t('navProfile', 'Tentang Kami') },
+        { href: '/#kontak', label: t('navContact', 'Kontak') },
     ];
 
-    const closeMenu = () => setIsMenuOpen(false);
+    const isActiveRoute = (href) => {
+        if (href === '/') return url === '/';
+        if (href.startsWith('/#')) return false;
+        return url.startsWith(href);
+    };
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Close menu on route change
+    useEffect(() => {
+        setIsMenuOpen(false);
+    }, [url]);
 
     return (
-        <div className="public-theme min-h-screen bg-brand-faint text-slate-900">
-            <header className="sticky top-0 z-30 border-b border-brand-soft bg-white/95 shadow-sm backdrop-blur-md">
-                <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2 sm:gap-3">
-                        <div className="flex items-center">
+        <div className="min-h-screen bg-[#fafbfc] text-slate-900 flex flex-col antialiased selection:bg-violet-100 selection:text-brand-primary">
+            {/* Top Announcement Bar */}
+            <div className="bg-slate-900 text-white text-[12px] sm:text-xs py-2 px-4">
+                <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+                            TERBARU
+                        </span>
+                        <span className="text-slate-300">
+                            Pendaftaran Siswa Baru Periode 2026/2027 Telah Dibuka!
+                        </span>
+                    </div>
+
+                    <div className="hidden sm:flex items-center gap-4 text-slate-300 shrink-0">
+                        <a
+                            href={waLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 hover:text-white transition"
+                        >
+                            <svg className="h-3.5 w-3.5 text-emerald-400" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                            </svg>
+                            <span>Konsultasi Hotline</span>
+                        </a>
+                        <span className="text-slate-600">•</span>
+                        <Link href="/pendaftaran" className="hover:text-white transition">
+                            Pendaftaran Online
+                        </Link>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Sticky Header */}
+            <header
+                className={`sticky top-0 z-40 w-full transition-all duration-300 ${
+                    scrolled
+                        ? 'bg-white/95 backdrop-blur-md shadow-xs border-b border-slate-200/80 py-2.5'
+                        : 'bg-white/90 backdrop-blur-sm border-b border-slate-100 py-3 sm:py-4'
+                }`}
+            >
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+                    {/* Brand Logo */}
+                    <Link href="/" className="flex items-center gap-3 shrink-0 group">
+                        <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-violet-50 overflow-hidden border border-slate-200/60 p-1 shadow-xs transition-transform group-hover:scale-105">
                             <img
                                 src={logoSrc}
-                                alt="ALC logo"
-                                className="h-16 w-16 object-contain sm:h-20 sm:w-20"
-                                onError={(event) => {
-                                    event.currentTarget.style.display = 'none';
-                                    if (event.currentTarget.nextSibling) {
-                                        event.currentTarget.nextSibling.style.display = 'block';
+                                alt="ALC Logo"
+                                className="h-full w-full object-contain"
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    if (e.currentTarget.nextSibling) {
+                                        e.currentTarget.nextSibling.style.display = 'flex';
                                     }
                                 }}
                             />
+                            <div className="hidden h-full w-full items-center justify-center bg-brand-primary font-bold text-white text-xs rounded-xl">
+                                ALC
+                            </div>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="font-display font-extrabold tracking-tight text-slate-900 text-base sm:text-lg leading-tight group-hover:text-brand-primary transition-colors">
+                                Ar Rayyan
+                            </span>
+                            <span className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+                                Learning Course
+                            </span>
                         </div>
                     </Link>
 
                     {/* Desktop Navigation */}
-                    <nav className="hidden items-center gap-1 lg:flex">
-                        {navItems.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className="rounded-full px-3 py-2 text-base font-medium text-slate-600 transition hover:bg-brand-faint hover:text-brand-primary"
-                            >
-                                {item.label}
-                            </Link>
-                        ))}
+                    <nav className="hidden lg:flex items-center gap-1">
+                        {navItems.map((item) => {
+                            const active = isActiveRoute(item.href);
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={`relative px-3.5 py-2 text-sm font-semibold rounded-full transition-colors ${
+                                        active
+                                            ? 'text-brand-primary bg-violet-50 font-bold'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                                    }`}
+                                >
+                                    {item.label}
+                                    {active && (
+                                        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-brand-primary" />
+                                    )}
+                                </Link>
+                            );
+                        })}
                     </nav>
 
-                    {/* Right Side Actions */}
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    {/* Right Header Controls */}
+                    <div className="flex items-center gap-2.5 sm:gap-3">
                         <LanguageSelector />
+
                         <Link
                             href="/pendaftaran"
-                            className="hidden rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-90 sm:inline-flex"
+                            className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-brand-primary px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition-all hover:brightness-105 hover:shadow-md active:scale-95"
                         >
-                            Daftar
+                            <span>Daftar Sekarang</span>
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                            </svg>
                         </Link>
 
-                        {/* Mobile Menu Button */}
+                        {/* Mobile Hamburger Toggle */}
                         <button
                             type="button"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-soft bg-white text-slate-600 transition hover:bg-brand-faint hover:text-brand-primary lg:hidden"
-                            aria-label="Toggle menu"
+                            className="lg:hidden flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 active:scale-95 transition"
+                            aria-label="Menu"
                         >
                             {isMenuOpen ? (
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -116,229 +198,261 @@ export default function PublicLayout({ children }) {
                     </div>
                 </div>
 
+                {/* Mobile Drawer / Dropdown */}
+                {isMenuOpen && (
+                    <div className="lg:hidden border-t border-slate-200/80 bg-white/98 backdrop-blur-xl px-4 pt-3 pb-6 shadow-xl transition-all">
+                        <nav className="flex flex-col gap-1">
+                            {navItems.map((item) => {
+                                const active = isActiveRoute(item.href);
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                                            active
+                                                ? 'bg-violet-50 text-brand-primary font-bold'
+                                                : 'text-slate-700 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <span>{item.label}</span>
+                                        {active && (
+                                            <span className="h-2 w-2 rounded-full bg-brand-primary" />
+                                        )}
+                                    </Link>
+                                );
+                            })}
+                        </nav>
+
+                        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2.5">
+                            <Link
+                                href="/pendaftaran"
+                                onClick={() => setIsMenuOpen(false)}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-primary py-3 text-sm font-bold text-white shadow-sm"
+                            >
+                                <span>Daftar Siswa / Pengajar</span>
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                </svg>
+                            </Link>
+
+                            <a
+                                href={waLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 py-3 text-sm font-bold text-emerald-800 hover:bg-emerald-100 transition"
+                            >
+                                <svg className="h-4 w-4 fill-emerald-600" viewBox="0 0 24 24">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                </svg>
+                                <span>Hubungi WhatsApp Admin</span>
+                            </a>
+                        </div>
+                    </div>
+                )}
             </header>
 
-            {/* Mobile Navigation Overlay */}
-            <div
-                className={`fixed inset-0 z-40 lg:hidden transition-opacity duration-300 ${
-                    isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-                }`}
+            {/* Page Content */}
+            <main className="flex-1">{children}</main>
+
+            {/* Floating WhatsApp Quick Action Button */}
+            <a
+                href={waLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="fixed bottom-6 right-6 z-30 flex items-center gap-2.5 rounded-full bg-emerald-600 px-4 py-3 text-white shadow-xl hover:bg-emerald-700 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group"
+                aria-label="Konsultasi WhatsApp"
             >
-                {/* Backdrop */}
-                <div
-                    className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
-                    onClick={closeMenu}
-                />
+                <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
+                </span>
+                <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                <span className="hidden sm:inline text-xs font-bold tracking-wide">
+                    Konsultasi Belajar
+                </span>
+            </a>
 
-                {/* Menu Panel */}
-                <div
-                    className={`absolute right-0 top-0 h-full w-72 sm:w-80 bg-white shadow-2xl transition-transform duration-300 ease-out ${
-                        isMenuOpen ? 'translate-x-0' : 'translate-x-full'
-                    }`}
-                >
-                    {/* Menu Header */}
-                    <div className="flex items-center justify-between border-b border-brand-soft px-5 py-4">
-                        <p className="font-display text-sm font-semibold text-slate-800">Menu</p>
-                        <button
-                            type="button"
-                            onClick={closeMenu}
-                            className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-brand-soft hover:text-brand-primary"
-                            aria-label="Close menu"
-                        >
-                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    {/* Menu Items */}
-                    <nav className="px-3 py-4">
-                        <div className="space-y-1">
-                            {navItems.map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    onClick={closeMenu}
-                                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-medium text-slate-700 transition hover:bg-brand-faint hover:text-brand-primary"
-                                >
-                                    <span className="h-1.5 w-1.5 rounded-full bg-brand-secondary" />
-                                    {item.label}
-                                </Link>
-                            ))}
-                        </div>
-                    </nav>
-
-                    {/* Menu Footer */}
-                    <div className="absolute bottom-0 left-0 right-0 border-t border-brand-soft bg-brand-faint p-4">
-                        <Link
-                            href="/pendaftaran"
-                            onClick={closeMenu}
-                            className="flex w-full items-center justify-center rounded-full bg-brand-primary px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:opacity-90"
-                        >
-                            Daftar Sekarang
-                        </Link>
-                        <div className="mt-4 flex items-center justify-center gap-3">
-                            {getSocial('whatsapp').link && (
-                                <a
-                                    href={getSocial('whatsapp').link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50 text-green-600 transition hover:bg-green-100"
-                                    aria-label="WhatsApp"
-                                >
-                                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                                    </svg>
-                                </a>
-                            )}
-                            {getSocial('instagram').link && (
-                                <a
-                                    href={getSocial('instagram').link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-pink-600 transition hover:bg-pink-100"
-                                    aria-label="Instagram"
-                                >
-                                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                                    </svg>
-                                </a>
-                            )}
-                            {email && (
-                                <a
-                                    href={`mailto:${email}`}
-                                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-faint text-brand-primary transition hover:bg-brand-soft"
-                                    aria-label="Email"
-                                >
-                                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M4 6h16v12H4z" />
-                                        <path d="m4 7 8 6 8-6" />
-                                    </svg>
-                                </a>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <main>{children}</main>
-
-            <footer className="border-t border-brand-soft bg-brand-footer">
-                <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:px-6 sm:py-12 md:grid-cols-[1.3fr_1fr_1fr]">
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center">
-                                <img
-                                    src={logoSrc}
-                                    alt="ALC logo"
-                                    className="h-16 w-16 object-contain sm:h-20 sm:w-20"
-                                    onError={(event) => {
-                                        event.currentTarget.style.display = 'none';
-                                        if (event.currentTarget.nextSibling) {
-                                            event.currentTarget.nextSibling.style.display = 'block';
-                                        }
-                                    }}
-                                />
-                              
+            {/* Premium Educational Institution Footer */}
+            <footer className="mt-auto border-t border-slate-200/80 bg-white pt-16 pb-12 text-slate-600">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12">
+                        {/* Col 1: Brand & Profile */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 p-1 border border-slate-200/80">
+                                    <img src={logoSrc} alt="ALC Logo" className="h-full w-full object-contain" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="font-display font-extrabold text-slate-900 text-base leading-tight">
+                                        Ar Rayyan
+                                    </span>
+                                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                                        Learning Course
+                                    </span>
+                                </div>
+                            </div>
+                            <p className="text-sm leading-relaxed text-slate-500">
+                                Lembaga bimbingan belajar terpercaya yang mendampingi tumbuh kembang akademik anak secara personal dengan fondasi adab dan karakter islami.
+                            </p>
+                            <div className="flex items-center gap-2 pt-1">
+                                {getSocial('whatsapp').link && (
+                                    <a
+                                        href={getSocial('whatsapp').link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                                        aria-label="WhatsApp"
+                                    >
+                                        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                        </svg>
+                                    </a>
+                                )}
+                                {getSocial('instagram').link && (
+                                    <a
+                                        href={getSocial('instagram').link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition"
+                                        aria-label="Instagram"
+                                    >
+                                        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+                                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                                        </svg>
+                                    </a>
+                                )}
+                                {email && (
+                                    <a
+                                        href={`mailto:${email}`}
+                                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-violet-50 hover:text-brand-primary transition"
+                                        aria-label="Email"
+                                    >
+                                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M4 6h16v12H4z" />
+                                            <path d="m4 7 8 6 8-6" />
+                                        </svg>
+                                    </a>
+                                )}
                             </div>
                         </div>
-                        <p className="text-sm text-slate-600 leading-relaxed">
-                            Lembaga pendidikan yang mendampingi anak belajar
-                            dengan pendekatan islami, hangat, dan profesional.
-                        </p>
-                        <div className="flex items-center gap-3">
-                            {getSocial('whatsapp').link && (
-                                <a
-                                    href={getSocial('whatsapp').link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-50 text-green-600 transition hover:bg-green-100"
-                                    aria-label="WhatsApp"
-                                >
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+
+                        {/* Col 2: Program Belajar */}
+                        <div className="space-y-3">
+                            <h4 className="font-display text-sm font-bold tracking-tight text-slate-900 uppercase">
+                                Program Belajar
+                            </h4>
+                            <ul className="space-y-2 text-sm">
+                                <li>
+                                    <Link href="/program" className="hover:text-brand-primary transition">
+                                        Program Bimbingan TK & Calistung
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link href="/program" className="hover:text-brand-primary transition">
+                                        Bimbel Reguler SD (Kelas 1-6)
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link href="/program" className="hover:text-brand-primary transition">
+                                        Bimbel Terpadu SMP (Kelas 7-9)
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link href="/program" className="hover:text-brand-primary transition">
+                                        Persiapan UTBK & SMA (Kelas 10-12)
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link href="/program" className="hover:text-brand-primary transition">
+                                        Bimbingan Intensif Privat
+                                    </Link>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {/* Col 3: Layanan & Akses */}
+                        <div className="space-y-3">
+                            <h4 className="font-display text-sm font-bold tracking-tight text-slate-900 uppercase">
+                                Layanan & Akses
+                            </h4>
+                            <ul className="space-y-2 text-sm">
+                                <li>
+                                    <Link href="/bank-soal" className="hover:text-brand-primary transition">
+                                        Bank Soal & Latihan Ujian
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link href="/olimpiade" className="hover:text-brand-primary transition">
+                                        Pusat Lomba & Olimpiade
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link href="/pendaftaran" className="hover:text-brand-primary transition">
+                                        Formulir Pendaftaran Siswa
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link href="/pendaftaran" className="hover:text-brand-primary transition">
+                                        Perekrutan Guru / Pengajar ALC
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link href="/admin/login" className="hover:text-brand-primary transition">
+                                        Portal Staf / Admin
+                                    </Link>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {/* Col 4: Hubungi Kami */}
+                        <div className="space-y-3">
+                            <h4 className="font-display text-sm font-bold tracking-tight text-slate-900 uppercase">
+                                Lokasi & Kontak
+                            </h4>
+                            <div className="space-y-2.5 text-sm text-slate-500">
+                                <div className="flex items-start gap-2.5">
+                                    <svg className="h-5 w-5 text-brand-primary shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                                     </svg>
-                                </a>
-                            )}
-                            {getSocial('instagram').link && (
-                                <a
-                                    href={getSocial('instagram').link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-pink-50 text-pink-600 transition hover:bg-pink-100"
-                                    aria-label="Instagram"
-                                >
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                                    <a
+                                        href={mapLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="hover:text-slate-900 transition"
+                                    >
+                                        {address}
+                                    </a>
+                                </div>
+                                <div className="flex items-center gap-2.5">
+                                    <svg className="h-5 w-5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
                                     </svg>
-                                </a>
-                            )}
-                            {email && (
-                                <a
-                                    href={`mailto:${email}`}
-                                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-faint text-brand-primary transition hover:bg-brand-soft"
-                                    aria-label="Email"
-                                >
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M4 6h16v12H4z" />
-                                        <path d="m4 7 8 6 8-6" />
+                                    <a href={waLink} target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition font-medium">
+                                        {phone}
+                                    </a>
+                                </div>
+                                <div className="flex items-center gap-2.5">
+                                    <svg className="h-5 w-5 text-violet-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                                     </svg>
-                                </a>
-                            )}
+                                    <a href={`mailto:${email}`} className="hover:text-slate-900 transition">
+                                        {email}
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div>
-                        <p className="text-base font-semibold text-slate-800">
-                            Menu
+
+                    <div className="mt-12 pt-8 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+                        <p>© {new Date().getFullYear()} Ar Rayyan Learning Course. Hak Cipta Dilindungi Undang-Undang.</p>
+                        <p className="flex items-center gap-1 text-slate-400">
+                            Bimbingan Belajar Berkualitas • Berkarakter & Terpercaya
                         </p>
-                        <nav className="mt-3 grid gap-2 text-base text-slate-600">
-                            {navItems.map((item) => (
-                                <Link
-                                    key={`footer-${item.href}`}
-                                    href={item.href}
-                                    className="transition hover:text-brand-primary"
-                                >
-                                    {item.label}
-                                </Link>
-                            ))}
-                        </nav>
                     </div>
-                    <div>
-                        <p className="text-sm font-semibold text-slate-800">
-                            Kontak
-                        </p>
-                        <div className="mt-3 space-y-2 text-sm text-slate-600">
-                            {address && (
-                                <p className="flex items-start gap-2">
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4 mt-0.5 text-brand-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M12 21s6-5.4 6-10a6 6 0 1 0-12 0c0 4.6 6 10 6 10Z" />
-                                        <circle cx="12" cy="11" r="2" />
-                                    </svg>
-                                    {address}
-                                </p>
-                            )}
-                            {phone && (
-                                <p className="flex items-center gap-2">
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4 text-brand-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M6.5 4.5h3l1 4-2 1.5a12 12 0 0 0 5 5l1.5-2 4 1v3c0 1.1-.9 2-2 2-8.3 0-15-6.7-15-15 0-1.1.9-2 2-2Z" />
-                                    </svg>
-                                    {phone}
-                                </p>
-                            )}
-                            {email && (
-                                <p className="flex items-center gap-2">
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4 text-brand-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M4 6h16v12H4z" />
-                                        <path d="m4 7 8 6 8-6" />
-                                    </svg>
-                                    {email}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                </div>
-                <div className="border-t border-brand-soft py-4 text-center text-xs text-slate-500">
-                    &copy; {new Date().getFullYear()} Ar Rayyan Learning Course. All rights reserved.
                 </div>
             </footer>
         </div>

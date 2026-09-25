@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Admin\SeoController;
+use App\Models\ActivityLog;
 use App\Models\BankSoal;
 use App\Models\Olympiad;
 use App\Models\PageContent;
+use App\Models\PageContentRevision;
 use App\Models\Program;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -81,12 +84,18 @@ class LandingContentController extends Controller
         ]);
     }
 
-    public function programDetail(int $program): Response
+    public function programDetail(string $program): Response
     {
         $content = $this->loadLandingContent();
         $record = Program::query()
-            ->whereKey($program)
+            ->with('teacher:id,name,subjects')
             ->where('is_active', true)
+            ->where(function ($query) use ($program): void {
+                $query->where('slug', $program);
+                if (is_numeric($program)) {
+                    $query->orWhere('id', (int) $program);
+                }
+            })
             ->first();
 
         return Inertia::render('Public/Program/Detail', [
@@ -185,12 +194,23 @@ class LandingContentController extends Controller
 
         $sections = $this->buildSectionPayloads($content);
 
+        foreach (PageContent::whereIn('slug', self::SECTION_SLUGS)->get() as $existing) {
+            PageContentRevision::create([
+                'slug' => $existing->slug,
+                'content' => $existing->content,
+                'created_by' => Auth::id(),
+                'note' => 'Otomatis sebelum update '.now()->format('d M Y H:i'),
+            ]);
+        }
+
         foreach ($sections as $slug => $payload) {
             PageContent::updateOrCreate(
                 ['slug' => $slug],
                 ['content' => $payload],
             );
         }
+
+        ActivityLog::record('konten.landing.ubah', 'Konten landing diperbarui.');
 
         return back()->with('success', 'Konten landing berhasil disimpan.');
     }
@@ -434,7 +454,7 @@ class LandingContentController extends Controller
 
     private function getPrograms(bool $onlyActive = false): array
     {
-        $query = Program::query();
+        $query = Program::query()->with('teacher:id,name,subjects');
         if ($onlyActive) {
             $query->where('is_active', true);
         }
@@ -447,15 +467,34 @@ class LandingContentController extends Controller
 
     private function formatProgram(Program $program): array
     {
+        if (! $program->relationLoaded('teacher')) {
+            $program->load('teacher:id,name,subjects');
+        }
+
         return [
             'id' => $program->id,
+            'slug' => $program->slug,
             'name' => $program->name,
             'level' => $program->level,
             'description' => $program->description,
+            'price' => $program->price,
+            'duration' => $program->duration,
+            'quota' => $program->quota,
+            'quota_filled' => $program->quotaFilled(),
+            'quota_remaining' => $program->quotaRemaining(),
+            'is_full' => ! $program->hasAvailableQuota(),
+            'schedule_info' => $program->schedule_info,
+            'syllabus' => $program->syllabus ?? [],
+            'teacher' => $program->teacher ? [
+                'id' => $program->teacher->id,
+                'name' => $program->teacher->name,
+                'subjects' => $program->teacher->subjects,
+            ] : null,
             'subjects' => $program->subjects ?? [],
             'mode' => $program->mode,
             'image_url' => $program->image_path ? Storage::url($program->image_path) : null,
             'is_active' => $program->is_active,
+            'is_featured' => $program->is_featured,
         ];
     }
 

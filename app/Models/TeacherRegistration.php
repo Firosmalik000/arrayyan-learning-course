@@ -11,6 +11,7 @@ class TeacherRegistration extends Model
     use HasFactory;
 
     protected $fillable = [
+        'registration_no',
         'name',
         'address',
         'education',
@@ -19,6 +20,8 @@ class TeacherRegistration extends Model
         'contact',
         'cv_path',
         'notes',
+        'admin_note',
+        'notified_at',
         'status',
         'approved_at',
         'approved_by',
@@ -33,6 +36,7 @@ class TeacherRegistration extends Model
         return [
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',
+            'notified_at' => 'datetime',
         ];
     }
 

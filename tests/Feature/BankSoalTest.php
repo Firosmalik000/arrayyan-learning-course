@@ -150,7 +150,7 @@ class BankSoalTest extends TestCase
             ->where('bankSoal.slug', 'matematika-sd-paket-1')
             ->where('bankSoal.links.0.label', 'Kelas 1')
             ->where('bankSoal.links.1.label', 'Kelas 2')
-            ->where('bankSoal.image_url', '/storage/bank-soals/matematika-sd-paket-1.jpg')
+            ->where('bankSoal.image_url', Storage::url('bank-soals/matematika-sd-paket-1.jpg'))
         );
     }
 

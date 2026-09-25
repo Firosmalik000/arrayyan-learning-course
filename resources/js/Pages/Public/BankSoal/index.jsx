@@ -1,18 +1,17 @@
 import { Link, usePage } from '@inertiajs/react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import SeoHead from '@/Components/SeoHead';
-import SectionTitle from '@/Components/SectionTitle';
 import PasskeyModal from '@/Components/PasskeyModal';
 import { useI18n } from '@/lib/i18n';
-
-// Shared data
-import { fadeUp, stagger, icons } from '@/data';
-
-// Import passkey and UI content from Home (not items)
+import {
+    Container,
+    Badge,
+    Button,
+    SectionHeader,
+    BankSoalCard,
+    EmptyState,
+} from '@/Components/Public';
 import { bankSoalContent, bankSoalPasskey, bankSoalPageContent } from '../Home/data';
-
-const selectClass = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100';
 
 const mergeContent = (base, override) => {
     if (Array.isArray(base)) {
@@ -22,9 +21,7 @@ const mergeContent = (base, override) => {
         const result = { ...base };
         if (override && typeof override === 'object') {
             Object.keys(override).forEach((key) => {
-                if (override[key] === undefined || override[key] === null) {
-                    return;
-                }
+                if (override[key] === undefined || override[key] === null) return;
                 result[key] = mergeContent(base[key], override[key]);
             });
         }
@@ -39,70 +36,22 @@ const localizeField = (value, lang) => {
     return value[lang] || value.id || value.en || '';
 };
 
-const normalizeFormatValue = (value) => (value || '').toString().trim().toLowerCase();
-
-const matchesFormat = (value, selectedFormat) => {
-    if (!selectedFormat) {
-        return true;
-    }
-
-    const normalized = normalizeFormatValue(value);
-    if (!normalized) {
-        return false;
-    }
-
-    if (normalized === selectedFormat) {
-        return true;
-    }
-
-    const hasOffline = /offline|luring|tatap/.test(normalized);
-    const hasOnline = /online|daring/.test(normalized);
-    const hasHybrid = /hybrid/.test(normalized) || (hasOffline && hasOnline);
-
-    if (selectedFormat === 'offline') {
-        return hasOffline;
-    }
-
-    if (selectedFormat === 'online') {
-        return hasOnline;
-    }
-
-    if (selectedFormat === 'hybrid') {
-        return hasHybrid;
-    }
-
-    return false;
-};
+const normalizeFormat = (val) => String(val || '').trim().toLowerCase();
 
 export default function BankSoalIndex() {
     const { language } = useI18n();
     const { url, props } = usePage();
-    const dbItems = (props.bankSoalItems || []).map((item) => ({
-        id: item.id,
-        slug: item.slug,
-        name: item.name || { id: '', en: '' },
-        category: item.category || { id: '', en: '' },
-        level: item.level || { id: '', en: '' },
-        format: item.format || '',
-        description: item.description || { id: '', en: '' },
-        image_url: item.image_url || null,
-        tone: item.tone || 'violet',
-    }));
 
-    const urlParams = new URLSearchParams(url.split('?')[1] || '');
-    const initialFormat = urlParams.get('format')?.toLowerCase() || null;
-
-    const [activeCategory, setActiveCategory] = useState(null);
-    const [activeFormat, setActiveFormat] = useState(initialFormat);
-    const [searchQuery, setSearchQuery] = useState('');
     const [hasAccess, setHasAccess] = useState(false);
     const [showPasskeyModal, setShowPasskeyModal] = useState(false);
-    const [isFiltering, setIsFiltering] = useState(true);
-    const shouldReduceMotion = useReducedMotion();
-    const floatSlow = shouldReduceMotion ? undefined : { y: [0, -16, 0] };
-    const floatFast = shouldReduceMotion ? undefined : { y: [0, -10, 0] };
-    const floatSlowTransition = shouldReduceMotion ? undefined : { duration: 8, repeat: Infinity, ease: 'easeInOut' };
-    const floatFastTransition = shouldReduceMotion ? undefined : { duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 };
+    const [targetItemUrl, setTargetItemUrl] = useState('');
+
+    const urlParams = new URLSearchParams(url.split('?')[1] || '');
+    const initialFormat = urlParams.get('format')?.toLowerCase() || 'semua';
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('Semua');
+    const [selectedFormat, setSelectedFormat] = useState(initialFormat === 'all' ? 'semua' : initialFormat);
 
     const landing = mergeContent(
         {
@@ -110,263 +59,296 @@ export default function BankSoalIndex() {
             bankSoalPasskey,
             bankSoalPageContent,
         },
-        props.landingContent || {},
+        props.landingContent || {}
     );
 
     const t = landing.bankSoalPageContent[language] || landing.bankSoalPageContent.id;
     const bank = landing.bankSoalContent[language] || landing.bankSoalContent.id;
-    const categories = Array.from(new Set(dbItems
-        .map((item) => localizeField(item.category, language))
-        .filter(Boolean)))
-        .sort((a, b) => a.localeCompare(b));
 
+    // Check passkey access on mount
     useEffect(() => {
         const access = sessionStorage.getItem('banksoal_access') === 'granted';
         setHasAccess(access);
-        if (!access) setShowPasskeyModal(true);
     }, []);
 
-    useEffect(() => {
-        setIsFiltering(true);
+    const dbItems = (props.bankSoalItems || []).map((item) => ({
+        id: item.id,
+        slug: item.slug,
+        name: item.name || { id: '', en: '' },
+        category: item.category || { id: '', en: '' },
+        level: item.level || { id: '', en: '' },
+        format: item.format || 'PDF',
+        questions: item.questions,
+        description: item.description || { id: '', en: '' },
+        links: item.links || [],
+        image_url: item.image_url || null,
+        tone: item.tone || 'violet',
+    }));
 
-        const timeoutId = window.setTimeout(() => {
-            setIsFiltering(false);
-        }, 220);
+    // Extract categories
+    const categories = useMemo(() => {
+        const set = new Set();
+        dbItems.forEach((item) => {
+            const cat = localizeField(item.category, language);
+            if (cat) set.add(cat);
+        });
+        return ['Semua', ...Array.from(set)];
+    }, [dbItems, language]);
 
-        return () => window.clearTimeout(timeoutId);
-    }, [activeCategory, activeFormat, searchQuery, dbItems.length]);
+    const formatOptions = [
+        { key: 'semua', label: 'Semua Format' },
+        { key: 'pdf', label: 'PDF Cetak' },
+        { key: 'online', label: 'Latihan Online' },
+        { key: 'hybrid', label: 'Hybrid' },
+    ];
 
-    const filteredItems = dbItems.filter((item) => {
-        const matchCategory = !activeCategory || localizeField(item.category, language) === activeCategory;
-        const matchFormat = matchesFormat(item.format, activeFormat);
-        const matchSearch =
-            !searchQuery ||
-            item.name[language]?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.name.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.description[language]?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.description.id?.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchCategory && matchFormat && matchSearch;
-    });
+    // Filter items
+    const filteredItems = useMemo(() => {
+        return dbItems.filter((item) => {
+            const nameStr = localizeField(item.name, language).toLowerCase();
+            const descStr = localizeField(item.description, language).toLowerCase();
+            const catStr = localizeField(item.category, language);
+            const fmtStr = normalizeFormat(item.format);
 
-    const hasActiveFilter = activeCategory || activeFormat || searchQuery;
+            const matchSearch =
+                !searchQuery ||
+                nameStr.includes(searchQuery.toLowerCase()) ||
+                descStr.includes(searchQuery.toLowerCase());
 
-    const clearFilters = () => {
-        setActiveCategory(null);
-        setActiveFormat(null);
-        setSearchQuery('');
+            const matchCat =
+                selectedCategory === 'Semua' ||
+                catStr.toLowerCase() === selectedCategory.toLowerCase();
+
+            const matchFormat =
+                selectedFormat === 'semua' ||
+                (selectedFormat === 'pdf' && fmtStr.includes('pdf')) ||
+                (selectedFormat === 'online' && fmtStr.includes('online')) ||
+                (selectedFormat === 'hybrid' && (fmtStr.includes('hybrid') || (fmtStr.includes('pdf') && fmtStr.includes('online'))));
+
+            return matchSearch && matchCat && matchFormat;
+        });
+    }, [dbItems, searchQuery, selectedCategory, selectedFormat, language]);
+
+    const handleRequireAccess = (item) => {
+        setTargetItemUrl(`/bank-soal/${item.slug}`);
+        setShowPasskeyModal(true);
     };
+
+    const resetFilters = () => {
+        setSearchQuery('');
+        setSelectedCategory('Semua');
+        setSelectedFormat('semua');
+    };
+
+    const hasActiveFilters = searchQuery !== '' || selectedCategory !== 'Semua' || selectedFormat !== 'semua';
 
     return (
         <>
             <SeoHead
-                title={t.title}
-                description={t.description}
+                title={t.title || 'Bank Soal & Latihan Ujian'}
+                description={t.description || 'Kumpulan modul dan bank soal terpercaya untuk persiapan ujian sekolah dan asesmen nasional.'}
             />
 
-            {/* Hero */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-amber-50 alc-pattern alc-section-tight">
-                <motion.div
-                    aria-hidden
-                    animate={floatSlow}
-                    transition={floatSlowTransition}
-                    className="absolute -left-24 top-10 h-32 w-32 sm:h-52 sm:w-52 rounded-full bg-violet-200/60 blur-3xl"
-                />
-                <motion.div
-                    aria-hidden
-                    animate={floatFast}
-                    transition={floatFastTransition}
-                    className="absolute right-0 top-20 h-40 w-40 sm:h-64 sm:w-64 rounded-full bg-amber-200/70 blur-3xl"
-                />
-                <div className="alc-container max-w-6xl relative">
-                    <Link href="/" className="inline-flex items-center gap-2 alc-body-sm text-violet-600 hover:text-violet-700 transition mb-6">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        {t.backToHome}
-                    </Link>
-                    <SectionTitle eyebrow="ALC" title={t.title} subtitle={t.description} />
-                </div>
-            </section>
+            {/* Header Hero */}
+            <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50/60 via-white to-slate-50/50 pt-10 pb-16 border-b border-slate-200/60">
+                <Container>
+                    {/* Breadcrumbs */}
+                    <nav className="mb-6 flex items-center gap-2 text-xs font-semibold text-slate-500">
+                        <Link href="/" className="hover:text-brand-primary transition">
+                            Beranda
+                        </Link>
+                        <span>/</span>
+                        <span className="text-emerald-700 font-bold">Bank Soal & Modul</span>
+                    </nav>
 
-            {/* Content */}
-            <section className="bg-white alc-section">
-                <div className="alc-container max-w-6xl">
-                    {/* Filter Card */}
-                    <div className="mb-8 rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-                            {/* Search */}
-                            <div className="flex-1">
-                                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-slate-500">
-                                    {t.searchPlaceholder}
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    <SectionHeader
+                        eyebrow="Bank Soal ALC"
+                        title={t.title || 'Bank Soal & Latihan Ujian Terpadu'}
+                        subtitle={t.description || 'Koleksi soal latihan terstandar yang disusun oleh tim pengajar berpengalaman untuk persiapan ujian harian, ANBK, dan seleksi sekolah favorit.'}
+                        align="center"
+                    />
+
+                    {/* Access Status Banner */}
+                    <div className="mt-8 mx-auto max-w-3xl">
+                        {hasAccess ? (
+                            <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-xs text-emerald-800 shadow-xs">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-200 text-emerald-800 font-bold">
+                                        ✓
+                                    </span>
+                                    <div>
+                                        <p className="font-bold">Akses Bank Soal Aktif</p>
+                                        <p className="text-emerald-700 text-[11px]">Seluruh link soal dan modul PDF dapat langsung dibuka.</p>
+                                    </div>
+                                </div>
+                                <span className="rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white">
+                                    Unlocked
+                                </span>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/90 px-5 py-3.5 text-xs text-amber-900 shadow-xs">
+                                <div className="flex items-center gap-3 text-center sm:text-left">
+                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-200 text-amber-800">
+                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                         </svg>
                                     </span>
-                                    <input
-                                        type="text"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder={t.searchPlaceholder}
-                                        className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                                    />
+                                    <div>
+                                        <p className="font-bold">Materi Terproteksi Passkey Siswa</p>
+                                        <p className="text-amber-800 text-[11px]">Masukkan passkey Anda untuk membuka link download dan modul latihan.</p>
+                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Format */}
-                            <div className="sm:w-40">
-                                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-slate-500">
-                                    Format
-                                </label>
-                                <select value={activeFormat || ''} onChange={(e) => setActiveFormat(e.target.value || null)} className={selectClass}>
-                                    <option value="">{t.formatAll}</option>
-                                    <option value="offline">Offline</option>
-                                    <option value="online">Online</option>
-                                    <option value="hybrid">Hybrid</option>
-                                </select>
-                            </div>
-
-                            {/* Category */}
-                            <div className="sm:w-44">
-                                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-slate-500">
-                                    {language === 'en' ? 'Category' : 'Kategori'}
-                                </label>
-                                <select value={activeCategory || ''} onChange={(e) => setActiveCategory(e.target.value || null)} className={selectClass}>
-                                    <option value="">{t.categoryAll}</option>
-                                    {categories.map((category) => (
-                                        <option key={category} value={category}>{category}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        {hasActiveFilter && (
-                            <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3">
-                                <p className="text-xs text-slate-500">
-                                    {filteredItems.length} {language === 'en' ? 'results found' : 'hasil ditemukan'}
-                                </p>
-                                <button type="button" onClick={clearFilters} className="text-xs font-medium text-violet-700 hover:text-violet-800 transition">
-                                    {language === 'en' ? 'Clear filters' : 'Hapus filter'}
-                                </button>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPasskeyModal(true)}
+                                        className="rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-slate-800 transition"
+                                    >
+                                        Buka Passkey
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>
 
-                    {/* Results Grid */}
-                    {isFiltering ? (
-                        <div className="grid alc-gap-md md:grid-cols-2 lg:grid-cols-3">
-                            {Array.from({ length: 6 }).map((_, index) => (
-                                <div
-                                    key={index}
-                                    className="overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"
+                    {/* Filter & Search Bar */}
+                    <div className="mt-8 mx-auto max-w-4xl rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-lg">
+                        <div className="flex flex-col gap-4">
+                            {/* Search */}
+                            <div className="relative">
+                                <svg
+                                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
                                 >
-                                    <div className="h-40 animate-pulse rounded-2xl bg-slate-100" />
-                                    <div className="mt-4 h-4 w-1/4 animate-pulse rounded bg-slate-100" />
-                                    <div className="mt-3 h-5 w-4/5 animate-pulse rounded bg-slate-100" />
-                                    <div className="mt-2 h-4 w-full animate-pulse rounded bg-slate-100" />
-                                    <div className="mt-2 h-4 w-3/4 animate-pulse rounded bg-slate-100" />
-                                    <div className="mt-5 flex gap-2">
-                                        <div className="h-6 w-20 animate-pulse rounded-full bg-slate-100" />
-                                        <div className="h-6 w-20 animate-pulse rounded-full bg-slate-100" />
-                                    </div>
-                                    <div className="mt-6 h-10 w-full animate-pulse rounded-full bg-slate-100" />
-                                </div>
-                            ))}
-                        </div>
-                    ) : filteredItems.length > 0 ? (
-                        <motion.div
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: false, amount: 0.2 }}
-                            variants={stagger}
-                            className="grid alc-gap-md md:grid-cols-2 lg:grid-cols-3"
-                        >
-                            {filteredItems.map((item) => (
-                                <motion.div
-                                    key={item.id}
-                                    variants={fadeUp}
-                                    whileHover={{ y: -4 }}
-                                    className="group flex flex-col rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-lg hover:border-violet-200"
-                                >
-                                    <div className="mb-4 overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
-                                        {item.image_url ? (
-                                            <img
-                                                src={item.image_url}
-                                                alt={item.name[language] || item.name.id}
-                                                className="h-40 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                                                loading="lazy"
-                                            />
-                                        ) : (
-                                            <div className="flex h-40 items-center justify-center bg-gradient-to-br from-slate-100 via-white to-violet-50">
-                                                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-violet-600 shadow-sm">
-                                                    {icons.book}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Header */}
-                                    <div className="flex justify-end">
-                                        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                                            {item.format}
-                                        </span>
-                                    </div>
-
-                                    {/* Content */}
-                                    <h3 className="mt-3 text-base font-semibold text-slate-800 group-hover:text-violet-700 transition-colors">
-                                        {item.name[language] || item.name.id}
-                                    </h3>
-                                    <p className="mt-1.5 text-sm text-slate-500 line-clamp-2">
-                                        {item.description[language] || item.description.id}
-                                    </p>
-
-                                    {/* Meta */}
-                                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                                        <span className="rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700">
-                                            {item.category[language] || item.category.id}
-                                        </span>
-                                        <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
-                                            {item.level[language] || item.level.id}
-                                        </span>
-                                    </div>
-
-                                    {/* Action */}
-                                    <div className="mt-auto pt-4">
-                                        <Link
-                                            href={`/bank-soal/${item.slug}`}
-                                            className="inline-flex w-full items-center justify-center rounded-full bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:bg-violet-800"
-                                        >
-                                            {bank.viewDetail}
-                                            <svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </Link>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    ) : (
-                        <div className="py-16 text-center">
-                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                                <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9zm3.75 11.625a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                                    />
                                 </svg>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Cari materi soal, kelas, atau topik pembahasan..."
+                                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-11 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchQuery('')}
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                                    >
+                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                )}
                             </div>
-                            <p className="text-slate-500">{t.noResults}</p>
+
+                            {/* Filters Row */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                                {/* Format Filters */}
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-xs font-bold text-slate-400 mr-1">Format:</span>
+                                    {formatOptions.map((fmt) => (
+                                        <button
+                                            key={fmt.key}
+                                            type="button"
+                                            onClick={() => setSelectedFormat(fmt.key)}
+                                            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                                                selectedFormat === fmt.key
+                                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                        >
+                                            {fmt.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Category Select */}
+                                {categories.length > 1 && (
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs font-bold text-slate-400 mr-1">Kategori:</span>
+                                        <select
+                                            value={selectedCategory}
+                                            onChange={(e) => setSelectedCategory(e.target.value)}
+                                            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-emerald-500"
+                                        >
+                                            {categories.map((c) => (
+                                                <option key={c} value={c}>
+                                                    {c}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    )}
-                </div>
+                    </div>
+                </Container>
             </section>
 
+            {/* Grid Listing */}
+            <section className="py-16 bg-slate-50/40">
+                <Container>
+                    <div className="mb-8 flex items-center justify-between gap-4">
+                        <p className="text-sm font-semibold text-slate-600">
+                            Menemukan <span className="text-slate-900 font-bold">{filteredItems.length}</span> modul soal
+                        </p>
+
+                        {hasActiveFilters && (
+                            <button
+                                type="button"
+                                onClick={resetFilters}
+                                className="text-xs font-bold text-emerald-700 hover:underline"
+                            >
+                                Reset Filter
+                            </button>
+                        )}
+                    </div>
+
+                    {filteredItems.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                            {filteredItems.map((item) => (
+                                <BankSoalCard
+                                    key={item.id}
+                                    item={item}
+                                    hasAccess={hasAccess}
+                                    onRequireAccess={handleRequireAccess}
+                                    language={language}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <EmptyState
+                            title="Tidak Ada Modul Soal"
+                            description="Tidak ditemukan modul atau bank soal yang cocok dengan filter atau kata kunci pencarian Anda."
+                            actionLabel="Reset Semua Filter"
+                            onAction={resetFilters}
+                        />
+                    )}
+                </Container>
+            </section>
+
+            {/* Passkey Modal */}
             <PasskeyModal
                 isOpen={showPasskeyModal}
-                onClose={() => { if (!hasAccess) { window.location.href = '/'; } else { setShowPasskeyModal(false); } }}
-                targetUrl={url}
+                onClose={() => {
+                    setShowPasskeyModal(false);
+                    setTargetItemUrl('');
+                }}
+                targetUrl={targetItemUrl}
                 correctPasskey={landing.bankSoalPasskey}
                 language={language}
-                onSuccess={() => { sessionStorage.setItem('banksoal_access', 'granted'); setHasAccess(true); setShowPasskeyModal(false); }}
+                onSuccess={() => {
+                    setHasAccess(true);
+                    sessionStorage.setItem('banksoal_access', 'granted');
+                }}
             />
         </>
     );

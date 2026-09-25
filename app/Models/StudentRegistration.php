@@ -11,6 +11,7 @@ class StudentRegistration extends Model
     use HasFactory;
 
     protected $fillable = [
+        'registration_no',
         'student_name',
         'address',
         'school_name',
@@ -22,6 +23,8 @@ class StudentRegistration extends Model
         'parent_contact',
         'preferred_mode',
         'notes',
+        'admin_note',
+        'notified_at',
         'status',
         'approved_at',
         'approved_by',
@@ -36,6 +39,7 @@ class StudentRegistration extends Model
         return [
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',
+            'notified_at' => 'datetime',
         ];
     }
 

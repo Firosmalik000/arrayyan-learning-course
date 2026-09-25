@@ -31,6 +31,12 @@ class PermissionCatalog
             'section' => 'Content',
         ],
         [
+            'id' => 'konten',
+            'label' => 'Konten',
+            'description' => 'Blog, testimoni, FAQ, dan revisi.',
+            'section' => 'Content',
+        ],
+        [
             'id' => 'program',
             'label' => 'Program',
             'description' => 'Data program belajar.',
@@ -53,6 +59,18 @@ class PermissionCatalog
             'label' => 'Pendaftaran',
             'description' => 'Pendaftar masuk.',
             'section' => 'Master Data',
+        ],
+        [
+            'id' => 'keuangan',
+            'label' => 'Keuangan',
+            'description' => 'Tagihan dan verifikasi pembayaran.',
+            'section' => 'Master Data',
+        ],
+        [
+            'id' => 'akademik',
+            'label' => 'Akademik',
+            'description' => 'Kelas, jadwal, absensi, dan nilai.',
+            'section' => 'Akademik',
         ],
         [
             'id' => 'pelajar',
@@ -142,6 +160,7 @@ class PermissionCatalog
             'Core' => 'Navigasi utama admin.',
             'Content' => 'Konten publik dan landing.',
             'Master Data' => 'Pengelolaan data akademik.',
+            'Akademik' => 'Operasional belajar harian.',
             'Administrator' => 'Manajemen role dan akses.',
             'System' => 'Pengaturan dan konfigurasi.',
         ];

@@ -1,9 +1,15 @@
 import { Link, usePage } from '@inertiajs/react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useState, useMemo } from 'react';
 import SeoHead from '@/Components/SeoHead';
-import SectionTitle from '@/Components/SectionTitle';
 import { useI18n } from '@/lib/i18n';
-import { fadeUp, stagger } from '@/data';
+import {
+    Container,
+    Badge,
+    Button,
+    SectionHeader,
+    ProgramCard,
+    EmptyState,
+} from '@/Components/Public';
 import { programContent, sectionTitles } from '../Home/data';
 
 const mergeContent = (base, override) => {
@@ -14,9 +20,7 @@ const mergeContent = (base, override) => {
         const result = { ...base };
         if (override && typeof override === 'object') {
             Object.keys(override).forEach((key) => {
-                if (override[key] === undefined || override[key] === null) {
-                    return;
-                }
+                if (override[key] === undefined || override[key] === null) return;
                 result[key] = mergeContent(base[key], override[key]);
             });
         }
@@ -31,36 +35,32 @@ const localizeField = (value, lang) => {
     return value[lang] || value.id || value.en || '';
 };
 
-const formatModeLabel = (value) => {
-    if (!value) return null;
-    const normalized = String(value).toLowerCase();
-    if (normalized === 'online') return 'Online';
-    if (normalized === 'offline') return 'Offline';
-    return value;
-};
-
 export default function ProgramIndex() {
     const { language } = useI18n();
     const { props } = usePage();
-    const shouldReduceMotion = useReducedMotion();
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedLevel, setSelectedLevel] = useState('Semua');
+    const [selectedMode, setSelectedMode] = useState('Semua');
 
     const landing = mergeContent(
         {
             programContent,
             sectionTitles,
         },
-        props.landingContent || {},
+        props.landingContent || {}
     );
 
     const titles = landing.sectionTitles[language] || landing.sectionTitles.id;
-    const programText = landing.programContent[language] || landing.programContent.id;
     const eyebrow = titles?.program?.eyebrow || (language === 'en' ? 'Programs' : 'Program');
-    const title = titles?.program?.title || (language === 'en' ? 'Learning Programs' : 'Program Belajar');
-    const subtitle = titles?.program?.subtitle || (language === 'en'
-        ? 'Flexible packages tailored to students and families.'
-        : 'Paket belajar yang fleksibel untuk kebutuhan siswa dan keluarga.');
+    const title = titles?.program?.title || (language === 'en' ? 'Learning Programs' : 'Pilihan Program Belajar');
+    const subtitle =
+        titles?.program?.subtitle ||
+        (language === 'en'
+            ? 'Structured tutoring packages designed to help students master core subjects and achieve peak academic milestones.'
+            : 'Paket bimbingan belajar komprehensif yang dirancang untuk membantu siswa menguasai konsep dan meraih prestasi terbaik.');
 
-    const programs = (props.programs || []).map((item) => ({
+    const rawPrograms = (props.programs || []).map((item) => ({
         id: item.id,
         name: localizeField(item.name, language),
         level: localizeField(item.level, language),
@@ -70,129 +70,215 @@ export default function ProgramIndex() {
         imageUrl: item.image_url || null,
     }));
 
-    const floatSlow = shouldReduceMotion ? undefined : { y: [0, -16, 0] };
-    const floatFast = shouldReduceMotion ? undefined : { y: [0, -10, 0] };
-    const floatSlowTransition = shouldReduceMotion ? undefined : { duration: 8, repeat: Infinity, ease: 'easeInOut' };
-    const floatFastTransition = shouldReduceMotion ? undefined : { duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 };
+    // Extract unique levels for filter tabs
+    const availableLevels = useMemo(() => {
+        const set = new Set();
+        rawPrograms.forEach((p) => {
+            if (p.level) set.add(p.level);
+        });
+        return ['Semua', ...Array.from(set)];
+    }, [rawPrograms]);
+
+    const availableModes = ['Semua', 'Offline', 'Online'];
+
+    // Filter logic
+    const filteredPrograms = useMemo(() => {
+        return rawPrograms.filter((p) => {
+            const matchSearch =
+                !searchQuery ||
+                p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                p.subjects.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()));
+
+            const matchLevel =
+                selectedLevel === 'Semua' ||
+                (p.level && p.level.toLowerCase().includes(selectedLevel.toLowerCase()));
+
+            const matchMode =
+                selectedMode === 'Semua' ||
+                (p.mode && p.mode.toLowerCase() === selectedMode.toLowerCase());
+
+            return matchSearch && matchLevel && matchMode;
+        });
+    }, [rawPrograms, searchQuery, selectedLevel, selectedMode]);
+
+    const resetFilters = () => {
+        setSearchQuery('');
+        setSelectedLevel('Semua');
+        setSelectedMode('Semua');
+    };
+
+    const hasActiveFilters = searchQuery !== '' || selectedLevel !== 'Semua' || selectedMode !== 'Semua';
 
     return (
         <>
             <SeoHead title={title} description={subtitle} />
 
-            <section className="relative overflow-hidden bg-gradient-to-br from-violet-50 via-white to-amber-50 alc-pattern alc-section-tight">
-                <motion.div
-                    aria-hidden
-                    animate={floatSlow}
-                    transition={floatSlowTransition}
-                    className="absolute -left-24 top-10 h-32 w-32 rounded-full bg-violet-200/60 blur-3xl sm:h-52 sm:w-52"
-                />
-                <motion.div
-                    aria-hidden
-                    animate={floatFast}
-                    transition={floatFastTransition}
-                    className="absolute right-0 top-20 h-40 w-40 rounded-full bg-amber-200/70 blur-3xl sm:h-64 sm:w-64"
-                />
-                <div className="alc-container relative max-w-6xl">
-                    <Link href="/" className="mb-6 inline-flex items-center gap-2 text-sm text-violet-600 transition hover:text-violet-700">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        {language === 'en' ? 'Back to Home' : 'Kembali ke Beranda'}
-                    </Link>
-                    <SectionTitle eyebrow={eyebrow} title={title} subtitle={subtitle} />
-                </div>
+            {/* Page Header */}
+            <section className="relative overflow-hidden bg-gradient-to-b from-violet-50/70 via-white to-slate-50/50 pt-10 pb-16 sm:pb-20 border-b border-slate-200/60">
+                <Container>
+                    {/* Breadcrumbs */}
+                    <nav className="mb-6 flex items-center gap-2 text-xs font-semibold text-slate-500">
+                        <Link href="/" className="hover:text-brand-primary transition">
+                            Beranda
+                        </Link>
+                        <span>/</span>
+                        <span className="text-brand-primary font-bold">Program Belajar</span>
+                    </nav>
+
+                    <SectionHeader
+                        eyebrow={eyebrow}
+                        title={title}
+                        subtitle={subtitle}
+                        align="center"
+                    />
+
+                    {/* Search & Filter Controls Bar */}
+                    <div className="mt-10 mx-auto max-w-4xl rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-lg">
+                        <div className="flex flex-col gap-4">
+                            {/* Search Input */}
+                            <div className="relative">
+                                <svg
+                                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                                    />
+                                </svg>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Cari program belajar, jenjang, atau mata pelajaran..."
+                                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-11 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchQuery('')}
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                                    >
+                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Filter Pills */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                                {/* Level Tabs */}
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-xs font-bold text-slate-400 mr-1">Jenjang:</span>
+                                    {availableLevels.map((lvl) => (
+                                        <button
+                                            key={lvl}
+                                            type="button"
+                                            onClick={() => setSelectedLevel(lvl)}
+                                            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                                                selectedLevel === lvl
+                                                    ? 'bg-brand-primary text-white shadow-xs'
+                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                        >
+                                            {lvl}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Mode Tabs */}
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-bold text-slate-400 mr-1">Mode:</span>
+                                    {availableModes.map((m) => (
+                                        <button
+                                            key={m}
+                                            type="button"
+                                            onClick={() => setSelectedMode(m)}
+                                            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                                                selectedMode === m
+                                                    ? 'bg-amber-500 text-white shadow-xs'
+                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                        >
+                                            {m}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </Container>
             </section>
 
-            <section className="bg-white alc-section">
-                <div className="alc-container max-w-6xl">
-                    {programs.length > 0 ? (
-                        <motion.div
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={{ once: false, amount: 0.2 }}
-                            variants={stagger}
-                            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-                        >
-                            {programs.map((item) => {
-                                const description = item.description || programText.fallbackDescription;
-                                const modeLabel = formatModeLabel(item.mode);
-                                return (
-                                    <motion.div
-                                        key={item.id}
-                                        variants={fadeUp}
-                                        whileHover={{ y: -6 }}
-                                        className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
-                                    >
-                                        <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
-                                            {item.imageUrl ? (
-                                                <img
-                                                    src={item.imageUrl}
-                                                    alt={item.name}
-                                                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                                                    loading="lazy"
-                                                />
-                                            ) : (
-                                                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-100 via-white to-amber-100 text-violet-600">
-                                                    <span className="text-2xl font-semibold">
-                                                        {item.name?.charAt(0) || 'A'}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/45 via-transparent to-transparent" />
-                                            <div className="absolute right-3 top-3 flex flex-wrap items-center gap-2">
-                                                {modeLabel && (
-                                                    <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
-                                                        {modeLabel}
-                                                    </span>
-                                                )}
-                                                {item.level && (
-                                                    <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
-                                                        {item.level}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="flex h-full flex-col gap-3 p-5">
-                                            <div>
-                                                <h3 className="font-display text-base font-semibold text-slate-800">
-                                                    {item.name}
-                                                </h3>
-                                                <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                                                    {description}
-                                                </p>
-                                            </div>
-                                            {Array.isArray(item.subjects) && item.subjects.length > 0 && (
-                                                <div className="mt-auto flex flex-wrap gap-2">
-                                                    {item.subjects.slice(0, 4).map((subject) => (
-                                                        <span
-                                                            key={`${item.id}-${subject}`}
-                                                            className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
-                                                        >
-                                                            {subject}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            <Link
-                                                href={`/program/${item.id}`}
-                                                className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-violet-700 transition hover:text-violet-800"
-                                            >
-                                                {language === 'en' ? 'View Detail' : 'Lihat Detail'}
-                                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 5l7 7-7 7" />
-                                                </svg>
-                                            </Link>
-                                        </div>
-                                    </motion.div>
-                                );
-                            })}
-                        </motion.div>
-                    ) : (
-                        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center text-sm text-slate-500">
-                            {language === 'en' ? 'Programs will be available soon.' : 'Program akan segera tersedia.'}
+            {/* Programs Listing Grid */}
+            <section className="py-16 sm:py-20 bg-slate-50/40">
+                <Container>
+                    {/* Results Counter & Reset Button */}
+                    <div className="mb-8 flex items-center justify-between gap-4">
+                        <p className="text-sm font-semibold text-slate-600">
+                            Menampilkan <span className="text-slate-900 font-bold">{filteredPrograms.length}</span> program belajar
+                        </p>
+
+                        {hasActiveFilters && (
+                            <button
+                                type="button"
+                                onClick={resetFilters}
+                                className="text-xs font-bold text-brand-primary hover:underline"
+                            >
+                                Reset Semua Filter
+                            </button>
+                        )}
+                    </div>
+
+                    {filteredPrograms.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                            {filteredPrograms.map((program) => (
+                                <ProgramCard
+                                    key={program.id}
+                                    program={program}
+                                    language={language}
+                                />
+                            ))}
                         </div>
+                    ) : (
+                        <EmptyState
+                            title="Tidak Menemukan Program"
+                            description="Tidak ada program bimbingan belajar yang cocok dengan kriteria filter atau pencarian Anda. Silakan coba kata kunci lain."
+                            actionLabel="Tampilkan Semua Program"
+                            onAction={resetFilters}
+                        />
                     )}
-                </div>
+
+                    {/* Bottom Help Banner */}
+                    <div className="mt-16 rounded-3xl border border-violet-200/80 bg-gradient-to-br from-violet-50 via-white to-amber-50 p-8 sm:p-10 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
+                        <div className="max-w-xl text-center sm:text-left">
+                            <h3 className="font-display text-xl sm:text-2xl font-bold text-slate-900">
+                                Butuh Rekomendasi Program yang Tepat?
+                            </h3>
+                            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                                Diskusikan kebutuhan belajar anak dengan tim konsultan pendidikan ALC secara gratis untuk memilih paket dan jadwal terbaik.
+                            </p>
+                        </div>
+                        <Button
+                            href="https://wa.me/6281234567890?text=Halo%20Admin%20ALC,%20saya%20ingin%20konsultasi%20program%20bimbingan%20belajar%20yang%20cocok%20untuk%20anak%20saya"
+                            variant="primary"
+                            size="md"
+                            iconRight={
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                </svg>
+                            }
+                        >
+                            Konsultasi via WhatsApp
+                        </Button>
+                    </div>
+                </Container>
             </section>
         </>
     );

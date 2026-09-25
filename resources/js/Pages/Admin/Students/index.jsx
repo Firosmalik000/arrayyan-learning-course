@@ -336,6 +336,17 @@ export default function Students() {
                                                         {icons.eye}
                                                     </button>
                                                 )}
+                                                {canView && (
+                                                    <a
+                                                        href={`/admin/pelajar/${student.id}/kartu`}
+                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-100 hover:text-emerald-600"
+                                                        title="Cetak Kartu"
+                                                    >
+                                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5.25A2.25 2.25 0 003 8.25v7.5A2.25 2.25 0 005.25 18H19.5a1.5 1.5 0 001.5-1.5v-6a1.5 1.5 0 00-1.5-1.5H14m-4 0V6m0 0L8.5 7.5M10 6l-1.5 1.5M14 18h4" />
+                                                        </svg>
+                                                    </a>
+                                                )}
                                                 {canEdit && (
                                                     <button
                                                         type="button"

@@ -206,6 +206,10 @@ export default function Olympiads() {
         selection_system: '',
         category: 'free',
         fee: '',
+        quota: '',
+        registration_deadline: '',
+        winners: '',
+        is_registration_open: true,
         notes: '',
         image: null,
         is_active: true,
@@ -245,6 +249,10 @@ export default function Olympiads() {
                 selection_system: item.selection_system || '',
                 category: normalizeCategory(item.category),
                 fee: item.fee?.toString() ?? '',
+                quota: item.quota ?? '',
+                registration_deadline: item.registration_deadline || '',
+                winners: (item.winners || []).join('\n'),
+                is_registration_open: item.is_registration_open ?? true,
                 notes: item.notes || '',
                 image: null,
                 is_active: item.is_active ?? true,
@@ -259,6 +267,10 @@ export default function Olympiads() {
                 selection_system: '',
                 category: 'free',
                 fee: '',
+                quota: '',
+                registration_deadline: '',
+                winners: '',
+                is_registration_open: true,
                 notes: '',
                 image: null,
                 is_active: true,
@@ -274,6 +286,13 @@ export default function Olympiads() {
         const payload = {
             ...form.data,
             fee: form.data.fee === '' ? 0 : parseFloat(form.data.fee) || 0,
+            quota: form.data.quota === '' ? null : parseInt(form.data.quota, 10) || null,
+            registration_deadline: form.data.registration_deadline || null,
+            winners: String(form.data.winners || '')
+                .split(/[\n,]+/)
+                .map((w) => w.trim())
+                .filter(Boolean),
+            is_registration_open: form.data.is_registration_open ? 1 : 0,
             is_active: Boolean(form.data.is_active),
         };
 
@@ -519,6 +538,21 @@ export default function Olympiads() {
                             onChange={(v) => form.setData('fee', v)}
                             placeholder="0 untuk gratis"
                         />
+                        <FormInput
+                            label="Kuota (kosong = tanpa batas)"
+                            type="number"
+                            value={form.data.quota}
+                            onChange={(v) => form.setData('quota', v)}
+                            placeholder="cth: 100"
+                        />
+                        <FormInput
+                            label="Batas Pendaftaran"
+                            type="date"
+                            value={form.data.registration_deadline}
+                            onChange={(v) => form.setData('registration_deadline', v)}
+                        />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
                         <FormSelect
                             label="Kategori"
                             value={form.data.category}
@@ -532,7 +566,23 @@ export default function Olympiads() {
                             options={statusOptions}
                         />
                     </div>
+                    <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700">
+                        <input
+                            type="checkbox"
+                            checked={form.data.is_registration_open}
+                            onChange={(e) => form.setData('is_registration_open', e.target.checked)}
+                            className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+                        />
+                        Pendaftaran dibuka
+                    </label>
                     <FormTextarea label="Catatan" value={form.data.notes} onChange={(v) => form.setData('notes', v)} placeholder="Catatan tambahan..." />
+                    <FormTextarea
+                        label="Pemenang (satu nama per baris)"
+                        value={form.data.winners}
+                        onChange={(v) => form.setData('winners', v)}
+                        placeholder={'cth:\nAhmad Fauzi\nSiti Aminah'}
+                        rows={3}
+                    />
                     <div>
                         <label className="mb-1.5 block text-sm font-medium text-slate-700">Upload Foto</label>
                         <input

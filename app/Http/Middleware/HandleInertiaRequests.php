@@ -47,6 +47,8 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'ticket' => fn () => $request->session()->get('ticket'),
             ],
             'appLogo' => fn () => $this->getLogoUrl(),
             'pendingRegistrationCount' => fn () => $this->getPendingRegistrationCount($request),
@@ -56,6 +58,29 @@ class HandleInertiaRequests extends Middleware
             'impersonation' => fn () => $this->getImpersonationState($request),
             'seoSettings' => fn () => $this->getSeoSettings($request),
             'url' => fn () => $request->url(),
+            'portalAuth' => fn () => $this->getPortalAuth($request),
+        ];
+    }
+
+    /**
+     * @return array{name: string, contact: string, type: string}|null
+     */
+    private function getPortalAuth(Request $request): ?array
+    {
+        if (! $request->is('portal/*') && ! $request->is('portal')) {
+            return null;
+        }
+
+        $user = $request->user('portal');
+
+        if (! $user) {
+            return null;
+        }
+
+        return [
+            'name' => $user->name,
+            'contact' => $user->contact,
+            'type' => $user->type,
         ];
     }
 

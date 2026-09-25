@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateBankSoalRequest extends FormRequest
@@ -17,7 +18,7 @@ class UpdateBankSoalRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -34,6 +35,8 @@ class UpdateBankSoalRequest extends FormRequest
             'links.*.id' => ['nullable', 'integer', 'min:1'],
             'links.*.label' => ['nullable', 'string', 'max:255'],
             'links.*.link' => ['nullable', 'string', 'max:500'],
+            'passkey' => ['nullable', 'string', 'max:100'],
+            'passkey_clear' => ['nullable', 'boolean'],
             'is_active' => ['boolean'],
         ];
     }
