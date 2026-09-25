@@ -34,8 +34,15 @@ class OlympiadRegistrationController extends Controller
             'school' => ['nullable', 'string', 'max:255'],
             'level' => ['nullable', 'string', 'max:100'],
             'contact' => ['required', 'string', 'max:20', 'regex:/^(?:\+62|62|0)8[0-9]{5,13}$/'],
+            'website' => ['nullable', 'prohibited'],
+            'form_started_at' => ['nullable', 'integer', function ($attribute, $value, $fail): void {
+                if (is_numeric($value) && (time() - (int) $value) < 3) {
+                    $fail('Formulir dikirim terlalu cepat. Silakan isi dengan wajar.');
+                }
+            }],
         ], [
             'contact.regex' => 'Kontak harus nomor WhatsApp Indonesia yang valid (contoh: 081234567890).',
+            'website.prohibited' => 'Deteksi spam. Silakan coba lagi.',
         ]);
 
         if ($reason = $olympiad->registrationClosedReason()) {

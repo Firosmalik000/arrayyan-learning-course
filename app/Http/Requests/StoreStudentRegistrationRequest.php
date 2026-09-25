@@ -38,6 +38,12 @@ class StoreStudentRegistrationRequest extends FormRequest
             'parent_contact' => ['required', 'string', 'max:20', 'regex:/^(?:\+62|62|0)8[0-9]{5,13}$/'],
             'preferred_mode' => ['nullable', 'string', Rule::in(['online', 'offline', 'Online', 'Offline'])],
             'notes' => ['nullable', 'string', 'max:500'],
+            'website' => ['nullable', 'prohibited'],
+            'form_started_at' => ['nullable', 'integer', function ($attribute, $value, $fail): void {
+                if (is_numeric($value) && (time() - (int) $value) < 3) {
+                    $fail('Formulir dikirim terlalu cepat. Silakan isi dengan wajar.');
+                }
+            }],
         ];
     }
 
@@ -55,6 +61,7 @@ class StoreStudentRegistrationRequest extends FormRequest
             'parent_contact.required' => 'Kontak orang tua wajib diisi.',
             'parent_contact.regex' => 'Kontak orang tua harus nomor WhatsApp Indonesia yang valid (contoh: 081234567890).',
             'preferred_mode.in' => 'Mode belajar harus Online atau Offline.',
+            'website.prohibited' => 'Deteksi spam. Silakan coba lagi.',
         ];
     }
 

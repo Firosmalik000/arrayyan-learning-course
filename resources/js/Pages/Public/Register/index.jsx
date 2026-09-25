@@ -8,7 +8,7 @@ import {
     Button,
     SectionHeader,
 } from '@/Components/Public';
-import { pageContent, formFields, initialStudentForm, initialTeacherForm, packageOptions } from './data';
+import { pageContent, formFields, initialStudentForm, initialTeacherForm, packageOptions, honeypotStyle } from './data';
 
 const localizeField = (value, lang) => {
     if (!value) return '';
@@ -81,6 +81,9 @@ export default function Register() {
         if (Object.keys(merged).length > 0) {
             studentForm.setData({ ...studentForm.data, ...merged });
         }
+        const startedAt = String(Math.floor(Date.now() / 1000));
+        studentForm.setData('form_started_at', startedAt);
+        teacherForm.setData('form_started_at', startedAt);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -625,6 +628,15 @@ export default function Register() {
                                         )}
 
                                         <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-between">
+                                            <div aria-hidden="true" style={honeypotStyle}>
+                                                <input
+                                                    type="text"
+                                                    tabIndex={-1}
+                                                    autoComplete="off"
+                                                    value={studentForm.data.website}
+                                                    onChange={(e) => studentForm.setData('website', e.target.value)}
+                                                />
+                                            </div>
                                             {step > 1 ? (
                                                 <Button
                                                     type="button"
@@ -804,6 +816,15 @@ export default function Register() {
                                         </div>
 
                                         <div className="pt-4">
+                                            <div aria-hidden="true" style={honeypotStyle}>
+                                                <input
+                                                    type="text"
+                                                    tabIndex={-1}
+                                                    autoComplete="off"
+                                                    value={teacherForm.data.website}
+                                                    onChange={(e) => teacherForm.setData('website', e.target.value)}
+                                                />
+                                            </div>
                                             <Button
                                                 type="submit"
                                                 variant="secondary"

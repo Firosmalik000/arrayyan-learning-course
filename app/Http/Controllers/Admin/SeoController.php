@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateSeoSettingsRequest;
 use App\Models\PageContent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -54,6 +55,8 @@ class SeoController extends Controller
             ['slug' => self::SEO_SLUG],
             ['content' => $content],
         );
+
+        Cache::forget('seo-settings');
 
         return back()->with('success', 'Pengaturan SEO berhasil disimpan.');
     }
@@ -140,20 +143,22 @@ class SeoController extends Controller
      */
     public static function getPublicSettings(): array
     {
-        $seoSettings = PageContent::where('slug', self::SEO_SLUG)->first();
-        $settings = $seoSettings?->content ?? (new self)->getDefaults();
+        return Cache::remember('seo-settings', 300, function (): array {
+            $seoSettings = PageContent::where('slug', self::SEO_SLUG)->first();
+            $settings = $seoSettings?->content ?? (new self)->getDefaults();
 
-        // Add URLs for images
-        $ogImagePath = Arr::get($settings, 'social.ogImage.path');
-        if ($ogImagePath) {
-            Arr::set($settings, 'social.ogImage.url', Storage::url($ogImagePath));
-        }
+            // Add URLs for images
+            $ogImagePath = Arr::get($settings, 'social.ogImage.path');
+            if ($ogImagePath) {
+                Arr::set($settings, 'social.ogImage.url', Storage::url($ogImagePath));
+            }
 
-        $logoPath = Arr::get($settings, 'contact.logo.path');
-        if ($logoPath) {
-            Arr::set($settings, 'contact.logo.url', Storage::url($logoPath));
-        }
+            $logoPath = Arr::get($settings, 'contact.logo.path');
+            if ($logoPath) {
+                Arr::set($settings, 'contact.logo.url', Storage::url($logoPath));
+            }
 
-        return $settings;
+            return $settings;
+        });
     }
 }

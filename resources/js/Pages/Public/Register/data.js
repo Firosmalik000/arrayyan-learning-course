@@ -91,6 +91,8 @@ export const initialStudentForm = {
     parent_contact: '',
     preferred_mode: '',
     notes: '',
+    website: '',
+    form_started_at: '',
 };
 
 export const initialTeacherForm = {
@@ -102,4 +104,15 @@ export const initialTeacherForm = {
     contact: '',
     cv: null,
     notes: '',
+    website: '',
+    form_started_at: '',
+};
+
+export const honeypotStyle = {
+    position: 'absolute',
+    left: '-9999px',
+    top: 'auto',
+    width: '1px',
+    height: '1px',
+    overflow: 'hidden',
 };

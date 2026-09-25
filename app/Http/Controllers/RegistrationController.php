@@ -18,6 +18,7 @@ class RegistrationController extends Controller
     {
         $data = $request->validated();
         $program = Program::query()->select(['id', 'name', 'quota'])->findOrFail($data['program_id']);
+        unset($data['website'], $data['form_started_at']);
 
         if (! $program->hasAvailableQuota()) {
             return back()
@@ -58,7 +59,7 @@ class RegistrationController extends Controller
         if ($request->hasFile('cv')) {
             $data['cv_path'] = $request->file('cv')->store('cv', 'public');
         }
-        unset($data['cv']);
+        unset($data['cv'], $data['website'], $data['form_started_at']);
 
         $registration = DB::transaction(function () use ($data): TeacherRegistration {
             $registration = TeacherRegistration::create($data);

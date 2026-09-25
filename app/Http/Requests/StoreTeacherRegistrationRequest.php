@@ -31,6 +31,12 @@ class StoreTeacherRegistrationRequest extends FormRequest
             'contact' => ['required', 'string', 'max:20', 'regex:/^(?:\+62|62|0)8[0-9]{5,13}$/'],
             'cv' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:5120'],
             'notes' => ['nullable', 'string', 'max:500'],
+            'website' => ['nullable', 'prohibited'],
+            'form_started_at' => ['nullable', 'integer', function ($attribute, $value, $fail): void {
+                if (is_numeric($value) && (time() - (int) $value) < 3) {
+                    $fail('Formulir dikirim terlalu cepat. Silakan isi dengan wajar.');
+                }
+            }],
         ];
     }
 

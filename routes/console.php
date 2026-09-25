@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('invoices:expire-overdue')->daily();
 Schedule::command('invoices:send-due-reminders')->daily();
+Schedule::command('app:backup-database')->weekly();

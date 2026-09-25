@@ -60,7 +60,9 @@ Route::get('/olimpiade', function () {
     ]);
 })->name('olympiad');
 Route::get('/olimpiade/{slug}/daftar', [OlympiadRegistrationController::class, 'create'])->name('olympiad.register');
-Route::post('/olimpiade/{slug}/daftar', [OlympiadRegistrationController::class, 'store'])->name('olympiad.register.store');
+Route::post('/olimpiade/{slug}/daftar', [OlympiadRegistrationController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('olympiad.register.store');
 Route::get('/olimpiade/{slug}/sertifikat', [OlympiadCertificateController::class, 'show'])->name('olympiad.certificate');
 Route::get('/olimpiade/{slug}', function ($slug) {
     $olympiad = Olympiad::query()
@@ -156,8 +158,12 @@ Route::get('/bank-soal/{slug}', function ($slug) {
         ] : null,
     ]);
 })->name('banksoal.detail');
-Route::post('/bank-soal/{slug}/unlock', [BankSoalAccessController::class, 'unlock'])->name('banksoal.unlock');
-Route::get('/bank-soal/{slug}/unduh/{linkId}', [BankSoalAccessController::class, 'download'])->name('banksoal.download');
+Route::post('/bank-soal/{slug}/unlock', [BankSoalAccessController::class, 'unlock'])
+    ->middleware('throttle:10,1')
+    ->name('banksoal.unlock');
+Route::get('/bank-soal/{slug}/unduh/{linkId}', [BankSoalAccessController::class, 'download'])
+    ->middleware('throttle:60,1')
+    ->name('banksoal.download');
 
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])
     ->middleware('guest')
@@ -170,13 +176,23 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('logout');
 
 Route::post('/pendaftaran/murid', [RegistrationController::class, 'storeStudent'])
+    ->middleware('throttle:10,1')
     ->name('registrations.student');
 Route::post('/pendaftaran/pengajar', [RegistrationController::class, 'storeTeacher'])
+    ->middleware('throttle:10,1')
     ->name('registrations.teacher');
-Route::get('/cek-status', [StatusCheckController::class, 'show'])->name('status.check');
-Route::get('/pembayaran', [PaymentController::class, 'show'])->name('payments.show');
-Route::get('/bayar', [PaymentController::class, 'show'])->name('bayar');
-Route::post('/bayar/{invoice}/upload', [PaymentController::class, 'upload'])->name('bayar.upload');
+Route::get('/cek-status', [StatusCheckController::class, 'show'])
+    ->middleware('throttle:60,1')
+    ->name('status.check');
+Route::get('/pembayaran', [PaymentController::class, 'show'])
+    ->middleware('throttle:60,1')
+    ->name('payments.show');
+Route::get('/bayar', [PaymentController::class, 'show'])
+    ->middleware('throttle:60,1')
+    ->name('bayar');
+Route::post('/bayar/{invoice}/upload', [PaymentController::class, 'upload'])
+    ->middleware('throttle:10,1')
+    ->name('bayar.upload');
 
 Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])
     ->middleware('guest')

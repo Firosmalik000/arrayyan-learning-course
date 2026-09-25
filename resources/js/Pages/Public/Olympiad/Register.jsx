@@ -1,5 +1,5 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SeoHead from '@/Components/SeoHead';
 import { useI18n } from '@/lib/i18n';
 import { formatDate } from '@/lib/formatDate';
@@ -19,7 +19,12 @@ export default function OlympiadRegister() {
     const flashTicket = props.flash?.ticket;
     const [copied, setCopied] = useState(false);
 
-    const form = useForm({ name: '', school: '', level: '', contact: '' });
+    const form = useForm({ name: '', school: '', level: '', contact: '', website: '', form_started_at: '' });
+
+    useEffect(() => {
+        form.setData('form_started_at', String(Math.floor(Date.now() / 1000)));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const submit = (e) => {
         e.preventDefault();
@@ -185,6 +190,15 @@ export default function OlympiadRegister() {
                                 <Button type="submit" variant="secondary" size="lg" loading={form.processing} className="mt-6 w-full">
                                     Kirim Pendaftaran
                                 </Button>
+                                <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }}>
+                                    <input
+                                        type="text"
+                                        tabIndex={-1}
+                                        autoComplete="off"
+                                        value={form.data.website}
+                                        onChange={(e) => form.setData('website', e.target.value)}
+                                    />
+                                </div>
                             </form>
                         )}
                     </div>

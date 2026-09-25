@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -210,6 +211,8 @@ class LandingContentController extends Controller
             );
         }
 
+        Cache::forget('landing-content');
+
         ActivityLog::record('konten.landing.ubah', 'Konten landing diperbarui.');
 
         return back()->with('success', 'Konten landing berhasil disimpan.');
@@ -252,6 +255,13 @@ class LandingContentController extends Controller
     }
 
     private function loadLandingContent(): array
+    {
+        return Cache::remember('landing-content', 300, function (): array {
+            return $this->buildLandingContent();
+        });
+    }
+
+    private function buildLandingContent(): array
     {
         $content = [];
         $sections = PageContent::whereIn('slug', self::SECTION_SLUGS)->get()->keyBy('slug');

@@ -283,4 +283,4 @@ laporan keluar 1 klik.
 - [x] M5 — selesai (guard portal terpisah + auto-akun saat approve + password sementara via WA + wajib ganti, dashboard/jadwal/absensi/nilai/tagihan murid, kelas + input absensi/nilai guru, isolasi auth diuji; 132 test hijau)
 - [x] M6 — selesai (pendaftaran olimpiade + tiket OLS + kuota/deadline + admin kelola + verifikasi biaya, pengumuman pemenang + sertifikat cetak, bank soal gate server + passkey per item + portal auto + statistik view/unduh; 143 test hijau)
 - [x] M7 — selesai (CMS blog/pengumuman/testimoni/FAQ + halaman publik editorial + sitemap, pusat notifikasi, audit log, export CSV pendaftaran/keuangan, kartu murid cetak, revisi landing + restore, helper localize; 156 test hijau)
-- [ ] M8 — belum mulai
+- [x] M8 — selesai (throttle form publik + honeypot/time-trap anti-spam, cache landing/SEO + bust, backup mysqldump mingguan + retensi, audit test semua route admin terkawal + passkey hidden; 164 test hijau)
