@@ -1,5 +1,6 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { FlashMessage, Modal, PageHeader } from '@/Components/Admin';
 
 const icons = {
     plus: (
@@ -17,11 +18,6 @@ const icons = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
         </svg>
     ),
-    close: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-    ),
     eye: (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -29,27 +25,6 @@ const icons = {
         </svg>
     ),
 };
-
-function Modal({ isOpen, onClose, title, children, size = 'md' }) {
-    if (!isOpen) return null;
-    const sizeClasses = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl' };
-    return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-screen items-center justify-center p-4">
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-                <div className={`relative w-full ${sizeClasses[size]} rounded-2xl bg-white shadow-2xl`}>
-                    <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                        <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
-                        <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-                            {icons.close}
-                        </button>
-                    </div>
-                    <div className="p-6">{children}</div>
-                </div>
-            </div>
-        </div>
-    );
-}
 
 const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100';
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700';
@@ -227,16 +202,12 @@ export default function Content() {
             <Head title="Konten" />
 
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800">Konten Website</h1>
-                    <p className="mt-1 text-sm text-slate-600">Kelola artikel, testimoni, FAQ, dan riwayat revisi landing.</p>
-                </div>
+                <PageHeader
+                    title="Konten Website"
+                    subtitle="Kelola artikel, testimoni, FAQ, dan riwayat revisi landing."
+                />
 
-                {flash?.success && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
+                <FlashMessage flash={flash} />
 
                 <div className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1">
                     {tabs.map((tab) => (

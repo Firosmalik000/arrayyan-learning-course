@@ -1,6 +1,15 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { formatDate } from '@/lib/formatDate';
+import {
+    ConfirmModal,
+    FlashMessage,
+    FormInput,
+    FormSelect,
+    FormTextarea,
+    Modal,
+    PageHeader,
+} from '@/Components/Admin';
 
 const statusStyles = {
     Aktif: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -38,16 +47,6 @@ const icons = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
         </svg>
     ),
-    close: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-    ),
-    warning: (
-        <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-        </svg>
-    ),
     trophy: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" />
@@ -77,89 +76,6 @@ const icons = {
 };
 
 // Modal Component
-function Modal({ isOpen, onClose, title, children, size = 'md' }) {
-    if (!isOpen) return null;
-    const sizeClasses = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl' };
-
-    return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-screen items-center justify-center p-4">
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-                <div className={`relative w-full ${sizeClasses[size]} rounded-2xl bg-white shadow-2xl`}>
-                    <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                        <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
-                        <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-                            {icons.close}
-                        </button>
-                    </div>
-                    <div className="p-6">{children}</div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// Form Components
-function FormInput({ label, type = 'text', value, onChange, placeholder, required }) {
-    return (
-        <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                {label} {required && <span className="text-red-500">*</span>}
-            </label>
-            <input
-                type={type}
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={placeholder}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                required={required}
-            />
-        </div>
-    );
-}
-
-function FormSelect({ label, value, onChange, options, required }) {
-    return (
-        <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                {label} {required && <span className="text-red-500">*</span>}
-            </label>
-            <select
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                required={required}
-            >
-                <option value="">Pilih {label}</option>
-                {options.map((opt) => {
-                    const optionValue = typeof opt === 'string' ? opt : opt.value;
-                    const optionLabel = typeof opt === 'string' ? opt : opt.label;
-                    return (
-                        <option key={optionValue} value={optionValue}>
-                            {optionLabel}
-                        </option>
-                    );
-                })}
-            </select>
-        </div>
-    );
-}
-
-function FormTextarea({ label, value, onChange, placeholder, rows = 3 }) {
-    return (
-        <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">{label}</label>
-            <textarea
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={placeholder}
-                rows={rows}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-            />
-        </div>
-    );
-}
-
 const formatCurrency = (value) => {
     if (!value || value === 0) return 'Gratis';
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
@@ -336,21 +252,13 @@ export default function Olympiads() {
             <Head title="Olimpiade" />
 
             <div className="space-y-6">
-                {flash?.success && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
+                <FlashMessage flash={flash} />
 
                 {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-800">Olimpiade</h1>
-                        <p className="mt-1 text-sm text-slate-600">
-                            Kelola jadwal lomba, biaya, dan sistem seleksi
-                        </p>
-                    </div>
-                    {canCreate && (
+                <PageHeader
+                    title="Olimpiade"
+                    subtitle="Kelola jadwal lomba, biaya, dan sistem seleksi"
+                    actions={canCreate && (
                         <button
                             type="button"
                             onClick={() => openModal()}
@@ -360,7 +268,7 @@ export default function Olympiads() {
                             Tambah Olimpiade
                         </button>
                     )}
-                </div>
+                />
 
                 {/* Stats */}
                 <div className="grid gap-4 sm:grid-cols-3">
@@ -667,25 +575,17 @@ export default function Olympiads() {
             </Modal>
 
             {/* Delete Modal */}
-            <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Konfirmasi Hapus" size="sm">
-                <div className="text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-500">
-                        {icons.warning}
-                    </div>
-                    <p className="text-slate-600">
+            <ConfirmModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                title="Konfirmasi Hapus"
+                message={(
+                    <>
                         Apakah Anda yakin ingin menghapus <span className="font-semibold text-slate-800">{deleteTarget?.name}</span>?
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">Tindakan ini tidak dapat dibatalkan.</p>
-                </div>
-                <div className="mt-6 flex justify-center gap-3">
-                    <button type="button" onClick={() => setShowDeleteModal(false)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
-                        Batal
-                    </button>
-                    <button type="button" onClick={confirmDelete} className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700">
-                        Ya, Hapus
-                    </button>
-                </div>
-            </Modal>
+                    </>
+                )}
+                onConfirm={confirmDelete}
+            />
         </>
     );
 }

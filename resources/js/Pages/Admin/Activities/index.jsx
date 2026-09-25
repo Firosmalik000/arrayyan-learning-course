@@ -1,5 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import { PageHeader, Pagination } from '@/Components/Admin';
 
 const formatDateTime = (value) => {
     if (!value) return '-';
@@ -11,26 +12,6 @@ const formatDateTime = (value) => {
         return '-';
     }
 };
-
-function Pagination({ meta, onPage }) {
-    if (!meta || meta.last_page <= 1) return null;
-    const btnClass = 'rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-violet-300 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50';
-    return (
-        <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-            <p className="text-xs text-slate-500">
-                Hal {meta.current_page} dari {meta.last_page} — {meta.total} data
-            </p>
-            <div className="flex gap-2">
-                <button type="button" disabled={meta.current_page <= 1} onClick={() => onPage(meta.current_page - 1)} className={btnClass}>
-                    Sebelumnya
-                </button>
-                <button type="button" disabled={meta.current_page >= meta.last_page} onClick={() => onPage(meta.current_page + 1)} className={btnClass}>
-                    Berikutnya
-                </button>
-            </div>
-        </div>
-    );
-}
 
 export default function Activities() {
     const { logs, events = [], filters = {} } = usePage().props;
@@ -64,10 +45,10 @@ export default function Activities() {
             <Head title="Log Aktivitas" />
 
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800">Log Aktivitas</h1>
-                    <p className="mt-1 text-sm text-slate-600">Siapa melakukan apa dan kapan — jejak audit aksi admin.</p>
-                </div>
+                <PageHeader
+                    title="Log Aktivitas"
+                    subtitle="Siapa melakukan apa dan kapan — jejak audit aksi admin."
+                />
 
                 <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
                     <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center">

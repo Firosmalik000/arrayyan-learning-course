@@ -1,5 +1,6 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import { ConfirmModal, FlashMessage, Modal, PageHeader, SearchInput } from '@/Components/Admin';
 
 const toneStyles = {
     violet: 'bg-violet-50 text-violet-700',
@@ -25,39 +26,7 @@ const icons = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
         </svg>
     ),
-    close: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-    ),
-    search: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-        </svg>
-    ),
 };
-
-function Modal({ isOpen, onClose, title, children, size = 'md' }) {
-    if (!isOpen) return null;
-    const sizeClasses = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl' };
-
-    return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-screen items-center justify-center p-4">
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-                <div className={`relative w-full ${sizeClasses[size]} rounded-2xl bg-white shadow-2xl`}>
-                    <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                        <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
-                        <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-                            {icons.close}
-                        </button>
-                    </div>
-                    <div className="p-6">{children}</div>
-                </div>
-            </div>
-        </div>
-    );
-}
 
 export default function Roles() {
     const {
@@ -211,11 +180,7 @@ export default function Roles() {
                     </div>
                 </div>
 
-                {flash?.success && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
+                <FlashMessage flash={flash} />
 
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                     {stats.map((item) => (
@@ -246,18 +211,12 @@ export default function Roles() {
                             </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                                    {icons.search}
-                                </span>
-                                <input
-                                    type="text"
-                                    value={search}
-                                    onChange={(event) => setSearch(event.target.value)}
-                                    placeholder="Filter nama role"
-                                    className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs text-slate-600 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 sm:text-sm"
-                                />
-                            </div>
+                            <SearchInput
+                                value={search}
+                                onChange={setSearch}
+                                placeholder="Filter nama role"
+                                className="sm:max-w-[220px]"
+                            />
                             <select
                                 value={pageSize}
                                 onChange={(event) => setPageSize(Number(event.target.value))}
@@ -517,35 +476,17 @@ export default function Roles() {
                 )}
             </Modal>
 
-            <Modal
+            <ConfirmModal
                 isOpen={!!deleteRole}
                 onClose={() => setDeleteRole(null)}
                 title="Konfirmasi Hapus"
-                size="sm"
-            >
-                <div className="text-center">
-                    <p className="text-slate-600">
+                message={(
+                    <>
                         Hapus role <span className="font-semibold text-slate-800">{deleteRole?.name}</span>?
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">Tindakan ini tidak dapat dibatalkan.</p>
-                </div>
-                <div className="mt-6 flex justify-center gap-3">
-                    <button
-                        type="button"
-                        onClick={() => setDeleteRole(null)}
-                        className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-                    >
-                        Batal
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleDelete}
-                        className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
-                    >
-                        Ya, Hapus
-                    </button>
-                </div>
-            </Modal>
+                    </>
+                )}
+                onConfirm={handleDelete}
+            />
         </>
     );
 }

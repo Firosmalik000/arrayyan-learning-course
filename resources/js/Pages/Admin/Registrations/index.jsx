@@ -1,13 +1,19 @@
 import { Head, usePage, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import {
+    ConfirmModal,
+    FlashMessage,
+    PageHeader,
+    Pagination,
+    SearchInput,
+    StatCards,
+    StatusBadge,
+} from '@/Components/Admin';
+import DetailModal from './components/DetailModal';
+import RejectModal from './components/RejectModal';
 
 // Icons
 const icons = {
-    search: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-        </svg>
-    ),
     eye: (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -29,84 +35,21 @@ const icons = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
         </svg>
     ),
-    close: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-    ),
-    warning: (
-        <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-        </svg>
-    ),
 };
 
-const statusBadge = (status) => {
-    const map = {
-        pending: 'border-amber-200 bg-amber-50 text-amber-700',
-        approved: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-        rejected: 'border-red-200 bg-red-50 text-red-700',
-    };
-    const labelMap = { pending: 'Pending', approved: 'Disetujui', rejected: 'Ditolak' };
-    return (
-        <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${map[status] || map.pending}`}>
-            {labelMap[status] || 'Pending'}
-        </span>
-    );
+const statusTone = (status) => {
+    const map = { pending: 'amber', approved: 'emerald', rejected: 'red' };
+    return map[status] || 'amber';
 };
 
-// Modal
-function Modal({ isOpen, onClose, title, children, size = 'md' }) {
-    if (!isOpen) return null;
-    const sizeClasses = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl' };
-    return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-screen items-center justify-center p-4">
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-                <div className={`relative w-full ${sizeClasses[size]} rounded-2xl bg-white shadow-2xl`}>
-                    <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                        <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
-                        <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-                            {icons.close}
-                        </button>
-                    </div>
-                    <div className="p-6">{children}</div>
-                </div>
-            </div>
-        </div>
-    );
-}
+const statusLabel = (status) => {
+    const map = { pending: 'Pending', approved: 'Disetujui', rejected: 'Ditolak' };
+    return map[status] || 'Pending';
+};
 
-// Pagination
-function Pagination({ meta, onPage }) {
-    if (!meta || meta.last_page <= 1) return null;
-    const btnClass = 'rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-violet-300 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50';
-    return (
-        <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-            <p className="text-xs text-slate-500">
-                Hal {meta.current_page} dari {meta.last_page} — {meta.total} data
-            </p>
-            <div className="flex gap-2">
-                <button
-                    type="button"
-                    disabled={meta.current_page <= 1}
-                    onClick={() => onPage(meta.current_page - 1)}
-                    className={btnClass}
-                >
-                    Sebelumnya
-                </button>
-                <button
-                    type="button"
-                    disabled={meta.current_page >= meta.last_page}
-                    onClick={() => onPage(meta.current_page + 1)}
-                    className={btnClass}
-                >
-                    Berikutnya
-                </button>
-            </div>
-        </div>
-    );
-}
+const statusBadge = (status) => (
+    <StatusBadge tone={statusTone(status)}>{statusLabel(status)}</StatusBadge>
+);
 
 export default function Registrations() {
     const {
@@ -277,13 +220,11 @@ export default function Registrations() {
 
             <div className="space-y-6">
                 {/* Header */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-800">Pendaftaran</h1>
-                        <p className="mt-1 text-sm text-slate-600">Kelola pendaftaran murid dan pengajar yang masuk</p>
-                    </div>
-                    {canExport && (
-                        <div className="flex gap-2">
+                <PageHeader
+                    title="Pendaftaran"
+                    subtitle="Kelola pendaftaran murid dan pengajar yang masuk"
+                    actions={canExport && (
+                        <>
                             <a
                                 href="/admin/pendaftaran/export/murid"
                                 className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-violet-300 hover:text-violet-700"
@@ -296,21 +237,11 @@ export default function Registrations() {
                             >
                                 Export Pengajar CSV
                             </a>
-                        </div>
+                        </>
                     )}
-                </div>
+                />
 
-                {flash?.success && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
-
-                {flash?.error && (
-                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                        {flash.error}
-                    </div>
-                )}
+                <FlashMessage flash={flash} />
 
                 {/* Tabs */}
                 <div className="flex rounded-xl border border-slate-200 bg-white p-1">
@@ -339,28 +270,16 @@ export default function Registrations() {
                 {activeTab === 'student' && (
                     <div className="space-y-4">
                         {/* Stats */}
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                            {studentStatCards.map((stat) => (
-                                <div key={stat.label} className={`rounded-2xl border p-4 ${stat.color}`}>
-                                    <p className="text-sm font-medium">{stat.label}</p>
-                                    <p className="mt-1 text-2xl font-bold">{stat.value}</p>
-                                </div>
-                            ))}
-                        </div>
+                        <StatCards items={studentStatCards} />
 
                         {/* Table */}
                         <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
                             <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="relative flex-1 sm:max-w-xs">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icons.search}</span>
-                                    <input
-                                        type="text"
-                                        value={studentSearch}
-                                        onChange={(e) => setStudentSearch(e.target.value)}
-                                        placeholder="Cari nama..."
-                                        className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                                    />
-                                </div>
+                                <SearchInput
+                                    value={studentSearch}
+                                    onChange={setStudentSearch}
+                                    placeholder="Cari nama..."
+                                />
                                 <div className="flex flex-wrap gap-2">
                                     <select value={filterLevel} onChange={(e) => setFilterLevel(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
                                         <option value="">Semua Jenjang</option>
@@ -485,28 +404,16 @@ export default function Registrations() {
                 {activeTab === 'teacher' && (
                     <div className="space-y-4">
                         {/* Stats */}
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                            {teacherStatCards.map((stat) => (
-                                <div key={stat.label} className={`rounded-2xl border p-4 ${stat.color}`}>
-                                    <p className="text-sm font-medium">{stat.label}</p>
-                                    <p className="mt-1 text-2xl font-bold">{stat.value}</p>
-                                </div>
-                            ))}
-                        </div>
+                        <StatCards items={teacherStatCards} />
 
                         {/* Table */}
                         <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
                             <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="relative flex-1 sm:max-w-xs">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icons.search}</span>
-                                    <input
-                                        type="text"
-                                        value={teacherSearch}
-                                        onChange={(e) => setTeacherSearch(e.target.value)}
-                                        placeholder="Cari nama..."
-                                        className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                                    />
-                                </div>
+                                <SearchInput
+                                    value={teacherSearch}
+                                    onChange={setTeacherSearch}
+                                    placeholder="Cari nama..."
+                                />
                                 <select value={teacherFilterStatus} onChange={(e) => setTeacherFilterStatus(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
                                     <option value="">Semua Status</option>
                                     <option value="pending">Pending</option>
@@ -629,160 +536,43 @@ export default function Registrations() {
             </div>
 
             {/* Detail Modal */}
-            <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title={detailModal?.type === 'student' ? 'Detail Pendaftaran Murid' : 'Detail Pendaftaran Pengajar'}>
-                {detailModal && (
-                    <div className="space-y-4">
-                        <div className="rounded-xl bg-slate-50 p-4">
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                {detailModal.type === 'student' ? (
-                                    <>
-                                        <div><p className="text-xs text-slate-500">Nama</p><p className="font-medium text-slate-800">{detailModal.data.student_name}</p></div>
-                                        <div><p className="text-xs text-slate-500">No. Tiket</p><p className="font-mono font-medium text-slate-800">{detailModal.data.registration_no || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Jenjang</p><p className="font-medium text-slate-800">{detailModal.data.level || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Alamat</p><p className="font-medium text-slate-800">{detailModal.data.address || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Sekolah</p><p className="font-medium text-slate-800">{detailModal.data.school_name || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Program</p><p className="font-medium text-slate-800">{detailModal.data.program || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Paket</p><p className="font-medium text-slate-800">{detailModal.data.package || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Mata Pelajaran</p><p className="font-medium text-slate-800">{detailModal.data.subjects || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Mode</p><p className="font-medium text-slate-800">{detailModal.data.preferred_mode || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Kontak Orang Tua</p><p className="font-medium text-slate-800">{detailModal.data.parent_contact || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Status</p>{statusBadge(detailModal.data.status)}</div>
-                                        <div><p className="text-xs text-slate-500">Tanggal Daftar</p><p className="font-medium text-slate-800">{detailModal.data.created_at ? new Date(detailModal.data.created_at).toLocaleDateString('id-ID') : '-'}</p></div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div><p className="text-xs text-slate-500">Nama</p><p className="font-medium text-slate-800">{detailModal.data.name}</p></div>
-                                        <div><p className="text-xs text-slate-500">No. Tiket</p><p className="font-mono font-medium text-slate-800">{detailModal.data.registration_no || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Pendidikan</p><p className="font-medium text-slate-800">{detailModal.data.education || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Alamat</p><p className="font-medium text-slate-800">{detailModal.data.address || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Mata Pelajaran</p><p className="font-medium text-slate-800">{detailModal.data.subjects || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Pengalaman</p><p className="font-medium text-slate-800">{detailModal.data.experience || '-'}</p></div>
-                                        <div><p className="text-xs text-slate-500">Kontak</p><p className="font-medium text-slate-800">{detailModal.data.contact || '-'}</p></div>
-                                        <div>
-                                            <p className="text-xs text-slate-500">CV</p>
-                                            {detailModal.data.cv_url ? (
-                                                <a href={detailModal.data.cv_url} target="_blank" rel="noreferrer" className="font-medium text-violet-600 underline">Lihat CV</a>
-                                            ) : <p className="font-medium text-slate-800">-</p>}
-                                        </div>
-                                        <div><p className="text-xs text-slate-500">Status</p>{statusBadge(detailModal.data.status)}</div>
-                                        <div><p className="text-xs text-slate-500">Tanggal Daftar</p><p className="font-medium text-slate-800">{detailModal.data.created_at ? new Date(detailModal.data.created_at).toLocaleDateString('id-ID') : '-'}</p></div>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                        {detailModal.data.notes && (
-                            <div className="rounded-xl border border-slate-100 bg-white p-4 text-sm text-slate-600">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Catatan</p>
-                                <p className="mt-2">{detailModal.data.notes}</p>
-                            </div>
-                        )}
-                        {detailModal.data.admin_note && (
-                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-amber-500">Catatan Admin (dikirim ke pendaftar)</p>
-                                <p className="mt-2">{detailModal.data.admin_note}</p>
-                            </div>
-                        )}
-                        {detailModal.data.status === 'pending' && (canApprove || canReject) && (
-                            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-                                {canReject && (
-                                    <button
-                                        type="button"
-                                        onClick={() => { handleReject(detailModal.type, detailModal.data); setDetailModal(null); }}
-                                        className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100"
-                                    >
-                                        {icons.x} Tolak
-                                    </button>
-                                )}
-                                {canApprove && (
-                                    <button
-                                        type="button"
-                                        onClick={() => { handleApprove(detailModal.type, detailModal.data.id); setDetailModal(null); }}
-                                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                                    >
-                                        {icons.check} Setujui
-                                    </button>
-                                )}
-                            </div>
-                        )}
-                        {detailModal.type === 'student' && detailModal.data.status === 'approved' && canCreateInvoice && (
-                            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => { handleCreateInvoice(detailModal.data.id); setDetailModal(null); }}
-                                    className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
-                                >
-                                    Buatkan Invoice
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </Modal>
+            <DetailModal
+                detailModal={detailModal}
+                onClose={() => setDetailModal(null)}
+                onApprove={(type, id) => { handleApprove(type, id); setDetailModal(null); }}
+                onReject={(type, item) => { handleReject(type, item); setDetailModal(null); }}
+                onCreateInvoice={(id) => { handleCreateInvoice(id); setDetailModal(null); }}
+                canApprove={canApprove}
+                canReject={canReject}
+                canCreateInvoice={canCreateInvoice}
+                icons={icons}
+                statusBadge={statusBadge}
+            />
 
             {/* Reject Modal */}
-            <Modal isOpen={!!rejectModal} onClose={() => setRejectModal(null)} title="Tolak Pendaftaran" size="md">
-                {rejectModal && (
-                    <div className="space-y-4">
-                        <p className="text-sm text-slate-600">
-                            Tolak pendaftaran <span className="font-semibold text-slate-800">{rejectModal.name}</span>{' '}
-                            <span className="font-mono text-xs">({rejectModal.ticket})</span>? Pendaftar akan menerima notifikasi WhatsApp otomatis.
-                        </p>
-                        <div>
-                            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Alasan Penolakan (opsional, terkirim ke pendaftar)
-                            </label>
-                            <textarea
-                                rows="3"
-                                value={adminNote}
-                                onChange={(e) => setAdminNote(e.target.value)}
-                                placeholder="Contoh: Kuota program sudah penuh, silakan pilih program lain."
-                                className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-red-300 focus:ring-2 focus:ring-red-100"
-                            />
-                        </div>
-                        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Preview Pesan WhatsApp</p>
-                            <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{waRejectPreview}</p>
-                        </div>
-                        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-                            <button
-                                type="button"
-                                onClick={() => setRejectModal(null)}
-                                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                type="button"
-                                onClick={confirmReject}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
-                            >
-                                {icons.x} Ya, Tolak
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </Modal>
+            <RejectModal
+                rejectModal={rejectModal}
+                adminNote={adminNote}
+                setAdminNote={setAdminNote}
+                waRejectPreview={waRejectPreview}
+                onClose={() => setRejectModal(null)}
+                onConfirm={confirmReject}
+                icons={icons}
+            />
 
             {/* Delete Modal */}
-            <Modal isOpen={!!deleteModal} onClose={() => setDeleteModal(null)} title="Konfirmasi Hapus" size="sm">
-                <div className="text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-500">
-                        {icons.warning}
-                    </div>
-                    <p className="text-slate-600">
-                        Apakah Anda yakin ingin menghapus <span className="font-semibold text-slate-800">{deleteModal?.name}</span>?
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">Tindakan ini tidak dapat dibatalkan.</p>
-                </div>
-                <div className="mt-6 flex justify-center gap-3">
-                    <button type="button" onClick={() => setDeleteModal(null)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
-                        Batal
-                    </button>
-                    <button type="button" onClick={handleDelete} className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700">
-                        Ya, Hapus
-                    </button>
-                </div>
-            </Modal>
+            <ConfirmModal
+                isOpen={!!deleteModal}
+                onClose={() => setDeleteModal(null)}
+                title="Konfirmasi Hapus"
+                message={(
+                    <>
+                        Apakah Anda yakin ingin menghapus{' '}
+                        <span className="font-semibold text-slate-800">{deleteModal?.name}</span>?
+                    </>
+                )}
+                onConfirm={handleDelete}
+            />
         </>
     );
 }

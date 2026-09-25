@@ -1,5 +1,11 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
+import {
+    ConfirmModal,
+    FlashMessage,
+    Modal,
+    PageHeader,
+} from '@/Components/Admin';
 
 const icons = {
     plus: (
@@ -17,43 +23,12 @@ const icons = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
         </svg>
     ),
-    close: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-    ),
-    warning: (
-        <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-        </svg>
-    ),
     download: (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
         </svg>
     ),
 };
-
-function Modal({ isOpen, onClose, title, children, size = 'md' }) {
-    if (!isOpen) return null;
-    const sizeClasses = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl' };
-    return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-screen items-center justify-center p-4">
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-                <div className={`relative w-full ${sizeClasses[size]} rounded-2xl bg-white shadow-2xl`}>
-                    <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                        <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
-                        <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
-                            {icons.close}
-                        </button>
-                    </div>
-                    <div className="p-6">{children}</div>
-                </div>
-            </div>
-        </div>
-    );
-}
 
 const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100';
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700';
@@ -283,12 +258,10 @@ export default function Academic() {
             <Head title="Akademik" />
 
             <div className="space-y-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-800">Akademik</h1>
-                        <p className="mt-1 text-sm text-slate-600">Kelola kelas, jadwal, absensi, dan nilai.</p>
-                    </div>
-                    {canCreate && (
+                <PageHeader
+                    title="Akademik"
+                    subtitle="Kelola kelas, jadwal, absensi, dan nilai."
+                    actions={canCreate && (
                         <button
                             type="button"
                             onClick={() => openClassModal()}
@@ -297,18 +270,9 @@ export default function Academic() {
                             {icons.plus} Tambah Kelas
                         </button>
                     )}
-                </div>
+                />
 
-                {flash?.success && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                        {flash.error}
-                    </div>
-                )}
+                <FlashMessage flash={flash} />
 
                 {classes.length === 0 && (
                     <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-12 text-center text-sm text-slate-500">
@@ -738,30 +702,17 @@ export default function Academic() {
             </Modal>
 
             {/* Delete Modal */}
-            <Modal isOpen={!!deleteModal} onClose={() => setDeleteModal(null)} title="Konfirmasi Hapus" size="sm">
-                <div className="text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-500">
-                        {icons.warning}
-                    </div>
-                    <p className="text-slate-600">
-                        {deleteModal?.kind === 'class' && (
-                            <>Hapus kelas <span className="font-semibold text-slate-800">{deleteModal?.name}</span> beserta seluruh jadwal, absensi, dan nilainya?</>
-                        )}
-                        {deleteModal?.kind !== 'class' && (
-                            <>Hapus <span className="font-semibold text-slate-800">{deleteModal?.name}</span>?</>
-                        )}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">Tindakan ini tidak dapat dibatalkan.</p>
-                </div>
-                <div className="mt-6 flex justify-center gap-3">
-                    <button type="button" onClick={() => setDeleteModal(null)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                        Batal
-                    </button>
-                    <button type="button" onClick={confirmDelete} className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700">
-                        Ya, Hapus
-                    </button>
-                </div>
-            </Modal>
+            <ConfirmModal
+                isOpen={!!deleteModal}
+                onClose={() => setDeleteModal(null)}
+                title="Konfirmasi Hapus"
+                message={deleteModal?.kind === 'class' ? (
+                    <>Hapus kelas <span className="font-semibold text-slate-800">{deleteModal?.name}</span> beserta seluruh jadwal, absensi, dan nilainya?</>
+                ) : (
+                    <>Hapus <span className="font-semibold text-slate-800">{deleteModal?.name}</span>?</>
+                )}
+                onConfirm={confirmDelete}
+            />
         </>
     );
 }
