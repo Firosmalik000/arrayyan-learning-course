@@ -1,6 +1,6 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import { useState } from 'react';
-import { FlashMessage, Modal, PageHeader } from '@/Components/Admin';
+import { FlashMessage, Modal } from '@/Components/Admin';
 
 const toneStyles = {
     violet: 'bg-violet-50 text-violet-700',
