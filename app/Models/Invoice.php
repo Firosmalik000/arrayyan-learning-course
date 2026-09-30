@@ -34,6 +34,7 @@ class Invoice extends Model
         'student_registration_id',
         'student_id',
         'program_id',
+        'package_id',
         'amount',
         'status',
         'due_date',
@@ -72,6 +73,11 @@ class Invoice extends Model
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class, 'program_id');
+    }
+
+    public function package(): BelongsTo
+    {
+        return $this->belongsTo(Package::class);
     }
 
     public function payments(): HasMany

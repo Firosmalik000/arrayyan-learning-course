@@ -20,6 +20,8 @@ const localizeField = (value, lang) => {
     return localized;
 };
 
+const formatCurrency = (value) => `Rp ${Number(value ?? 0).toLocaleString('id-ID')}`;
+
 export default function Register() {
     const { props, url } = usePage();
     const programs = props.programs ?? [];
@@ -115,7 +117,7 @@ export default function Register() {
         }
         if (current === 3) {
             if (!d.program_id) errs.program_id = 'Program wajib dipilih.';
-            if (!d.package) errs.package = 'Paket wajib dipilih.';
+            if (!d.package_id && !d.package) errs.package_id = 'Pilihan harga wajib dipilih.';
         }
         setStepErrors(errs);
         return Object.keys(errs).length === 0;
@@ -135,7 +137,7 @@ export default function Register() {
     const serverErrorStep = {
         student_name: 1, parent_contact: 1, address: 1,
         school_name: 2, level: 2, subjects: 2,
-        program_id: 3, package: 3, preferred_mode: 3,
+        program_id: 3, package_id: 3, package: 3, preferred_mode: 3,
         notes: 4,
     };
     const serverErrorSteps = [...new Set(Object.keys(studentForm.errors).map((k) => serverErrorStep[k]).filter(Boolean))];
@@ -155,10 +157,46 @@ export default function Register() {
             disabled: isFull,
         };
     });
+    const selectedProgram = programs.find((program) => String(program.id) === String(studentForm.data.program_id));
     const selectedProgramLabel =
         programOptions.find((o) => String(o.value) === String(studentForm.data.program_id))?.label || '-';
-    const selectedPackageLabel =
-        packageOptions.find((o) => String(o.value) === String(studentForm.data.package))?.label || studentForm.data.package || '-';
+    const dynamicPackageOptions = (selectedProgram?.packages ?? []).map((pkg) => ({
+        id: pkg.id,
+        value: String(pkg.id),
+        label: pkg.display_name || pkg.name,
+        level: pkg.level,
+        sessions: pkg.sessions,
+        intensity: pkg.intensity,
+        price: pkg.price,
+        maxParticipants: pkg.max_participants,
+        mode: pkg.mode,
+    }));
+    const availablePackageOptions = dynamicPackageOptions.length > 0
+        ? dynamicPackageOptions
+        : packageOptions.map((option) => ({ ...option, id: null, value: option.value }));
+    const selectedPackage = dynamicPackageOptions.find((option) => String(option.id) === String(studentForm.data.package_id));
+    const selectedPackageLabel = selectedPackage?.label ||
+        packageOptions.find((option) => String(option.value) === String(studentForm.data.package))?.label ||
+        studentForm.data.package || '-';
+
+    const handleProgramChange = (programId) => {
+        studentForm.setData({
+            ...studentForm.data,
+            program_id: programId,
+            package_id: '',
+            package: '',
+        });
+        setStepErrors((errors) => ({ ...errors, program_id: undefined, package_id: undefined }));
+    };
+
+    const handlePackageChange = (option) => {
+        studentForm.setData({
+            ...studentForm.data,
+            package_id: option.id ? String(option.id) : '',
+            package: option.label,
+        });
+        setStepErrors((errors) => ({ ...errors, package_id: undefined }));
+    };
 
     const handleStudentSubmit = (event) => {
         event.preventDefault();
@@ -533,14 +571,14 @@ export default function Register() {
                                         )}
 
                                         {step === 3 && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-5">
                                             {/* Program Belajar */}
                                             <div>
                                                 <label className={labelClass}>{studentFields.program} *</label>
                                                 <select
                                                     className={selectClass}
                                                     value={studentForm.data.program_id}
-                                                    onChange={(e) => studentForm.setData('program_id', e.target.value)}
+                                                    onChange={(e) => handleProgramChange(e.target.value)}
                                                     required
                                                 >
                                                     <option value="" disabled>Pilih Program Belajar</option>
@@ -555,29 +593,86 @@ export default function Register() {
                                                 )}
                                             </div>
 
-                                            {/* Paket Belajar */}
+                                            {/* Pilihan Harga */}
                                             <div>
-                                                <label className={labelClass}>{studentFields.package} *</label>
-                                                <select
-                                                    className={selectClass}
-                                                    value={studentForm.data.package}
-                                                    onChange={(e) => studentForm.setData('package', e.target.value)}
-                                                    required
-                                                >
-                                                    <option value="" disabled>Pilih Tipe Paket</option>
-                                                    {packageOptions.map((opt) => (
-                                                        <option key={opt.value} value={opt.value}>
-                                                            {opt.label}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                {fieldError('package') && (
-                                                    <p className="mt-1 text-xs text-rose-500">{fieldError('package')}</p>
+                                                <div className="flex items-end justify-between gap-3">
+                                                    <div>
+                                                        <label className={labelClass}>Pilihan Pertemuan & Harga *</label>
+                                                        <p className="text-xs text-slate-500">
+                                                            Pilih sesuai jenjang siswa dan frekuensi belajar yang diinginkan.
+                                                        </p>
+                                                    </div>
+                                                    {selectedProgram?.packages?.length > 0 && (
+                                                        <span className="shrink-0 text-xs font-semibold text-slate-500">
+                                                            {selectedProgram.packages.length} pilihan
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {!studentForm.data.program_id ? (
+                                                    <div className="mt-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                                                        Pilih program terlebih dahulu untuk melihat harga yang tersedia.
+                                                    </div>
+                                                ) : (
+                                                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                                        {availablePackageOptions.map((option) => {
+                                                            const isSelected = option.id
+                                                                ? String(studentForm.data.package_id) === String(option.id)
+                                                                : studentForm.data.package === option.label;
+
+                                                            return (
+                                                                <button
+                                                                    key={option.id ?? option.value}
+                                                                    type="button"
+                                                                    onClick={() => handlePackageChange(option)}
+                                                                    aria-pressed={isSelected}
+                                                                    className={`rounded-2xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-violet-300 ${
+                                                                        isSelected
+                                                                            ? 'border-violet-500 bg-violet-50 shadow-sm'
+                                                                            : 'border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40'
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-start justify-between gap-3">
+                                                                        <div>
+                                                                            <p className="text-sm font-bold text-slate-900">
+                                                                                {option.level || option.label}
+                                                                            </p>
+                                                                            {option.sessions && (
+                                                                                <p className="mt-1 text-xs text-slate-600">
+                                                                                    {option.sessions} pertemuan/bulan
+                                                                                    {option.intensity ? ` • ${option.intensity}` : ''}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                        <span className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border ${
+                                                                            isSelected ? 'border-violet-600 bg-violet-600' : 'border-slate-300 bg-white'
+                                                                        }`}>
+                                                                            {isSelected && <span className="h-2 w-2 rounded-full bg-white" />}
+                                                                        </span>
+                                                                    </div>
+                                                                    {option.price != null && (
+                                                                        <p className="mt-3 font-display text-lg font-extrabold tabular-nums text-violet-700">
+                                                                            {formatCurrency(option.price)}
+                                                                            <span className="ml-1 text-[11px] font-medium text-slate-500">/ bulan</span>
+                                                                        </p>
+                                                                    )}
+                                                                    {option.maxParticipants && (
+                                                                        <p className="mt-2 text-[11px] font-medium text-slate-500">
+                                                                            Maksimal {option.maxParticipants} siswa
+                                                                        </p>
+                                                                    )}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                                {(fieldError('package_id') || fieldError('package')) && (
+                                                    <p className="mt-2 text-xs text-rose-500">{fieldError('package_id') || fieldError('package')}</p>
                                                 )}
                                             </div>
 
                                             {/* Preferensi Mode Belajar */}
-                                            <div>
+                                            <div className="max-w-sm">
                                                 <label className={labelClass}>{studentFields.preferredMode} *</label>
                                                 <select
                                                     className={selectClass}

@@ -47,6 +47,10 @@ class ProgramController extends Controller
 
     public function destroy(Program $program): RedirectResponse
     {
+        if ($program->packages()->exists() || $program->studentRegistrations()->exists()) {
+            return back()->with('error', 'Program sudah memiliki pilihan harga atau pendaftaran. Nonaktifkan program agar riwayat tetap aman.');
+        }
+
         $program->delete();
 
         return back()->with('success', 'Program berhasil dihapus.');

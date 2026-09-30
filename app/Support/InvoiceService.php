@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Invoice;
+use App\Models\Package;
 use App\Models\Program;
 use App\Models\Student;
 use App\Models\StudentRegistration;
@@ -25,13 +26,17 @@ class InvoiceService
             $program = $registration->program_id
                 ? Program::query()->select(['id', 'price'])->find($registration->program_id)
                 : null;
+            $package = $registration->package_id
+                ? Package::query()->select(['id', 'price'])->find($registration->package_id)
+                : null;
 
             $invoice = Invoice::create([
                 'invoice_no' => 'TEMP',
                 'student_registration_id' => $registration->id,
                 'student_id' => $student?->id,
                 'program_id' => $registration->program_id,
-                'amount' => $program?->price ?? 0,
+                'package_id' => $registration->package_id,
+                'amount' => $package?->price ?? $program?->price ?? 0,
                 'status' => Invoice::STATUS_UNPAID,
                 'due_date' => now()->addDays(7)->toDateString(),
             ]);

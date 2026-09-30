@@ -6,29 +6,21 @@
       "_vendor-react-ZwENbJqZ.js"
     ]
   },
-  "_vendor-motion-F5vWgioE.js": {
-    "file": "assets/vendor-motion-F5vWgioE.js",
-    "name": "vendor-motion",
-    "imports": [
-      "_vendor-react-ZwENbJqZ.js"
-    ]
-  },
   "_vendor-react-ZwENbJqZ.js": {
     "file": "assets/vendor-react-ZwENbJqZ.js",
     "name": "vendor-react"
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-COaHVpn8.js",
+    "file": "assets/app-DWR3WRu0.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
     "imports": [
       "_vendor-react-ZwENbJqZ.js",
-      "_vendor-inertia-k7FJVHLV.js",
-      "_vendor-motion-F5vWgioE.js"
+      "_vendor-inertia-k7FJVHLV.js"
     ],
     "css": [
-      "assets/app-DVBmXIBu.css"
+      "assets/app-plbDBfDa.css"
     ]
   }
 }

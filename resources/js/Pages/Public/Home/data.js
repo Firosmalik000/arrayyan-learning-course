@@ -75,7 +75,7 @@ export const aboutContent = {
     id: {
         title: 'Tentang Kami',
         description:
-            'Ar Rayyan Learning Course adalah lembaga bimbingan belajar yang berfokus pada pendampingan belajar anak secara menyeluruh. Kami hadir untuk membantu siswa memahami pelajaran dengan lebih baik melalui metode pembelajaran yang terarah, interaktif, dan disesuaikan dengan kebutuhan masing-masing anak.\n\nKami meyakini bahwa setiap anak memiliki potensi unik. Oleh karena itu, Ar Rayyan Learning Course tidak hanya menekankan pada peningkatan akademik, tetapi juga pada pembentukan karakter, adab, dan semangat belajar. Dengan lingkungan belajar yang aman, nyaman, dan penuh perhatian, kami berupaya menumbuhkan rasa percaya diri serta kecintaan anak terhadap proses belajar.\n\nBersama Ar Rayyan Learning Course, mari kita siapkan generasi yang berilmu, berakhlak, dan siap menghadapi masa depan.',
+            'Ar Rayyan Learning Course menghadirkan bimbingan belajar personal yang memadukan penguasaan akademik terarah dengan pembiasaan adab dan akhlak mulia. Kami mendampingi setiap anak memahami konsep pelajaran secara mendalam, percaya diri, dan mencintai proses belajar.',
         valuesTitle: 'Nilai Utama',
         values: ['Aman & Nyaman', 'Terarah & Personal', 'Berkarakter'],
         panelTitle: '25+ aktivitas belajar',
@@ -84,7 +84,7 @@ export const aboutContent = {
     en: {
         title: 'About Us',
         description:
-            "Ar Rayyan Learning Course is a tutoring institution focused on comprehensive learning support for children. We help students understand their lessons better through guided, interactive, and personalized learning methods tailored to each child's needs.\n\nWe believe every child has unique potential. Therefore, Ar Rayyan Learning Course emphasizes not only academic improvement but also character building, manners, and a passion for learning. With a safe, comfortable, and caring learning environment, we strive to nurture self-confidence and a love for learning in every child.\n\nTogether with Ar Rayyan Learning Course, let's prepare a generation that is knowledgeable, well-mannered, and ready to face the future.",
+            'Ar Rayyan Learning Course delivers personalized tutoring that harmonizes academic mastery with strong Islamic character building. We empower every child to understand concepts deeply, build confidence, and cultivate a genuine love for learning.',
         valuesTitle: 'Core Values',
         values: ['Safe & Comfortable', 'Guided & Personal', 'Character-focused'],
         panelTitle: '25+ learning activities',

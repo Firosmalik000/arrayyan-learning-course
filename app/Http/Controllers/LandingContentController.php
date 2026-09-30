@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\SeoController;
 use App\Models\ActivityLog;
 use App\Models\BankSoal;
 use App\Models\Olympiad;
+use App\Models\Package;
 use App\Models\PageContent;
 use App\Models\PageContentRevision;
 use App\Models\Program;
@@ -464,7 +465,14 @@ class LandingContentController extends Controller
 
     private function getPrograms(bool $onlyActive = false): array
     {
-        $query = Program::query()->with('teacher:id,name,subjects');
+        $query = Program::query()->with([
+            'teacher:id,name,subjects',
+            'packages' => fn ($packageQuery) => $packageQuery
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('level')
+                ->orderBy('sessions'),
+        ]);
         if ($onlyActive) {
             $query->where('is_active', true);
         }
@@ -481,13 +489,22 @@ class LandingContentController extends Controller
             $program->load('teacher:id,name,subjects');
         }
 
+        if (! $program->relationLoaded('packages')) {
+            $program->load(['packages' => fn ($query) => $query
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('level')
+                ->orderBy('sessions')]);
+        }
+
         return [
             'id' => $program->id,
             'slug' => $program->slug,
             'name' => $program->name,
             'level' => $program->level,
             'description' => $program->description,
-            'price' => $program->price,
+            'price' => $program->packages->whereNotNull('price')->min('price') ?? $program->price,
+            'base_price' => $program->price,
             'duration' => $program->duration,
             'quota' => $program->quota,
             'quota_filled' => $program->quotaFilled(),
@@ -505,6 +522,18 @@ class LandingContentController extends Controller
             'image_url' => $program->image_path ? Storage::url($program->image_path) : null,
             'is_active' => $program->is_active,
             'is_featured' => $program->is_featured,
+            'packages' => $program->packages->map(fn (Package $package) => [
+                'id' => $package->id,
+                'name' => $package->name,
+                'level' => $package->level,
+                'sessions' => $package->sessions,
+                'intensity' => $package->intensity,
+                'price' => $package->price,
+                'max_participants' => $package->max_participants,
+                'mode' => $package->mode,
+                'schedule' => $package->schedule,
+                'display_name' => $package->displayName(),
+            ])->values()->all(),
         ];
     }
 

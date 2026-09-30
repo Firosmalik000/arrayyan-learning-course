@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreStudentRegistrationRequest;
 use App\Http\Requests\StoreTeacherRegistrationRequest;
 use App\Jobs\SendRegistrationNotification;
+use App\Models\Package;
 use App\Models\Program;
 use App\Models\StudentRegistration;
 use App\Models\TeacherRegistration;
@@ -26,7 +27,25 @@ class RegistrationController extends Controller
                 ->withInput();
         }
 
+        $package = null;
+        if (! empty($data['package_id'])) {
+            $package = Package::query()
+                ->whereKey($data['package_id'])
+                ->where('program_id', $program->id)
+                ->where('is_active', true)
+                ->first();
+
+            if (! $package) {
+                return back()
+                    ->withErrors(['package_id' => 'Pilihan harga tidak sesuai dengan program yang dipilih.'])
+                    ->withInput();
+            }
+        }
+
         $data['program'] = $program->name;
+        if ($package) {
+            $data['package'] = $package->displayName();
+        }
 
         $registration = DB::transaction(function () use ($data): StudentRegistration {
             $registration = StudentRegistration::create($data);

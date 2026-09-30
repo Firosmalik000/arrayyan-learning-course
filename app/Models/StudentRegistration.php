@@ -18,6 +18,7 @@ class StudentRegistration extends Model
         'level',
         'subjects',
         'program_id',
+        'package_id',
         'program',
         'package',
         'parent_contact',
@@ -56,5 +57,10 @@ class StudentRegistration extends Model
     public function programItem(): BelongsTo
     {
         return $this->belongsTo(Program::class, 'program_id');
+    }
+
+    public function packageItem(): BelongsTo
+    {
+        return $this->belongsTo(Package::class, 'package_id');
     }
 }

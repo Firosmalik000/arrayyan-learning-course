@@ -685,6 +685,8 @@ class LandingContentSeeder extends Seeder
             );
         }
 
+        $this->call(ProgramPricingSeeder::class);
+
         foreach ($content['olympiadHighlights'] ?? [] as $item) {
             $name = $item['name']['id'] ?? ($item['name'] ?? null);
             if (! $name) {

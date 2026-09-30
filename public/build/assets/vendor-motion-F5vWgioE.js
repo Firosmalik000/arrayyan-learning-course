@@ -1,1 +1,0 @@
-import{r as o}from"./vendor-react-ZwENbJqZ.js";const t={current:null},r={current:!1},c=typeof window<"u";function s(){if(r.current=!0,!!c)if(window.matchMedia){const e=window.matchMedia("(prefers-reduced-motion)"),n=()=>t.current=e.matches;e.addEventListener("change",n),n()}else t.current=!1}function i(){!r.current&&s();const[e]=o.useState(t.current);return e}export{i as u};

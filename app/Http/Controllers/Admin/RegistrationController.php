@@ -51,6 +51,7 @@ class RegistrationController extends Controller
                 'level' => $studentRegistration->level,
                 'subjects' => $studentRegistration->subjects,
                 'program_id' => $studentRegistration->program_id,
+                'package_id' => $studentRegistration->package_id,
                 'program' => $studentRegistration->programItem?->name ?? $studentRegistration->program,
                 'package' => $studentRegistration->package,
                 'parent_contact' => $studentRegistration->parent_contact,

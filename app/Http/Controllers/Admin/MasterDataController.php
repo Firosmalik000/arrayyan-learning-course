@@ -266,6 +266,7 @@ class MasterDataController extends Controller
         return Inertia::render('Admin/Programs', [
             'programs' => Program::query()
                 ->with('teacher:id,name')
+                ->withCount('packages')
                 ->latest()
                 ->get()
                 ->map(function (Program $program) {
@@ -276,6 +277,8 @@ class MasterDataController extends Controller
                         'level' => $program->level,
                         'description' => $program->description,
                         'price' => $program->price,
+                        'starting_price' => $program->startingPrice(),
+                        'packages_count' => $program->packages_count,
                         'duration' => $program->duration,
                         'quota' => $program->quota,
                         'quota_filled' => $program->quotaFilled(),
@@ -292,7 +295,29 @@ class MasterDataController extends Controller
                         'is_featured' => $program->is_featured,
                     ];
                 }),
-            'packages' => Package::query()->latest()->get(),
+            'packages' => Package::query()
+                ->with('program:id,name')
+                ->orderBy('program_id')
+                ->orderBy('sort_order')
+                ->orderBy('level')
+                ->orderBy('sessions')
+                ->get()
+                ->map(fn (Package $package) => [
+                    'id' => $package->id,
+                    'program_id' => $package->program_id,
+                    'program_name' => $package->program?->name,
+                    'name' => $package->name,
+                    'level' => $package->level,
+                    'sessions' => $package->sessions,
+                    'intensity' => $package->intensity,
+                    'price' => $package->price,
+                    'max_participants' => $package->max_participants,
+                    'mode' => $package->mode,
+                    'schedule' => $package->schedule,
+                    'sort_order' => $package->sort_order,
+                    'is_active' => $package->is_active,
+                    'is_used' => $package->studentRegistrations()->exists(),
+                ]),
             'teachers' => Teacher::query()
                 ->where('is_active', true)
                 ->orderBy('name')
@@ -571,6 +596,7 @@ class MasterDataController extends Controller
             'level' => $student->level,
             'subjects' => $student->subjects,
             'program' => $student->programItem?->name ?? $student->program,
+            'package_id' => $student->package_id,
             'package' => $student->package,
             'parent_contact' => $student->parent_contact,
             'preferred_mode' => $student->preferred_mode,

@@ -66,6 +66,7 @@ export default function ProgramDetail() {
               subjects: Array.isArray(props.program.subjects) ? props.program.subjects : [],
               mode: localizeField(props.program.mode, language),
               imageUrl: props.program.image_url || null,
+              packages: Array.isArray(props.program.packages) ? props.program.packages : [],
           }
         : null;
 
@@ -77,6 +78,13 @@ export default function ProgramDetail() {
     const quotaPercent = program?.quota
         ? Math.min(100, Math.round(((program.quotaFilled || 0) / program.quota) * 100))
         : null;
+    const packagesByLevel = Object.entries(
+        (program?.packages ?? []).reduce((groups, item) => {
+            const level = item.level || 'Semua Jenjang';
+            groups[level] = [...(groups[level] || []), item];
+            return groups;
+        }, {})
+    );
 
     const description = program?.description || programText.fallbackDescription;
     const mode = program?.mode || 'Offline & Online';
@@ -173,6 +181,60 @@ export default function ProgramDetail() {
                                         </div>
                                     )}
                                 </div>
+
+                                {packagesByLevel.length > 0 && (
+                                    <section aria-labelledby="price-options-title">
+                                        <div className="mb-5 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+                                            <div>
+                                                <h2 id="price-options-title" className="font-display text-2xl font-bold text-slate-900">
+                                                    Pilihan Pertemuan & Harga
+                                                </h2>
+                                                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
+                                                    Bandingkan pilihan berdasarkan jenjang dan frekuensi belajar. Harga berlaku per bulan.
+                                                </p>
+                                            </div>
+                                            <span className="text-xs font-semibold text-slate-500">
+                                                Mulai {formatRupiah(program.price)}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            {packagesByLevel.map(([level, options]) => (
+                                                <div key={level} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                                                    <div className="flex items-center justify-between bg-slate-900 px-4 py-3 text-white">
+                                                        <h3 className="font-bold">Jenjang {level}</h3>
+                                                        {options[0]?.max_participants && (
+                                                            <span className="text-[11px] font-medium text-slate-300">
+                                                                Maks. {options[0].max_participants} siswa
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="divide-y divide-slate-100">
+                                                        {options.map((option) => (
+                                                            <div key={option.id} className="grid grid-cols-[1fr_auto] gap-4 px-4 py-3">
+                                                                <div>
+                                                                    <p className="text-sm font-semibold text-slate-800">
+                                                                        {option.sessions} pertemuan / bulan
+                                                                    </p>
+                                                                    <p className="mt-0.5 text-xs text-slate-500">
+                                                                        {option.intensity || option.schedule || 'Jadwal disepakati bersama'}
+                                                                    </p>
+                                                                </div>
+                                                                <p className="self-center text-sm font-extrabold tabular-nums text-violet-700">
+                                                                    {formatRupiah(option.price)}
+                                                                </p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="mt-4 rounded-2xl bg-amber-50 px-5 py-4 text-sm leading-relaxed text-amber-900">
+                                            Harga, kapasitas kelas, dan jadwal mengikuti pilihan di atas. Tim ALC akan mengonfirmasi ketersediaan jadwal setelah pendaftaran.
+                                        </div>
+                                    </section>
+                                )}
 
                                 {/* Subjects Covered */}
                                 {program.subjects.length > 0 && (

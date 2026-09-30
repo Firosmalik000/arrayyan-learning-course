@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\OlympiadController;
 use App\Http\Controllers\Admin\OlympiadRegistrationAdminController;
 use App\Http\Controllers\Admin\OpsController;
+use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\ProgramController;
 use App\Http\Controllers\Admin\RegistrationController as AdminRegistrationController;
 use App\Http\Controllers\Admin\RoleController;
@@ -96,7 +97,14 @@ Route::get('/olimpiade/{slug}', function ($slug) {
 })->name('olympiad.detail');
 Route::get('/pendaftaran', fn () => Inertia::render('Public/Register', [
     'programs' => Program::query()
-        ->with('teacher:id,name')
+        ->with([
+            'teacher:id,name',
+            'packages' => fn ($query) => $query
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('level')
+                ->orderBy('sessions'),
+        ])
         ->where('is_active', true)
         ->orderBy('name')
         ->get()
@@ -109,6 +117,18 @@ Route::get('/pendaftaran', fn () => Inertia::render('Public/Register', [
             'quota' => $program->quota,
             'quota_remaining' => $program->quotaRemaining(),
             'is_full' => ! $program->hasAvailableQuota(),
+            'packages' => $program->packages->map(fn ($package) => [
+                'id' => $package->id,
+                'name' => $package->name,
+                'level' => $package->level,
+                'sessions' => $package->sessions,
+                'intensity' => $package->intensity,
+                'price' => $package->price,
+                'max_participants' => $package->max_participants,
+                'mode' => $package->mode,
+                'schedule' => $package->schedule,
+                'display_name' => $package->displayName(),
+            ])->values()->all(),
         ])
         ->values()
         ->all(),
@@ -244,6 +264,15 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::delete('/program/{program}', [ProgramController::class, 'destroy'])
         ->middleware('role_or_permission:administrator|program.delete,admin')
         ->name('programs.destroy');
+    Route::post('/paket', [PackageController::class, 'store'])
+        ->middleware('role_or_permission:administrator|program.create,admin')
+        ->name('packages.store');
+    Route::put('/paket/{package}', [PackageController::class, 'update'])
+        ->middleware('role_or_permission:administrator|program.edit,admin')
+        ->name('packages.update');
+    Route::delete('/paket/{package}', [PackageController::class, 'destroy'])
+        ->middleware('role_or_permission:administrator|program.delete,admin')
+        ->name('packages.destroy');
     Route::get('/bank-soal', [MasterDataController::class, 'bankSoal'])
         ->middleware('role_or_permission:administrator|bank-soal.view,admin')
         ->name('banksoal');

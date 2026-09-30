@@ -34,7 +34,14 @@ class StoreStudentRegistrationRequest extends FormRequest
                 'integer',
                 Rule::exists('programs', 'id')->where('is_active', true),
             ],
-            'package' => ['required', 'string', 'max:100'],
+            'package_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('packages', 'id')->where(fn ($query) => $query
+                    ->where('is_active', true)
+                    ->where('program_id', $this->input('program_id'))),
+            ],
+            'package' => ['required_without:package_id', 'nullable', 'string', 'max:100'],
             'parent_contact' => ['required', 'string', 'max:20', 'regex:/^(?:\+62|62|0)8[0-9]{5,13}$/'],
             'preferred_mode' => ['nullable', 'string', Rule::in(['online', 'offline', 'Online', 'Offline'])],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -58,6 +65,8 @@ class StoreStudentRegistrationRequest extends FormRequest
             'program_id.required' => 'Program wajib dipilih.',
             'program_id.exists' => 'Program tidak ditemukan atau tidak aktif.',
             'package.required' => 'Paket wajib dipilih.',
+            'package.required_without' => 'Pilihan harga wajib dipilih.',
+            'package_id.exists' => 'Pilihan harga tidak ditemukan atau sudah tidak aktif.',
             'parent_contact.required' => 'Kontak orang tua wajib diisi.',
             'parent_contact.regex' => 'Kontak orang tua harus nomor WhatsApp Indonesia yang valid (contoh: 081234567890).',
             'preferred_mode.in' => 'Mode belajar harus Online atau Offline.',

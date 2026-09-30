@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Program extends Model
 {
@@ -43,6 +44,29 @@ class Program extends Model
     public function teacher(): BelongsTo
     {
         return $this->belongsTo(Teacher::class, 'teacher_id');
+    }
+
+    public function packages(): HasMany
+    {
+        return $this->hasMany(Package::class)
+            ->orderBy('sort_order')
+            ->orderBy('level')
+            ->orderBy('sessions');
+    }
+
+    public function studentRegistrations(): HasMany
+    {
+        return $this->hasMany(StudentRegistration::class);
+    }
+
+    public function startingPrice(): ?string
+    {
+        $packagePrice = $this->packages()
+            ->where('is_active', true)
+            ->whereNotNull('price')
+            ->min('price');
+
+        return $packagePrice !== null ? (string) $packagePrice : $this->price;
     }
 
     public function quotaFilled(): int

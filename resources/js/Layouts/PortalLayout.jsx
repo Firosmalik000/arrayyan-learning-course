@@ -27,60 +27,93 @@ export default function PortalLayout({ children }) {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            <header className="border-b border-slate-200 bg-white">
-                <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-                    <Link href="/portal" className="flex items-center gap-2">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-primary font-display text-sm font-bold text-white">
+        <div className="min-h-screen bg-[#fafbfc] text-slate-900 flex flex-col antialiased selection:bg-violet-100 selection:text-brand-primary">
+            {/* Sticky Modern Portal Header */}
+            <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-2xs">
+                <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+                    {/* Brand & User Info */}
+                    <Link href="/portal" className="flex items-center gap-3 group">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-purple-800 font-display text-sm font-extrabold text-white shadow-xs group-hover:scale-105 transition-transform">
                             ALC
-                        </span>
-                        <span className="leading-tight">
-                            <span className="block text-sm font-bold text-slate-900">Portal {type === 'teacher' ? 'Pengajar' : 'Murid'}</span>
-                            <span className="block text-xs text-slate-500">{portalAuth?.name || ''}</span>
-                        </span>
+                        </div>
+                        <div className="leading-tight">
+                            <div className="flex items-center gap-2">
+                                <span className="font-display font-bold text-slate-900 text-sm sm:text-base">
+                                    Portal
+                                </span>
+                                <span
+                                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                                        type === 'teacher'
+                                            ? 'bg-amber-100 text-amber-800'
+                                            : 'bg-violet-100 text-brand-primary'
+                                    }`}
+                                >
+                                    {type === 'teacher' ? 'Pengajar' : 'Murid'}
+                                </span>
+                            </div>
+                            <span className="block text-xs text-slate-500 font-medium truncate max-w-[180px] sm:max-w-xs">
+                                {portalAuth?.name || ''}
+                            </span>
+                        </div>
                     </Link>
+
+                    {/* Actions */}
                     <div className="flex items-center gap-2">
-                        <Link href="/" className="hidden rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:text-slate-800 sm:inline">
+                        <Link
+                            href="/"
+                            className="hidden rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-violet-300 hover:text-brand-primary sm:inline"
+                        >
                             Website
                         </Link>
                         <button
                             type="button"
                             onClick={logout}
-                            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-red-200 hover:text-red-600"
+                            className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
                         >
                             Keluar
                         </button>
                     </div>
                 </div>
-                <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 pb-3 sm:px-6">
-                    {links.map((link) => {
-                        const active = path === link.href;
-                        return (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
-                                    active
-                                        ? 'bg-brand-primary text-white shadow'
-                                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
-                                }`}
-                            >
-                                {link.label}
-                            </Link>
-                        );
-                    })}
-                </nav>
+
+                {/* Sub Navigation Bar */}
+                <div className="border-t border-slate-100 bg-slate-50/60">
+                    <nav className="mx-auto flex max-w-5xl gap-1.5 overflow-x-auto px-4 py-2 sm:px-6 scrollbar-none">
+                        {links.map((link) => {
+                            const active = path === link.href;
+                            return (
+                                <Link
+                                    key={link.href}
+                                    href={link.href}
+                                    className={`whitespace-nowrap rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
+                                        active
+                                            ? 'bg-brand-primary text-white shadow-xs'
+                                            : 'text-slate-600 hover:bg-white hover:text-slate-900'
+                                    }`}
+                                >
+                                    {link.label}
+                                </Link>
+                            );
+                        })}
+                    </nav>
+                </div>
             </header>
 
-            <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+            {/* Main Content Area */}
+            <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
                 {props.flash?.success && (
-                    <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                        {props.flash.success}
+                    <div className="mb-5 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs sm:text-sm font-semibold text-emerald-800 shadow-2xs">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-200 text-emerald-800 text-xs">
+                            ✓
+                        </span>
+                        <span>{props.flash.success}</span>
                     </div>
                 )}
                 {props.flash?.error && (
-                    <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                        {props.flash.error}
+                    <div className="mb-5 flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs sm:text-sm font-semibold text-rose-800 shadow-2xs">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-200 text-rose-800 text-xs">
+                            !
+                        </span>
+                        <span>{props.flash.error}</span>
                     </div>
                 )}
                 {children}

@@ -231,31 +231,6 @@ export default function StatusCheck() {
                                     </div>
                                 )}
 
-                                {result.type === 'student' && result.invoices?.length > 0 && (
-                                    <div className="mt-6 border-t border-slate-100 pt-4">
-                                        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Tagihan Pembayaran</p>
-                                        <ul className="mt-2 space-y-2">
-                                            {result.invoices.map((inv) => (
-                                                <li key={inv.invoice_no} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm">
-                                                    <div>
-                                                        <p className="font-mono text-xs font-bold text-slate-800">{inv.invoice_no}</p>
-                                                        <p className="text-xs text-slate-500">
-                                                            Rp {Number(inv.amount).toLocaleString('id-ID')} — {inv.status === 'paid' ? 'Lunas' : inv.status === 'pending' ? 'Menunggu verifikasi' : inv.status === 'expired' ? 'Kedaluwarsa' : 'Belum bayar'}
-                                                        </p>
-                                                    </div>
-                                                    {inv.status !== 'paid' && (
-                                                        <Link
-                                                            href={`/bayar?invoice=${encodeURIComponent(inv.invoice_no)}&phone=${encodeURIComponent(phone)}`}
-                                                            className="rounded-xl bg-brand-primary px-3 py-1.5 text-xs font-bold text-white transition hover:opacity-90"
-                                                        >
-                                                            Bayar
-                                                        </Link>
-                                                    )}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
                             </div>
                         )}
 

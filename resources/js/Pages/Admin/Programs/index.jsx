@@ -1,14 +1,6 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
-import {
-    ConfirmModal,
-    FlashMessage,
-    FormInput,
-    FormSelect,
-    FormTextarea,
-    Modal,
-    PageHeader,
-} from '@/Components/Admin';
+import { ConfirmModal, FlashMessage, FormInput, FormSelect, FormTextarea, Modal, PageHeader } from '@/Components/Admin';
 
 const normalizeSubjects = (value) => {
     if (Array.isArray(value)) return value.filter(Boolean);
@@ -31,7 +23,11 @@ const programModeOptions = [
     { value: 'offline', label: 'Offline' },
     { value: 'online', label: 'Online' },
 ];
-const packageModeOptions = ['Offline', 'Online', 'Hybrid', 'Offline / Online', 'Offline / Hybrid'];
+const packageModeOptions = [
+    { value: 'offline', label: 'Tatap muka' },
+    { value: 'online', label: 'Online' },
+    { value: 'hybrid', label: 'Tatap muka / Online' },
+];
 const levelOptions = ['Pra TK', 'TK', 'SD', 'SMP', 'SMA', 'Pra TK - SMA', 'TK - SMA', 'SD - SMA'];
 
 // Icons
@@ -43,17 +39,29 @@ const icons = {
     ),
     edit: (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"
+            />
         </svg>
     ),
     trash: (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+            />
         </svg>
     ),
     eye: (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+            />
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
     ),
@@ -68,27 +76,40 @@ const formatModeLabel = (value) => {
     return value || '-';
 };
 
+const formatCurrency = (value) => `Rp ${Number(value ?? 0).toLocaleString('id-ID')}`;
+
 const getInitials = (value) => {
     if (!value) return 'ALC';
-    const chars = value.trim().split(/\s+/).map((part) => part[0]).join('');
+    const chars = value
+        .trim()
+        .split(/\s+/)
+        .map((part) => part[0])
+        .join('');
     return chars.slice(0, 2).toUpperCase();
 };
 
 export default function Programs() {
     const { programs: programsData = [], packages: packagesData = [], teachers: teachersData = [], allowedActions = {}, flash } = usePage().props;
-    const programs = useMemo(() => programsData.map((program) => ({
-        ...program,
-        subjects: normalizeSubjects(program.subjects),
-        is_active: Number(program.is_active ?? 1) === 1,
-        mode: normalizeModeValue(program.mode),
-    })), [programsData]);
-    const normalizedPackages = packagesData.map((pkg) => ({
-        ...pkg,
-        subjects: normalizeSubjects(pkg.subjects),
-        is_active: Number(pkg.is_active ?? 1) === 1,
-    }));
-
-    const [packages, setPackages] = useState(normalizedPackages);
+    const programs = useMemo(
+        () =>
+            programsData.map((program) => ({
+                ...program,
+                subjects: normalizeSubjects(program.subjects),
+                is_active: Number(program.is_active ?? 1) === 1,
+                mode: normalizeModeValue(program.mode),
+            })),
+        [programsData],
+    );
+    const packages = useMemo(
+        () =>
+            packagesData.map((pkg) => ({
+                ...pkg,
+                subjects: normalizeSubjects(pkg.subjects),
+                is_active: Number(pkg.is_active ?? 1) === 1,
+                mode: normalizeModeValue(pkg.mode),
+            })),
+        [packagesData],
+    );
 
     const can = (action) => (allowedActions.program ?? []).includes(action);
     const canCreate = can('create');
@@ -106,6 +127,14 @@ export default function Programs() {
     const [deleteTarget, setDeleteTarget] = useState({ type: '', item: null });
     const [programDetail, setProgramDetail] = useState(null);
     const [currentProgramImageUrl, setCurrentProgramImageUrl] = useState(null);
+    const [activePriceProgramId, setActivePriceProgramId] = useState(programsData[0]?.id ? String(programsData[0].id) : '');
+
+    const resolvedPriceProgramId = programs.some((program) => String(program.id) === activePriceProgramId)
+        ? activePriceProgramId
+        : String(programs[0]?.id ?? '');
+    const activePriceProgram = programs.find((program) => String(program.id) === resolvedPriceProgramId) ?? null;
+    const visiblePackages = packages.filter((pkg) => String(pkg.program_id) === resolvedPriceProgramId);
+    const activeStartingPrice = visiblePackages.length > 0 ? Math.min(...visiblePackages.map((pkg) => Number(pkg.price ?? 0))) : null;
 
     // Program form state
     const programForm = useForm({
@@ -127,13 +156,16 @@ export default function Programs() {
     });
 
     // Package form state
-    const [packageForm, setPackageForm] = useState({
-        name: '',
+    const packageForm = useForm({
+        program_id: '',
         level: '',
-        subjects: '',
         sessions: '',
+        intensity: '',
+        price: '',
+        max_participants: '',
         mode: '',
         schedule: '',
+        sort_order: 0,
         is_active: true,
     });
 
@@ -197,7 +229,9 @@ export default function Programs() {
             quota: programForm.data.quota === '' ? null : Number(programForm.data.quota),
             teacher_id: programForm.data.teacher_id === '' ? null : Number(programForm.data.teacher_id),
             syllabus: normalizeSubjects(
-                String(programForm.data.syllabus || '').split(/[\n,]/).map((item) => item.trim())
+                String(programForm.data.syllabus || '')
+                    .split(/[\n,]/)
+                    .map((item) => item.trim()),
             ),
             subjects: normalizeSubjects(programForm.data.subjects),
             is_active: programForm.data.is_active ? 1 : 0,
@@ -224,46 +258,62 @@ export default function Programs() {
     };
 
     // Package handlers
-    const openPackageModal = (pkg = null) => {
+    const openPackageModal = (pkg = null, programId = null) => {
         if (pkg) {
             setEditingPackage(pkg);
-            setPackageForm({
-                name: pkg.name || '',
+            packageForm.setData({
+                program_id: pkg.program_id ? String(pkg.program_id) : '',
                 level: pkg.level || '',
-                subjects: normalizeSubjects(pkg.subjects).join(', '),
                 sessions: pkg.sessions ?? '',
-                mode: pkg.mode || '',
+                intensity: pkg.intensity || '',
+                price: pkg.price ?? '',
+                max_participants: pkg.max_participants ?? '',
+                mode: normalizeModeValue(pkg.mode),
                 schedule: pkg.schedule || '',
+                sort_order: pkg.sort_order ?? 0,
                 is_active: Number(pkg.is_active ?? 1) === 1,
             });
         } else {
             setEditingPackage(null);
-            setPackageForm({
-                name: '',
+            packageForm.setData({
+                program_id: String(programId ?? activePriceProgram?.id ?? programs[0]?.id ?? ''),
                 level: '',
-                subjects: '',
                 sessions: '',
+                intensity: '',
+                price: '',
+                max_participants: '',
                 mode: '',
                 schedule: '',
+                sort_order: 0,
                 is_active: true,
             });
         }
+        packageForm.clearErrors();
         setShowPackageModal(true);
     };
 
     const savePackageForm = () => {
         const payload = {
-            ...packageForm,
-            subjects: normalizeSubjects(packageForm.subjects),
-            sessions: packageForm.sessions === '' ? null : Number(packageForm.sessions),
-            is_active: packageForm.is_active ? 1 : 0,
+            ...packageForm.data,
+            program_id: Number(packageForm.data.program_id),
+            sessions: Number(packageForm.data.sessions),
+            price: Number(packageForm.data.price),
+            max_participants: packageForm.data.max_participants === '' ? null : Number(packageForm.data.max_participants),
+            sort_order: Number(packageForm.data.sort_order || 0),
+            is_active: packageForm.data.is_active ? 1 : 0,
         };
-        if (editingPackage) {
-            setPackages(packages.map((p) => (p.id === editingPackage.id ? { ...payload, id: editingPackage.id } : p)));
-        } else {
-            setPackages([...packages, { ...payload, id: Date.now() }]);
-        }
-        setShowPackageModal(false);
+
+        packageForm.transform(() => ({
+            ...payload,
+            ...(editingPackage ? { _method: 'put' } : {}),
+        }));
+
+        const url = editingPackage ? `/admin/paket/${editingPackage.id}` : '/admin/paket';
+        packageForm.post(url, {
+            preserveScroll: true,
+            onSuccess: () => setShowPackageModal(false),
+            onFinish: () => packageForm.transform((data) => data),
+        });
     };
 
     // Delete handlers
@@ -279,31 +329,35 @@ export default function Programs() {
                 onSuccess: () => setShowDeleteModal(false),
             });
         } else {
-            setPackages(packages.filter(p => p.id !== deleteTarget.item.id));
-            setShowDeleteModal(false);
+            router.delete(`/admin/paket/${deleteTarget.item.id}`, {
+                preserveScroll: true,
+                onSuccess: () => setShowDeleteModal(false),
+            });
         }
     };
 
     return (
         <>
-            <Head title="Program & Paket" />
+            <Head title="Program & Daftar Harga" />
 
             <div className="space-y-6">
                 <FlashMessage flash={flash} />
                 {/* Header */}
                 <PageHeader
-                    title="Program & Paket Belajar"
-                    subtitle="Kelola daftar program dan paket belajar ALC"
-                    actions={canCreate && (
-                        <button
-                            type="button"
-                            onClick={() => openProgramModal()}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
-                        >
-                            {icons.plus}
-                            Tambah Program
-                        </button>
-                    )}
+                    title="Program & Daftar Harga"
+                    subtitle="Kelola jenis program lalu atur harga per jenjang dan jumlah pertemuan."
+                    actions={
+                        canCreate && (
+                            <button
+                                type="button"
+                                onClick={() => openProgramModal()}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                            >
+                                {icons.plus}
+                                Tambah Program
+                            </button>
+                        )
+                    }
                 />
 
                 {/* Program Cards */}
@@ -313,18 +367,10 @@ export default function Programs() {
                         const modeLabel = formatModeLabel(program.mode);
 
                         return (
-                            <div
-                                key={program.id}
-                                className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md"
-                            >
+                            <div key={program.id} className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
                                 <div className="mb-4 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
                                     {program.image_url ? (
-                                        <img
-                                            src={program.image_url}
-                                            alt={program.name}
-                                            className="h-40 w-full object-cover"
-                                            loading="lazy"
-                                        />
+                                        <img src={program.image_url} alt={program.name} className="h-40 w-full object-cover" loading="lazy" />
                                     ) : (
                                         <div className="flex h-40 items-center justify-center bg-gradient-to-br from-slate-100 via-white to-violet-50">
                                             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-sm font-semibold text-violet-600 shadow-sm">
@@ -347,39 +393,33 @@ export default function Programs() {
                                         </span>
                                     </div>
                                 </div>
-                                <p className="mt-3 text-sm text-slate-600 line-clamp-2">
-                                    {program.description || 'Belum ada deskripsi program.'}
-                                </p>
+                                <p className="mt-3 text-sm text-slate-600 line-clamp-2">{program.description || 'Belum ada deskripsi program.'}</p>
                                 <div className="mt-3 flex flex-wrap gap-2">
-                                    {program.price != null && (
+                                    {program.starting_price != null && (
                                         <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                                            Rp {Number(program.price).toLocaleString('id-ID')}
+                                            Mulai Rp {Number(program.starting_price).toLocaleString('id-ID')}
                                         </span>
                                     )}
+                                    <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">
+                                        {program.packages_count ?? 0} pilihan harga
+                                    </span>
                                     {program.quota != null ? (
-                                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${Number(program.quota_remaining ?? 0) <= 0 ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-800'}`}>
-                                            {Number(program.quota_remaining ?? 0) <= 0
-                                                ? 'Kuota penuh'
-                                                : `Sisa ${program.quota_remaining}/${program.quota}`}
+                                        <span
+                                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${Number(program.quota_remaining ?? 0) <= 0 ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-800'}`}
+                                        >
+                                            {Number(program.quota_remaining ?? 0) <= 0 ? 'Kuota penuh' : `Sisa ${program.quota_remaining}/${program.quota}`}
                                         </span>
                                     ) : (
-                                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
-                                            Tanpa batas kuota
-                                        </span>
+                                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">Tanpa batas kuota</span>
                                     )}
                                     {Number(program.is_featured ?? 0) === 1 && (
-                                        <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">
-                                            Unggulan
-                                        </span>
+                                        <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">Unggulan</span>
                                     )}
                                 </div>
                                 {program.subjects?.length > 0 && (
                                     <div className="mt-3 flex flex-wrap gap-2">
                                         {program.subjects.map((subject) => (
-                                            <span
-                                                key={`${program.id}-${subject}`}
-                                                className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
-                                            >
+                                            <span key={`${program.id}-${subject}`} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
                                                 {subject}
                                             </span>
                                         ))}
@@ -421,82 +461,160 @@ export default function Programs() {
                     })}
                 </div>
 
-                {/* Packages Table */}
+                {/* Package prices by program */}
                 <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
-                    <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                    <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h2 className="font-semibold text-slate-800">Paket Belajar</h2>
-                            <p className="mt-0.5 text-sm text-slate-500">Daftar paket berdasarkan data yang tersimpan</p>
+                            <h2 className="font-semibold text-slate-800">Daftar Harga per Program</h2>
+                            <p className="mt-0.5 text-sm text-slate-500">Pilih program untuk melihat dan mengatur pilihan harganya.</p>
                         </div>
-                        {canCreate && (
+                        {canCreate && activePriceProgram && (
                             <button
                                 type="button"
-                                onClick={() => openPackageModal()}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100"
+                                onClick={() => openPackageModal(null, activePriceProgram.id)}
+                                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-primary px-3.5 py-2 text-xs font-semibold text-white transition hover:opacity-90"
                             >
-                                {icons.plus} Tambah Paket
+                                {icons.plus} Tambah Harga {activePriceProgram.name}
                             </button>
                         )}
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
-                                    <th className="px-5 py-3 font-medium">Nama Paket</th>
-                                    <th className="px-5 py-3 font-medium">Jenjang</th>
-                                    <th className="px-5 py-3 font-medium">Sesi</th>
-                                    <th className="px-5 py-3 font-medium">Mode</th>
-                                    <th className="px-5 py-3 font-medium">Jadwal</th>
-                                    <th className="px-5 py-3 font-medium">Status</th>
-                                    <th className="px-5 py-3 font-medium text-right">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {packages.map((pkg) => {
-                                    const statusLabel = pkg.is_active ? 'Aktif' : 'Nonaktif';
 
-                                    return (
-                                        <tr key={pkg.id} className="transition hover:bg-slate-50">
-                                            <td className="px-5 py-4 font-medium text-slate-800">{pkg.name}</td>
-                                            <td className="px-5 py-4 text-slate-600">{pkg.level || '-'}</td>
-                                            <td className="px-5 py-4 text-slate-600">{pkg.sessions ?? '-'}</td>
-                                            <td className="px-5 py-4 text-slate-600">{pkg.mode || '-'}</td>
-                                            <td className="px-5 py-4 text-slate-600">{pkg.schedule || '-'}</td>
-                                            <td className="px-5 py-4">
-                                                <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[statusLabel]}`}>
-                                                    {statusLabel}
+                    {programs.length > 0 ? (
+                        <>
+                            <div className="overflow-x-auto border-b border-slate-100 px-3 pt-3">
+                                <div role="tablist" aria-label="Pilih program untuk daftar harga" className="flex min-w-max gap-1">
+                                    {programs.map((program) => {
+                                        const programPackages = packages.filter((pkg) => String(pkg.program_id) === String(program.id));
+                                        const startingPrice =
+                                            programPackages.length > 0 ? Math.min(...programPackages.map((pkg) => Number(pkg.price ?? 0))) : null;
+                                        const isActive = String(program.id) === resolvedPriceProgramId;
+
+                                        return (
+                                            <button
+                                                key={program.id}
+                                                id={`price-tab-${program.id}`}
+                                                type="button"
+                                                role="tab"
+                                                aria-selected={isActive}
+                                                aria-controls="program-price-panel"
+                                                onClick={() => setActivePriceProgramId(String(program.id))}
+                                                className={`rounded-t-xl px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
+                                                    isActive ? 'bg-brand-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                                }`}
+                                            >
+                                                <span className="block text-sm font-semibold">{program.name}</span>
+                                                <span className={`mt-0.5 block text-xs ${isActive ? 'text-white/80' : 'text-slate-500'}`}>
+                                                    {programPackages.length} pilihan
+                                                    {startingPrice !== null ? ` · mulai ${formatCurrency(startingPrice)}` : ''}
                                                 </span>
-                                            </td>
-                                            <td className="px-5 py-4">
-                                                <div className="flex justify-end gap-1">
-                                                    {canEdit && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openPackageModal(pkg)}
-                                                            className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600"
-                                                            title="Edit"
-                                                        >
-                                                            {icons.edit}
-                                                        </button>
-                                                    )}
-                                                    {canDelete && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openDeleteModal('package', pkg)}
-                                                            className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
-                                                            title="Hapus"
-                                                        >
-                                                            {icons.trash}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div id="program-price-panel" role="tabpanel" aria-labelledby={`price-tab-${activePriceProgram.id}`}>
+                                <div className="flex flex-col gap-2 border-b border-slate-100 bg-slate-50/70 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-800">{activePriceProgram.name}</p>
+                                        <p className="mt-0.5 text-xs text-slate-500">
+                                            {activePriceProgram.level || 'Semua jenjang'} · {formatModeLabel(activePriceProgram.mode)}
+                                        </p>
+                                    </div>
+                                    <p className="text-sm text-slate-600">
+                                        <span className="font-semibold text-slate-900">{visiblePackages.length}</span> pilihan
+                                        {activeStartingPrice !== null && (
+                                            <>
+                                                {' '}
+                                                · mulai{' '}
+                                                <span className="font-semibold tabular-nums text-emerald-700">{formatCurrency(activeStartingPrice)}</span>
+                                            </>
+                                        )}
+                                    </p>
+                                </div>
+
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-[760px] w-full text-left text-sm">
+                                        <thead>
+                                            <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                                <th className="px-5 py-3 font-medium">Jenjang</th>
+                                                <th className="px-5 py-3 font-medium">Pertemuan</th>
+                                                <th className="px-5 py-3 font-medium">Harga</th>
+                                                <th className="px-5 py-3 font-medium">Kapasitas</th>
+                                                <th className="px-5 py-3 font-medium">Status</th>
+                                                <th className="px-5 py-3 font-medium text-right">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {visiblePackages.map((pkg) => {
+                                                const statusLabel = pkg.is_active ? 'Aktif' : 'Nonaktif';
+
+                                                return (
+                                                    <tr key={pkg.id} className="transition hover:bg-slate-50">
+                                                        <td className="px-5 py-4 font-medium text-slate-700">{pkg.level || '-'}</td>
+                                                        <td className="px-5 py-4 text-slate-600">
+                                                            <p className="font-medium text-slate-800">{pkg.sessions ? `${pkg.sessions}x / bulan` : '-'}</p>
+                                                            <p className="mt-0.5 text-xs text-slate-500">
+                                                                {pkg.intensity || pkg.schedule || 'Jadwal fleksibel'}
+                                                            </p>
+                                                        </td>
+                                                        <td className="px-5 py-4 font-semibold tabular-nums text-slate-900">{formatCurrency(pkg.price)}</td>
+                                                        <td className="px-5 py-4 text-slate-600">
+                                                            {pkg.max_participants ? `Maks. ${pkg.max_participants} siswa` : 'Tidak dibatasi'}
+                                                        </td>
+                                                        <td className="px-5 py-4">
+                                                            <span
+                                                                className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[statusLabel]}`}
+                                                            >
+                                                                {statusLabel}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-5 py-4">
+                                                            <div className="flex justify-end gap-1">
+                                                                {canEdit && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => openPackageModal(pkg)}
+                                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600"
+                                                                        title="Edit"
+                                                                    >
+                                                                        {icons.edit}
+                                                                    </button>
+                                                                )}
+                                                                {canDelete && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => openDeleteModal('package', pkg)}
+                                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
+                                                                        title="Hapus"
+                                                                    >
+                                                                        {icons.trash}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                            {visiblePackages.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="6" className="px-5 py-10 text-center text-sm text-slate-500">
+                                                        Belum ada pilihan harga untuk {activePriceProgram.name}. Tambahkan harga pertama agar customer dapat
+                                                        memilihnya saat mendaftar.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="px-5 py-10 text-center">
+                            <p className="text-sm font-semibold text-slate-700">Belum ada program</p>
+                            <p className="mt-1 text-sm text-slate-500">Tambahkan program terlebih dahulu sebelum membuat pilihan harga.</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -507,7 +625,13 @@ export default function Programs() {
                 title={editingProgram ? 'Edit Program' : 'Tambah Program Baru'}
                 size="lg"
             >
-                <form onSubmit={(e) => { e.preventDefault(); saveProgramForm(); }} className="space-y-4">
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        saveProgramForm();
+                    }}
+                    className="space-y-4"
+                >
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-1">
                             <FormInput
@@ -607,7 +731,13 @@ export default function Programs() {
                             label="Pengajar Penanggung Jawab"
                             value={programForm.data.teacher_id}
                             onChange={(v) => programForm.setData('teacher_id', v)}
-                            options={[{ value: '', label: 'Tanpa pengajar khusus' }, ...teachersData.map((t) => ({ value: String(t.id), label: t.name }))]}
+                            options={[
+                                { value: '', label: 'Tanpa pengajar khusus' },
+                                ...teachersData.map((t) => ({
+                                    value: String(t.id),
+                                    label: t.name,
+                                })),
+                            ]}
                         />
                         <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700">
                             <input
@@ -671,22 +801,12 @@ export default function Programs() {
             </Modal>
 
             {/* Program Detail Modal */}
-            <Modal
-                isOpen={showProgramDetailModal}
-                onClose={() => setShowProgramDetailModal(false)}
-                title="Detail Program"
-                size="lg"
-            >
+            <Modal isOpen={showProgramDetailModal} onClose={() => setShowProgramDetailModal(false)} title="Detail Program" size="lg">
                 {programDetail && (
                     <div className="space-y-4">
                         <div className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
                             {programDetail.image_url ? (
-                                <img
-                                    src={programDetail.image_url}
-                                    alt={programDetail.name}
-                                    className="h-56 w-full object-cover"
-                                    loading="lazy"
-                                />
+                                <img src={programDetail.image_url} alt={programDetail.name} className="h-56 w-full object-cover" loading="lazy" />
                             ) : (
                                 <div className="flex h-56 items-center justify-center bg-gradient-to-br from-slate-100 via-white to-violet-50">
                                     <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white text-base font-semibold text-violet-600 shadow-sm">
@@ -696,7 +816,9 @@ export default function Programs() {
                             )}
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusStyles[programDetail.is_active ? 'Aktif' : 'Nonaktif']}`}>
+                            <span
+                                className={`rounded-full border px-3 py-1 text-xs font-medium ${statusStyles[programDetail.is_active ? 'Aktif' : 'Nonaktif']}`}
+                            >
                                 {programDetail.is_active ? 'Aktif' : 'Nonaktif'}
                             </span>
                             <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600">
@@ -709,9 +831,7 @@ export default function Programs() {
                         </div>
                         <div className="rounded-xl border border-slate-100 bg-white p-4">
                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Deskripsi</p>
-                            <p className="mt-2 text-sm text-slate-600">
-                                {programDetail.description || 'Belum ada deskripsi program.'}
-                            </p>
+                            <p className="mt-2 text-sm text-slate-600">{programDetail.description || 'Belum ada deskripsi program.'}</p>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2">
                             <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm">
@@ -727,9 +847,7 @@ export default function Programs() {
                             <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Kuota</p>
                                 <p className="mt-1 font-semibold text-slate-800">
-                                    {programDetail.quota != null
-                                        ? `${programDetail.quota_filled ?? 0}/${programDetail.quota} terisi`
-                                        : 'Tanpa batas'}
+                                    {programDetail.quota != null ? `${programDetail.quota_filled ?? 0}/${programDetail.quota} terisi` : 'Tanpa batas'}
                                 </p>
                             </div>
                             <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm">
@@ -775,56 +893,113 @@ export default function Programs() {
             <Modal
                 isOpen={showPackageModal}
                 onClose={() => setShowPackageModal(false)}
-                title={editingPackage ? 'Edit Paket' : 'Tambah Paket Baru'}
+                title={editingPackage ? 'Edit Pilihan Harga' : 'Tambah Pilihan Harga'}
+                size="lg"
             >
-                <form onSubmit={(e) => { e.preventDefault(); savePackageForm(); }} className="space-y-4">
-                    <FormInput
-                        label="Nama Paket"
-                        value={packageForm.name}
-                        onChange={(v) => setPackageForm({ ...packageForm, name: v })}
-                        placeholder="contoh: Reguler SD"
-                        required
-                    />
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormSelect
-                            label="Jenjang"
-                            value={packageForm.level}
-                            onChange={(v) => setPackageForm({ ...packageForm, level: v })}
-                            options={levelOptions}
-                        />
-                        <FormInput
-                            label="Mata Pelajaran"
-                            value={packageForm.subjects}
-                            onChange={(v) => setPackageForm({ ...packageForm, subjects: v })}
-                            placeholder="contoh: Matematika, IPA"
-                        />
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        savePackageForm();
+                    }}
+                    className="space-y-4"
+                >
+                    <div className="rounded-xl bg-violet-50 px-4 py-3 text-sm text-violet-800">
+                        Nama pilihan akan dibuat otomatis dari program, jenjang, dan jumlah pertemuan.
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-3">
-                        <FormInput
-                            label="Jumlah Sesi"
-                            value={packageForm.sessions}
-                            onChange={(v) => setPackageForm({ ...packageForm, sessions: v })}
-                            placeholder="8"
-                        />
+                    <div className="space-y-1">
                         <FormSelect
-                            label="Mode"
-                            value={packageForm.mode}
-                            onChange={(v) => setPackageForm({ ...packageForm, mode: v })}
-                            options={packageModeOptions}
+                            label="Program"
+                            value={packageForm.data.program_id}
+                            onChange={(v) => packageForm.setData('program_id', v)}
+                            options={programs.map((program) => ({
+                                value: String(program.id),
+                                label: program.name,
+                            }))}
+                            required
+                        />
+                        {packageForm.errors.program_id && <p className="text-xs text-rose-500">{packageForm.errors.program_id}</p>}
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1">
+                            <FormSelect
+                                label="Jenjang"
+                                value={packageForm.data.level}
+                                onChange={(v) => packageForm.setData('level', v)}
+                                options={levelOptions}
+                                required
+                            />
+                            {packageForm.errors.level && <p className="text-xs text-rose-500">{packageForm.errors.level}</p>}
+                        </div>
+                        <div className="space-y-1">
+                            <FormInput
+                                label="Jumlah Pertemuan / Bulan"
+                                value={packageForm.data.sessions}
+                                onChange={(v) => packageForm.setData('sessions', v)}
+                                placeholder="contoh: 8"
+                                required
+                            />
+                            {packageForm.errors.sessions && <p className="text-xs text-rose-500">{packageForm.errors.sessions}</p>}
+                        </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormInput
+                            label="Intensitas"
+                            value={packageForm.data.intensity}
+                            onChange={(v) => packageForm.setData('intensity', v)}
+                            placeholder="contoh: 2x / minggu"
+                        />
+                        <div className="space-y-1">
+                            <FormInput
+                                label="Harga per Bulan"
+                                value={packageForm.data.price}
+                                onChange={(v) => packageForm.setData('price', v)}
+                                placeholder="contoh: 400000"
+                                required
+                            />
+                            {packageForm.errors.price && <p className="text-xs text-rose-500">{packageForm.errors.price}</p>}
+                        </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormInput
+                            label="Maksimal Siswa"
+                            value={packageForm.data.max_participants}
+                            onChange={(v) => packageForm.setData('max_participants', v)}
+                            placeholder="1 untuk privat, 5 untuk reguler"
+                        />
+                        <div className="space-y-1">
+                            <FormSelect
+                                label="Mode Belajar"
+                                value={packageForm.data.mode}
+                                onChange={(v) => packageForm.setData('mode', v)}
+                                options={packageModeOptions}
+                                required
+                            />
+                            {packageForm.errors.mode && <p className="text-xs text-rose-500">{packageForm.errors.mode}</p>}
+                        </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormInput
+                            label="Keterangan Jadwal"
+                            value={packageForm.data.schedule}
+                            onChange={(v) => packageForm.setData('schedule', v)}
+                            placeholder="contoh: Senin - Jumat, fleksibel"
                         />
                         <FormInput
-                            label="Jadwal"
-                            value={packageForm.schedule}
-                            onChange={(v) => setPackageForm({ ...packageForm, schedule: v })}
-                            placeholder="contoh: Senin - Jumat"
+                            label="Urutan Tampil"
+                            value={packageForm.data.sort_order}
+                            onChange={(v) => packageForm.setData('sort_order', v)}
+                            placeholder="0"
                         />
                     </div>
                     <FormSelect
                         label="Status"
-                        value={packageForm.is_active ? 'Aktif' : 'Nonaktif'}
-                        onChange={(v) => setPackageForm({ ...packageForm, is_active: v === 'Aktif' })}
+                        value={packageForm.data.is_active ? 'Aktif' : 'Nonaktif'}
+                        onChange={(v) => packageForm.setData('is_active', v === 'Aktif')}
                         options={statusOptions}
                     />
+                    {packageForm.hasErrors && (
+                        <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">Periksa kembali data pilihan harga yang ditandai.</p>
+                    )}
                     <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
                         <button
                             type="button"
@@ -837,7 +1012,7 @@ export default function Programs() {
                             type="submit"
                             className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
                         >
-                            {editingPackage ? 'Simpan Perubahan' : 'Tambah Paket'}
+                            {packageForm.processing ? 'Menyimpan...' : editingPackage ? 'Simpan Perubahan' : 'Tambah Pilihan Harga'}
                         </button>
                     </div>
                 </form>
@@ -848,15 +1023,11 @@ export default function Programs() {
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}
                 title="Konfirmasi Hapus"
-                message={(
+                message={
                     <>
-                        Apakah Anda yakin ingin menghapus{' '}
-                        <span className="font-semibold text-slate-800">
-                            {deleteTarget.item?.name}
-                        </span>
-                        ?
+                        Apakah Anda yakin ingin menghapus <span className="font-semibold text-slate-800">{deleteTarget.item?.name}</span>?
                     </>
-                )}
+                }
                 onConfirm={confirmDelete}
             />
         </>

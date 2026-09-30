@@ -460,26 +460,31 @@ export default function AdminLayout({ children }) {
         () => menu.filter((item) => item.children).map((item) => item.label),
         [menu]
     );
-    const [openGroups, setOpenGroups] = useState(() => (
-        groupLabels.reduce((acc, label) => {
-            acc[label] = true;
-            return acc;
-        }, {})
-    ));
 
-    useEffect(() => {
-        setOpenGroups((prev) => {
-            const missing = groupLabels.filter((label) => prev[label] === undefined);
-            if (missing.length === 0) {
-                return prev;
+    // Initial state: only expand the group that contains the current active URL
+    const [openGroups, setOpenGroups] = useState(() => {
+        const initial = {};
+        menu.forEach((item) => {
+            if (item.children) {
+                const isGroupActive = item.children.some((child) => child.href === url);
+                initial[item.label] = isGroupActive;
             }
-            const next = { ...prev };
-            missing.forEach((label) => {
-                next[label] = true;
-            });
-            return next;
         });
-    }, [groupLabels]);
+        return initial;
+    });
+
+    // Automatically expand the group containing the active page on navigation
+    useEffect(() => {
+        const activeGroup = menu.find((item) =>
+            item.children?.some((child) => child.href === url)
+        );
+        if (activeGroup) {
+            setOpenGroups((prev) => ({
+                ...prev,
+                [activeGroup.label]: true,
+            }));
+        }
+    }, [url, menu]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -504,9 +509,9 @@ export default function AdminLayout({ children }) {
         <div className="min-h-screen bg-brand-shell text-slate-900">
             <div className="flex min-h-screen">
                 {/* Desktop Sidebar */}
-                <aside className="hidden w-72 flex-col border-r border-slate-200/50 bg-white/80 backdrop-blur-xl md:flex">
+                <aside className="hidden w-72 flex-col border-r border-slate-200/50 bg-white/80 backdrop-blur-xl md:flex h-screen sticky top-0">
                     {/* Sidebar Header */}
-                    <div className="border-b border-slate-100 px-5 py-5">
+                    <div className="shrink-0 border-b border-slate-100 px-5 py-5">
                         <Link href="/admin" className="flex items-center gap-3 group">
                             {appLogo ? (
                                 <img src={appLogo} alt="Logo" className="h-12 w-12 rounded-2xl object-contain shadow-brand transition-transform group-hover:scale-105" />
@@ -523,8 +528,8 @@ export default function AdminLayout({ children }) {
                     </div>
 
                     {/* Navigation */}
-                    <nav className="flex-1 overflow-y-auto px-4 py-5">
-                        <div className="space-y-6">
+                    <nav className="flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
+                        <div className="space-y-3">
                             {menu.map((item) => {
                                 if (!item.children) {
                                     const isActive = url === item.href;
@@ -560,59 +565,61 @@ export default function AdminLayout({ children }) {
                                 }
 
                                 const isGroupActive = item.children.some((child) => child.href === url);
-                                const isGroupOpen = openGroups[item.label] ?? true;
+                                const isGroupOpen = openGroups[item.label] ?? isGroupActive;
 
                                 return (
-                                    <div key={item.label}>
+                                    <div key={item.label} className="rounded-2xl transition-colors">
                                         <button
                                             type="button"
                                             onClick={() => setOpenGroups((prev) => ({
                                                 ...prev,
                                                 [item.label]: !isGroupOpen,
                                             }))}
-                                            className={`mb-3 flex w-full items-center gap-2 px-3 text-xs font-bold uppercase tracking-wider transition ${
-                                                isGroupActive ? 'text-brand-primary' : 'text-slate-400'
+                                            className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider transition ${
+                                                isGroupActive ? 'text-brand-primary bg-violet-50/70' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                                             }`}
                                         >
-                                            <span className={`flex h-6 w-6 items-center justify-center rounded-md ${
-                                                isGroupActive ? 'bg-brand-soft text-brand-primary' : 'bg-slate-100 text-slate-400'
-                                            }`}>
-                                                {icons[item.icon]}
+                                            <span className="flex items-center gap-2.5">
+                                                <span className={`flex h-6 w-6 items-center justify-center rounded-md ${
+                                                    isGroupActive ? 'bg-brand-soft text-brand-primary' : 'bg-slate-100 text-slate-400'
+                                                }`}>
+                                                    {icons[item.icon]}
+                                                </span>
+                                                <span>{item.label}</span>
                                             </span>
-                                            <span className="flex-1 text-left">{item.label}</span>
-                                            <span className={`text-slate-300 transition-transform ${isGroupOpen ? 'rotate-180' : ''}`}>
+                                            <span className={`text-slate-400 transition-transform duration-200 ${isGroupOpen ? 'rotate-180' : ''}`}>
                                                 {icons.chevronDown}
                                             </span>
                                         </button>
-                                        <div className={`space-y-1 pl-2 ${isGroupOpen ? '' : 'hidden'}`}>
+                                        <div className={`mt-1 space-y-0.5 pl-3 border-l-2 border-slate-100 ml-4 transition-all ${isGroupOpen ? 'block' : 'hidden'}`}>
                                             {item.children.map((child) => {
                                                 const isActive = url === child.href;
                                                 return (
                                                     <Link
                                                         key={child.href}
                                                         href={child.href}
-                                                        className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition-all ${
+                                                        className={`flex items-center justify-between rounded-xl px-3 py-2 transition-all ${
                                                             isActive
-                                                                ? 'bg-brand-gradient text-white shadow-md shadow-brand'
-                                                                : 'text-slate-600 hover:bg-slate-50'
+                                                                ? 'bg-brand-gradient text-white shadow-xs'
+                                                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                                         }`}
                                                     >
-                                                        <span className="flex items-center gap-3">
-                                                            <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                                                        <span className="flex items-center gap-2.5">
+                                                            <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${
                                                                 isActive
                                                                     ? 'bg-white/20 text-white'
-                                                                    : 'bg-slate-100 text-slate-500'
+                                                                    : 'bg-slate-100 text-slate-400'
                                                             }`}>
                                                                 {icons[child.icon]}
                                                             </span>
-                                                            <span className="text-sm font-medium">{child.label}</span>
+                                                            <span className="text-xs font-semibold">{child.label}</span>
                                                         </span>
                                                         {child.badge && (
-                                                            <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                                                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                                                                 isActive ? 'bg-white/20 text-white' : 'bg-brand-secondary-soft text-brand-secondary'
-                                                        }`}>
-                                                            {child.badge}
-                                                        </span>
+                                                            }`}>
+                                                                {child.badge}
+                                                            </span>
                                                         )}
                                                     </Link>
                                                 );
@@ -625,7 +632,7 @@ export default function AdminLayout({ children }) {
                     </nav>
 
                     {/* Sidebar Footer */}
-                    <div className="border-t border-slate-100 p-4 space-y-3">
+                    <div className="shrink-0 border-t border-slate-100 p-4 space-y-3">
                         <a
                             href="/"
                             target="_blank"
@@ -812,12 +819,12 @@ export default function AdminLayout({ children }) {
 
                 {/* Sidebar Panel */}
                 <aside
-                    className={`absolute left-0 top-0 h-full w-72 bg-white shadow-2xl transition-transform duration-300 ease-out ${
+                    className={`absolute left-0 top-0 h-full w-72 bg-white shadow-2xl transition-transform duration-300 ease-out flex flex-col ${
                         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
                     }`}
                 >
                     {/* Mobile Sidebar Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                    <div className="shrink-0 flex items-center justify-between border-b border-slate-100 px-5 py-4">
                         <Link href="/admin" className="flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
                             {appLogo ? (
                                 <img src={appLogo} alt="Logo" className="h-10 w-10 rounded-xl object-contain shadow-lg" />
@@ -841,8 +848,8 @@ export default function AdminLayout({ children }) {
                     </div>
 
                     {/* Mobile Navigation */}
-                    <nav className="flex-1 overflow-y-auto px-4 py-4">
-                        <div className="space-y-5">
+                    <nav className="flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
+                        <div className="space-y-3">
                             {menu.map((item) => {
                                 if (!item.children) {
                                     const isActive = url === item.href;
@@ -877,26 +884,26 @@ export default function AdminLayout({ children }) {
                                 }
 
                                 const isGroupActive = item.children.some((child) => child.href === url);
-                                const isGroupOpen = openGroups[item.label] ?? true;
+                                const isGroupOpen = openGroups[item.label] ?? isGroupActive;
 
                                 return (
-                                    <div key={item.label}>
+                                    <div key={item.label} className="rounded-2xl transition-colors">
                                         <button
                                             type="button"
                                             onClick={() => setOpenGroups((prev) => ({
                                                 ...prev,
                                                 [item.label]: !isGroupOpen,
                                             }))}
-                                            className={`mb-2 flex w-full items-center gap-2 px-3 text-xs font-bold uppercase tracking-wider transition ${
-                                                isGroupActive ? 'text-brand-primary' : 'text-slate-400'
+                                            className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider transition ${
+                                                isGroupActive ? 'text-brand-primary bg-violet-50/70' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                                             }`}
                                         >
                                             <span className="flex-1 text-left">{item.label}</span>
-                                            <span className={`text-slate-300 transition-transform ${isGroupOpen ? 'rotate-180' : ''}`}>
+                                            <span className={`text-slate-400 transition-transform duration-200 ${isGroupOpen ? 'rotate-180' : ''}`}>
                                                 {icons.chevronDown}
                                             </span>
                                         </button>
-                                        <div className={`space-y-1 ${isGroupOpen ? '' : 'hidden'}`}>
+                                        <div className={`mt-1 space-y-0.5 pl-3 border-l-2 border-slate-100 ml-4 transition-all ${isGroupOpen ? 'block' : 'hidden'}`}>
                                             {item.children.map((child) => {
                                                 const isActive = url === child.href;
                                                 return (
@@ -904,23 +911,23 @@ export default function AdminLayout({ children }) {
                                                         key={child.href}
                                                         href={child.href}
                                                         onClick={() => setIsMobileMenuOpen(false)}
-                                                        className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition ${
+                                                        className={`flex items-center justify-between rounded-xl px-3 py-2 transition ${
                                                             isActive
-                                                            ? 'bg-brand-primary text-white'
+                                                            ? 'bg-brand-primary text-white shadow-xs'
                                                             : 'text-slate-600 hover:bg-slate-50'
                                                     }`}
                                                 >
-                                                        <span className="flex items-center gap-3">
-                                                            <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                                                                isActive ? 'bg-white/20' : 'bg-slate-100'
+                                                        <span className="flex items-center gap-2.5">
+                                                            <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${
+                                                                isActive ? 'bg-white/20' : 'bg-slate-100 text-slate-400'
                                                             }`}>
                                                                 {icons[child.icon]}
                                                             </span>
-                                                            <span className="text-sm font-medium">{child.label}</span>
+                                                            <span className="text-xs font-semibold">{child.label}</span>
                                                         </span>
                                                         {child.badge && (
-                                                            <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                                                                isActive ? 'bg-white/20' : 'bg-brand-secondary-soft text-brand-secondary'
+                                                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                                                isActive ? 'bg-white/20 text-white' : 'bg-brand-secondary-soft text-brand-secondary'
                                                         }`}>
                                                             {child.badge}
                                                         </span>
@@ -936,7 +943,7 @@ export default function AdminLayout({ children }) {
                     </nav>
 
                     {/* Mobile Sidebar Footer */}
-                    <div className="border-t border-slate-100 p-4 space-y-3">
+                    <div className="shrink-0 border-t border-slate-100 p-4 space-y-3">
                         <a
                             href="/"
                             target="_blank"

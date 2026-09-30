@@ -25,6 +25,13 @@ class UpdateStudentRequest extends FormRequest
                 'integer',
                 Rule::exists('programs', 'id')->where('is_active', true),
             ],
+            'package_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('packages', 'id')->where(fn ($query) => $query
+                    ->where('is_active', true)
+                    ->where('program_id', $this->input('program_id'))),
+            ],
             'package' => ['nullable', 'string', 'max:100'],
             'parent_contact' => ['nullable', 'string', 'max:255'],
             'preferred_mode' => ['nullable', 'string', 'max:100'],
