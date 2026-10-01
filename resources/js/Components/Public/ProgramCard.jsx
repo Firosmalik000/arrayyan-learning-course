@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Link } from '@inertiajs/react';
 import Badge from './Badge';
 
@@ -6,6 +7,7 @@ export default function ProgramCard({
     language = 'id',
     featured = false,
     className = '',
+    showDescription = true,
 }) {
     if (!program) return null;
 
@@ -21,7 +23,30 @@ export default function ProgramCard({
     const mode = localize(program.mode);
     const subjects = Array.isArray(program.subjects) ? program.subjects : [];
     const imageUrl = program.image_url || program.imageUrl;
-    const price = program.price;
+
+    const price = useMemo(() => {
+        const prices = [];
+        if (program.price !== null && program.price !== undefined && program.price !== '') {
+            const p = Number(program.price);
+            if (!isNaN(p)) prices.push(p);
+        }
+        if (program.base_price !== null && program.base_price !== undefined && program.base_price !== '') {
+            const bp = Number(program.base_price);
+            if (!isNaN(bp)) prices.push(bp);
+        }
+        if (Array.isArray(program.packages)) {
+            program.packages.forEach((pkg) => {
+                if (pkg.price !== null && pkg.price !== undefined && pkg.price !== '') {
+                    const pp = Number(pkg.price);
+                    if (!isNaN(pp)) prices.push(pp);
+                }
+            });
+        }
+        if (prices.length > 0) {
+            return Math.min(...prices);
+        }
+        return program.price;
+    }, [program.price, program.base_price, program.packages]);
 
     const formatPrice = (amount) => {
         if (amount === null || amount === undefined || amount === '') {
@@ -102,7 +127,7 @@ export default function ProgramCard({
                         </Link>
                     </h3>
 
-                    {description && (
+                    {showDescription && description && (
                         <p className="mt-2 text-xs sm:text-sm text-slate-500 line-clamp-2 leading-relaxed">
                             {description}
                         </p>
@@ -132,7 +157,7 @@ export default function ProgramCard({
                 <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
                     <div>
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
-                            Mulai dari
+                            {language === 'en' ? 'Starts from' : 'Mulai dari'}
                         </span>
                         <span className="font-display text-sm sm:text-base font-extrabold text-slate-900">
                             {formatPrice(price)}

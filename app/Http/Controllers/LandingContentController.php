@@ -503,7 +503,7 @@ class LandingContentController extends Controller
             'name' => $program->name,
             'level' => $program->level,
             'description' => $program->description,
-            'price' => $program->packages->whereNotNull('price')->min('price') ?? $program->price,
+            'price' => $program->startingPrice(),
             'base_price' => $program->price,
             'duration' => $program->duration,
             'quota' => $program->quota,

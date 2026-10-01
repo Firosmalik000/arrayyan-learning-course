@@ -11,7 +11,7 @@
     "name": "vendor-react"
   },
   "resources/js/app.jsx": {
-    "file": "assets/app-DWR3WRu0.js",
+    "file": "assets/app-Cb4Eb8f8.js",
     "name": "app",
     "src": "resources/js/app.jsx",
     "isEntry": true,
@@ -20,7 +20,7 @@
       "_vendor-inertia-k7FJVHLV.js"
     ],
     "css": [
-      "assets/app-plbDBfDa.css"
+      "assets/app-BsN4dL_y.css"
     ]
   }
 }

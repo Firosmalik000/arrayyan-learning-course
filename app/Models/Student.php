@@ -15,6 +15,7 @@ class Student extends Model
         'address',
         'school_name',
         'level',
+        'class_level',
         'subjects',
         'program_id',
         'package_id',

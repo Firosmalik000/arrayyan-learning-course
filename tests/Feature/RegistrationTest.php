@@ -95,6 +95,40 @@ class RegistrationTest extends TestCase
         ]);
     }
 
+    public function test_student_registration_stores_with_class_level(): void
+    {
+        $program = Program::create([
+            'name' => 'Reguler',
+            'level' => 'SD',
+            'is_active' => true,
+        ]);
+
+        $payload = [
+            'student_name' => 'Aisyah Putri',
+            'address' => 'Jl. Mawar No. 12',
+            'school_name' => 'SDIT Nurul Fikri',
+            'level' => 'SD',
+            'class_level' => 'Kelas 4',
+            'subjects' => 'Matematika, IPA',
+            'program_id' => $program->id,
+            'package' => '8 Sesi/Bulan',
+            'parent_contact' => '081234567890',
+            'preferred_mode' => 'Offline',
+        ];
+
+        $response = $this->post(route('registrations.student'), $payload);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('student_registrations', [
+            'student_name' => 'Aisyah Putri',
+            'level' => 'SD',
+            'class_level' => 'Kelas 4',
+            'program_id' => $program->id,
+        ]);
+    }
+
     public function test_student_registration_requires_mandatory_fields(): void
     {
         $response = $this->post(route('registrations.student'), []);
@@ -327,6 +361,26 @@ class RegistrationTest extends TestCase
         ]);
         $this->assertNotNull($reg->fresh()->approved_at);
         $this->assertDatabaseHas('students', ['name' => 'Anak Pintar', 'is_active' => true, 'created_by' => $user->id]);
+    }
+
+    public function test_approve_student_copies_class_level_to_student(): void
+    {
+        $user = $this->actingAsAdmin();
+        $reg = StudentRegistration::factory()->create([
+            'student_name' => 'Anak Jenius',
+            'level' => 'SD',
+            'class_level' => 'Kelas 5',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.student.approve', $reg));
+
+        $this->assertDatabaseHas('students', [
+            'name' => 'Anak Jenius',
+            'level' => 'SD',
+            'class_level' => 'Kelas 5',
+            'is_active' => true,
+        ]);
     }
 
     public function test_reject_student_updates_status(): void

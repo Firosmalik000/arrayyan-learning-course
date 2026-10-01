@@ -62,12 +62,17 @@ export default function ProgramIndex() {
 
     const rawPrograms = (props.programs || []).map((item) => ({
         id: item.id,
+        slug: item.slug || item.id,
         name: localizeField(item.name, language),
         level: localizeField(item.level, language),
         description: localizeField(item.description, language),
         subjects: Array.isArray(item.subjects) ? item.subjects : [],
         mode: localizeField(item.mode, language),
         imageUrl: item.image_url || null,
+        image_url: item.image_url || null,
+        price: item.price,
+        base_price: item.base_price,
+        packages: Array.isArray(item.packages) ? item.packages : [],
     }));
 
     // Extract unique levels for filter tabs
@@ -243,6 +248,7 @@ export default function ProgramIndex() {
                                     key={program.id}
                                     program={program}
                                     language={language}
+                                    showDescription={false}
                                 />
                             ))}
                         </div>

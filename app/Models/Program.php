@@ -61,12 +61,21 @@ class Program extends Model
 
     public function startingPrice(): ?string
     {
-        $packagePrice = $this->packages()
-            ->where('is_active', true)
+        $packagePrices = ($this->relationLoaded('packages')
+            ? $this->packages->where('is_active', true)
+            : $this->packages()->where('is_active', true)->get())
             ->whereNotNull('price')
-            ->min('price');
+            ->pluck('price')
+            ->filter(fn ($price) => $price !== null && $price !== '')
+            ->map(fn ($price) => (float) $price);
 
-        return $packagePrice !== null ? (string) $packagePrice : $this->price;
+        $prices = collect();
+        if ($this->price !== null && $this->price !== '') {
+            $prices->push((float) $this->price);
+        }
+        $prices = $prices->merge($packagePrices);
+
+        return $prices->isNotEmpty() ? number_format((float) $prices->min(), 2, '.', '') : null;
     }
 
     public function quotaFilled(): int

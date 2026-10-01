@@ -594,6 +594,7 @@ class MasterDataController extends Controller
             'address' => $student->address,
             'school_name' => $student->school_name,
             'level' => $student->level,
+            'class_level' => $student->class_level,
             'subjects' => $student->subjects,
             'program' => $student->programItem?->name ?? $student->program,
             'package_id' => $student->package_id,

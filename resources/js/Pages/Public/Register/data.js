@@ -29,6 +29,40 @@ export const packageOptions = [
     { value: '20', label: '20 pertemuan/bulan' },
 ];
 
+export const LEVEL_OPTIONS = [
+    { value: 'TK', label: 'TK / PAUD' },
+    { value: 'SD', label: 'SD (Sekolah Dasar)' },
+    { value: 'SMP', label: 'SMP (Sekolah Menengah Pertama)' },
+    { value: 'SMA', label: 'SMA / SMK' },
+];
+
+export const CLASS_OPTIONS_BY_LEVEL = {
+    TK: [
+        { value: 'PAUD', label: 'PAUD' },
+        { value: 'TK A', label: 'TK A' },
+        { value: 'TK B', label: 'TK B' },
+    ],
+    SD: [
+        { value: 'Kelas 1', label: 'Kelas 1' },
+        { value: 'Kelas 2', label: 'Kelas 2' },
+        { value: 'Kelas 3', label: 'Kelas 3' },
+        { value: 'Kelas 4', label: 'Kelas 4' },
+        { value: 'Kelas 5', label: 'Kelas 5' },
+        { value: 'Kelas 6', label: 'Kelas 6' },
+    ],
+    SMP: [
+        { value: 'Kelas 7', label: 'Kelas 7' },
+        { value: 'Kelas 8', label: 'Kelas 8' },
+        { value: 'Kelas 9', label: 'Kelas 9' },
+    ],
+    SMA: [
+        { value: 'Kelas 10', label: 'Kelas 10' },
+        { value: 'Kelas 11', label: 'Kelas 11' },
+        { value: 'Kelas 12', label: 'Kelas 12' },
+        { value: 'Alumni / Gap Year', label: 'Alumni / Gap Year' },
+    ],
+};
+
 export const formFields = {
     student: {
         id: {
@@ -36,6 +70,7 @@ export const formFields = {
             address: 'Alamat',
             schoolName: 'Nama sekolah',
             level: 'Jenjang',
+            classLevel: 'Kelas',
             subjects: 'Mata pelajaran',
             program: 'Program',
             package: 'Pilihan pertemuan dan harga',
@@ -48,6 +83,7 @@ export const formFields = {
             address: 'Address',
             schoolName: 'School name',
             level: 'Grade level',
+            classLevel: 'Grade / Class',
             subjects: 'Subjects',
             program: 'Program',
             package: 'Sessions and price option',
@@ -85,6 +121,7 @@ export const initialStudentForm = {
     address: '',
     school_name: '',
     level: '',
+    class_level: '',
     subjects: '',
     program_id: '',
     package_id: '',

@@ -8,7 +8,16 @@ import {
     Button,
     SectionHeader,
 } from '@/Components/Public';
-import { pageContent, formFields, initialStudentForm, initialTeacherForm, packageOptions, honeypotStyle } from './data';
+import {
+    pageContent,
+    formFields,
+    initialStudentForm,
+    initialTeacherForm,
+    packageOptions,
+    honeypotStyle,
+    LEVEL_OPTIONS,
+    CLASS_OPTIONS_BY_LEVEL,
+} from './data';
 
 const localizeField = (value, lang) => {
     if (!value) return '';
@@ -21,6 +30,42 @@ const localizeField = (value, lang) => {
 };
 
 const formatCurrency = (value) => `Rp ${Number(value ?? 0).toLocaleString('id-ID')}`;
+
+const DRAFT_KEY = 'alc-student-draft-v2';
+const STEP_KEY = 'alc-student-step-v2';
+const OLD_DRAFT_KEY = 'alc-student-draft-v1';
+
+const getInitialStudentData = (prefilledProgramId) => {
+    let draft = {};
+    if (typeof window !== 'undefined') {
+        try {
+            const raw = window.localStorage.getItem(DRAFT_KEY) || window.localStorage.getItem(OLD_DRAFT_KEY);
+            if (raw) {
+                draft = JSON.parse(raw);
+            }
+        } catch {
+            draft = {};
+        }
+    }
+    return {
+        ...initialStudentForm,
+        ...draft,
+        ...(prefilledProgramId ? { program_id: prefilledProgramId } : {}),
+        form_started_at: String(Math.floor(Date.now() / 1000)),
+    };
+};
+
+const matchesPackageLevel = (pkgLevel, tab) => {
+    if (!tab || tab === 'Semua') return true;
+    if (!pkgLevel) return false;
+    const p = String(pkgLevel).toUpperCase().trim();
+    const t = String(tab).toUpperCase().trim();
+    if (t === 'TK') return p === 'TK' || p.includes('TK') || p.includes('PAUD');
+    if (t === 'SD') return p === 'SD' || p.includes('SD');
+    if (t === 'SMP') return p === 'SMP' || p.includes('SMP');
+    if (t === 'SMA') return p === 'SMA' || p.includes('SMA') || p.includes('SMK');
+    return p === t;
+};
 
 export default function Register() {
     const { props, url } = usePage();
@@ -59,44 +104,49 @@ export default function Register() {
     const selectClass =
         'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100';
 
-    const studentForm = useForm(initialStudentForm);
-
+    // ── Wizard langkah + draft tersimpan aman (terhidrasi tanpa menimpa kosong) ──
+    const initialStudentData = getInitialStudentData(prefilledProgramId);
+    const studentForm = useForm(initialStudentData);
     const teacherForm = useForm(initialTeacherForm);
 
-    // ── Wizard langkah + draft tersimpan ──
-    const DRAFT_KEY = 'alc-student-draft-v1';
-    const [savedDraft] = useState(() => {
+    const [isMounted, setIsMounted] = useState(false);
+    const [step, setStep] = useState(() => {
+        if (typeof window === 'undefined') return 1;
         try {
-            const raw = window.localStorage.getItem(DRAFT_KEY);
-            return raw ? JSON.parse(raw) : {};
+            const saved = window.localStorage.getItem(STEP_KEY);
+            const parsed = parseInt(saved, 10);
+            return parsed >= 1 && parsed <= 4 ? parsed : 1;
         } catch {
-            return {};
+            return 1;
         }
     });
-    const [step, setStep] = useState(1);
     const [stepErrors, setStepErrors] = useState({});
+    const [packageTab, setPackageTab] = useState(initialStudentData.level || 'Semua');
 
     useEffect(() => {
-        const merged = { ...savedDraft };
-        // Prefill dari URL (tombol "Daftar Program Ini") selalu menang atas draft lama.
-        if (prefilledProgramId) merged.program_id = prefilledProgramId;
-        if (Object.keys(merged).length > 0) {
-            studentForm.setData({ ...studentForm.data, ...merged });
-        }
+        setIsMounted(true);
         const startedAt = String(Math.floor(Date.now() / 1000));
-        studentForm.setData('form_started_at', startedAt);
         teacherForm.setData('form_started_at', startedAt);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
+        if (!isMounted) return;
         try {
             window.localStorage.setItem(DRAFT_KEY, JSON.stringify(studentForm.data));
         } catch {
-            // abaikan: draft hanya peningkatan UX
+            // abaikan
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [studentForm.data]);
+    }, [studentForm.data, isMounted]);
+
+    useEffect(() => {
+        if (!isMounted) return;
+        try {
+            window.localStorage.setItem(STEP_KEY, String(step));
+        } catch {
+            // abaikan
+        }
+    }, [step, isMounted]);
 
     const waValid = (value) =>
         /^(?:\+62|62|0)8[0-9]{5,13}$/.test(String(value || '').replace(/[\s\-.()]/g, ''));
@@ -112,7 +162,8 @@ export default function Register() {
         }
         if (current === 2) {
             if (!d.school_name?.trim()) errs.school_name = 'Nama sekolah wajib diisi.';
-            if (!d.level?.trim()) errs.level = 'Jenjang wajib diisi.';
+            if (!d.level?.trim()) errs.level = 'Jenjang wajib dipilih.';
+            if (!d.class_level?.trim()) errs.class_level = 'Kelas wajib dipilih.';
             if (!d.subjects?.trim()) errs.subjects = 'Mata pelajaran wajib diisi.';
         }
         if (current === 3) {
@@ -136,7 +187,7 @@ export default function Register() {
     const stepLabels = ['Data Diri', 'Sekolah', 'Program', 'Review'];
     const serverErrorStep = {
         student_name: 1, parent_contact: 1, address: 1,
-        school_name: 2, level: 2, subjects: 2,
+        school_name: 2, level: 2, class_level: 2, subjects: 2,
         program_id: 3, package_id: 3, package: 3, preferred_mode: 3,
         notes: 4,
     };
@@ -173,13 +224,47 @@ export default function Register() {
     }));
     const availablePackageOptions = dynamicPackageOptions.length > 0
         ? dynamicPackageOptions
-        : packageOptions.map((option) => ({ ...option, id: null, value: option.value }));
+        : packageOptions.map((option) => ({ ...option, id: null, value: option.value, level: null }));
     const selectedPackage = dynamicPackageOptions.find((option) => String(option.id) === String(studentForm.data.package_id));
     const selectedPackageLabel = selectedPackage?.label ||
         packageOptions.find((option) => String(option.value) === String(studentForm.data.package))?.label ||
         studentForm.data.package || '-';
 
+    // ── Pengelompokan Tab Jenjang untuk Paket ──
+    const levelTabsList = ['TK', 'SD', 'SMP', 'SMA'];
+    const availableLevelTabs = levelTabsList.filter((lvl) =>
+        dynamicPackageOptions.some((pkg) => matchesPackageLevel(pkg.level, lvl))
+    );
+    const hasLevelTabs = availableLevelTabs.length > 0;
+    const displayedTabs = hasLevelTabs ? ['Semua', ...availableLevelTabs] : [];
+    const activeTabResolved = displayedTabs.includes(packageTab) ? packageTab : 'Semua';
+
+    const filteredPackageOptions = hasLevelTabs && activeTabResolved !== 'Semua'
+        ? availablePackageOptions.filter((pkg) => matchesPackageLevel(pkg.level, activeTabResolved))
+        : availablePackageOptions;
+
+    const handleLevelChange = (newLevel) => {
+        const validClasses = CLASS_OPTIONS_BY_LEVEL[newLevel] || [];
+        const isCurrentClassValid = validClasses.some((opt) => opt.value === studentForm.data.class_level);
+
+        studentForm.setData({
+            ...studentForm.data,
+            level: newLevel,
+            class_level: isCurrentClassValid ? studentForm.data.class_level : '',
+        });
+        setStepErrors((errors) => ({ ...errors, level: undefined, class_level: undefined }));
+        if (availableLevelTabs.includes(newLevel)) {
+            setPackageTab(newLevel);
+        }
+    };
+
     const handleProgramChange = (programId) => {
+        const prog = programs.find((p) => String(p.id) === String(programId));
+        const progPackages = prog?.packages ?? [];
+        const validLevelTabs = levelTabsList.filter((lvl) =>
+            progPackages.some((pkg) => matchesPackageLevel(pkg.level, lvl))
+        );
+
         studentForm.setData({
             ...studentForm.data,
             program_id: programId,
@@ -187,6 +272,13 @@ export default function Register() {
             package: '',
         });
         setStepErrors((errors) => ({ ...errors, program_id: undefined, package_id: undefined }));
+
+        // Sesuaikan tab paket jika jenjang siswa tersedia di program tersebut
+        if (studentForm.data.level && validLevelTabs.includes(studentForm.data.level)) {
+            setPackageTab(studentForm.data.level);
+        } else if (validLevelTabs.length > 0) {
+            setPackageTab('Semua');
+        }
     };
 
     const handlePackageChange = (option) => {
@@ -198,6 +290,29 @@ export default function Register() {
         setStepErrors((errors) => ({ ...errors, package_id: undefined }));
     };
 
+    const handleResetDraft = () => {
+        if (window.confirm('Bersihkan data formulir yang tersimpan dan mulai dari awal?')) {
+            studentForm.reset();
+            setStep(1);
+            setStepErrors({});
+            setPackageTab('Semua');
+            try {
+                window.localStorage.removeItem(DRAFT_KEY);
+                window.localStorage.removeItem(STEP_KEY);
+                window.localStorage.removeItem(OLD_DRAFT_KEY);
+            } catch {
+                // abaikan
+            }
+        }
+    };
+
+    const hasSavedDraft = Boolean(
+        studentForm.data.student_name ||
+        studentForm.data.parent_contact ||
+        studentForm.data.school_name ||
+        studentForm.data.level
+    );
+
     const handleStudentSubmit = (event) => {
         event.preventDefault();
         studentForm.post('/pendaftaran/murid', {
@@ -206,8 +321,11 @@ export default function Register() {
                 studentForm.reset();
                 setStep(1);
                 setStepErrors({});
+                setPackageTab('Semua');
                 try {
                     window.localStorage.removeItem(DRAFT_KEY);
+                    window.localStorage.removeItem(STEP_KEY);
+                    window.localStorage.removeItem(OLD_DRAFT_KEY);
                 } catch {
                     // abaikan
                 }
@@ -424,13 +542,24 @@ export default function Register() {
                                 {/* STUDENT REGISTRATION FORM (WIZARD) */}
                                 {activeTab === 'student' && (
                                     <form onSubmit={handleStudentSubmit} className="space-y-5">
-                                        <div>
-                                            <h3 className="font-display text-lg font-bold text-slate-900">
-                                                {text.studentTitle || 'Data Pendaftaran Siswa'}
-                                            </h3>
-                                            <p className="text-xs text-slate-500 mt-0.5">
-                                                Lengkapi data diri calon siswa dan pilihan paket belajar.
-                                            </p>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                                <h3 className="font-display text-lg font-bold text-slate-900">
+                                                    {text.studentTitle || 'Data Pendaftaran Siswa'}
+                                                </h3>
+                                                <p className="text-xs text-slate-500 mt-0.5">
+                                                    Lengkapi data diri calon siswa dan pilihan paket belajar.
+                                                </p>
+                                            </div>
+                                            {hasSavedDraft && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleResetDraft}
+                                                    className="shrink-0 text-xs font-semibold text-rose-500 hover:text-rose-700 hover:underline transition"
+                                                >
+                                                    Hapus Draft
+                                                </button>
+                                            )}
                                         </div>
 
                                         {/* Step indicator */}
@@ -522,12 +651,12 @@ export default function Register() {
                                         {step === 2 && (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             {/* Asal Sekolah */}
-                                            <div>
+                                            <div className="sm:col-span-2">
                                                 <label className={labelClass}>{studentFields.schoolName} *</label>
                                                 <input
                                                     type="text"
                                                     className={inputClass}
-                                                    placeholder="Nama Sekolah Asal"
+                                                    placeholder="Nama Sekolah Asal (cth: SDN 1 Bandung / SMPN 5)"
                                                     value={studentForm.data.school_name}
                                                     onChange={(e) => studentForm.setData('school_name', e.target.value)}
                                                     required
@@ -537,19 +666,51 @@ export default function Register() {
                                                 )}
                                             </div>
 
-                                            {/* Jenjang / Kelas */}
+                                            {/* Jenjang */}
                                             <div>
                                                 <label className={labelClass}>{studentFields.level} *</label>
-                                                <input
-                                                    type="text"
-                                                    className={inputClass}
-                                                    placeholder="Contoh: Kelas 4 SD / Kelas 8 SMP"
+                                                <select
+                                                    className={selectClass}
                                                     value={studentForm.data.level}
-                                                    onChange={(e) => studentForm.setData('level', e.target.value)}
+                                                    onChange={(e) => handleLevelChange(e.target.value)}
                                                     required
-                                                />
+                                                >
+                                                    <option value="" disabled>Pilih Jenjang Sekolah</option>
+                                                    {LEVEL_OPTIONS.map((opt) => (
+                                                        <option key={opt.value} value={opt.value}>
+                                                            {opt.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                                 {fieldError('level') && (
                                                     <p className="mt-1 text-xs text-rose-500">{fieldError('level')}</p>
+                                                )}
+                                            </div>
+
+                                            {/* Kelas */}
+                                            <div>
+                                                <label className={labelClass}>{studentFields.classLevel || 'Kelas'} *</label>
+                                                <select
+                                                    className={selectClass}
+                                                    value={studentForm.data.class_level}
+                                                    onChange={(e) => {
+                                                        studentForm.setData('class_level', e.target.value);
+                                                        setStepErrors((errors) => ({ ...errors, class_level: undefined }));
+                                                    }}
+                                                    disabled={!studentForm.data.level}
+                                                    required
+                                                >
+                                                    <option value="" disabled>
+                                                        {studentForm.data.level ? 'Pilih Kelas' : 'Pilih Jenjang Terlebih Dahulu'}
+                                                    </option>
+                                                    {(CLASS_OPTIONS_BY_LEVEL[studentForm.data.level] || []).map((opt) => (
+                                                        <option key={opt.value} value={opt.value}>
+                                                            {opt.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {fieldError('class_level') && (
+                                                    <p className="mt-1 text-xs text-rose-500">{fieldError('class_level')}</p>
                                                 )}
                                             </div>
 
@@ -559,7 +720,7 @@ export default function Register() {
                                                 <input
                                                     type="text"
                                                     className={inputClass}
-                                                    placeholder="Contoh: Matematika, IPA, Bahasa Inggris"
+                                                    placeholder="Contoh: Matematika, IPA, Bahasa Inggris, Calistung"
                                                     value={studentForm.data.subjects}
                                                     onChange={(e) => studentForm.setData('subjects', e.target.value)}
                                                 />
@@ -593,9 +754,9 @@ export default function Register() {
                                                 )}
                                             </div>
 
-                                            {/* Pilihan Harga */}
+                                            {/* Pilihan Pertemuan & Harga */}
                                             <div>
-                                                <div className="flex items-end justify-between gap-3">
+                                                <div className="mb-3 flex items-end justify-between gap-3">
                                                     <div>
                                                         <label className={labelClass}>Pilihan Pertemuan & Harga *</label>
                                                         <p className="text-xs text-slate-500">
@@ -610,60 +771,112 @@ export default function Register() {
                                                 </div>
 
                                                 {!studentForm.data.program_id ? (
-                                                    <div className="mt-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                                                        Pilih program terlebih dahulu untuk melihat harga yang tersedia.
+                                                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                                                        Pilih program terlebih dahulu untuk melihat pilihan paket dan harga yang tersedia.
                                                     </div>
                                                 ) : (
-                                                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                                                        {availablePackageOptions.map((option) => {
-                                                            const isSelected = option.id
-                                                                ? String(studentForm.data.package_id) === String(option.id)
-                                                                : studentForm.data.package === option.label;
+                                                    <div>
+                                                        {/* Tab Jenjang Paket */}
+                                                        {hasLevelTabs && (
+                                                            <div className="mb-4 flex flex-wrap items-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-100/90 p-1.5">
+                                                                {displayedTabs.map((tab) => {
+                                                                    const isActive = activeTabResolved === tab;
+                                                                    const count = tab === 'Semua'
+                                                                        ? dynamicPackageOptions.length
+                                                                        : dynamicPackageOptions.filter((p) => matchesPackageLevel(p.level, tab)).length;
+                                                                    const hasSelectedInTab = selectedPackage && (
+                                                                        tab === 'Semua' || matchesPackageLevel(selectedPackage.level, tab)
+                                                                    );
+                                                                    return (
+                                                                        <button
+                                                                            key={tab}
+                                                                            type="button"
+                                                                            onClick={() => setPackageTab(tab)}
+                                                                            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
+                                                                                isActive
+                                                                                    ? 'bg-white text-brand-primary shadow-xs'
+                                                                                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
+                                                                            }`}
+                                                                        >
+                                                                            <span>{tab === 'Semua' ? 'Semua Jenjang' : tab}</span>
+                                                                            <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-extrabold ${
+                                                                                isActive ? 'bg-violet-100 text-violet-800' : 'bg-slate-200/80 text-slate-600'
+                                                                            }`}>
+                                                                                {count}
+                                                                            </span>
+                                                                            {hasSelectedInTab && !isActive && (
+                                                                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" title="Paket terpilih ada di tab ini" />
+                                                                            )}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
 
-                                                            return (
-                                                                <button
-                                                                    key={option.id ?? option.value}
-                                                                    type="button"
-                                                                    onClick={() => handlePackageChange(option)}
-                                                                    aria-pressed={isSelected}
-                                                                    className={`rounded-2xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-violet-300 ${
-                                                                        isSelected
-                                                                            ? 'border-violet-500 bg-violet-50 shadow-sm'
-                                                                            : 'border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40'
-                                                                    }`}
-                                                                >
-                                                                    <div className="flex items-start justify-between gap-3">
-                                                                        <div>
-                                                                            <p className="text-sm font-bold text-slate-900">
-                                                                                {option.level || option.label}
-                                                                            </p>
-                                                                            {option.sessions && (
-                                                                                <p className="mt-1 text-xs text-slate-600">
-                                                                                    {option.sessions} pertemuan/bulan
-                                                                                    {option.intensity ? ` • ${option.intensity}` : ''}
+                                                        {filteredPackageOptions.length === 0 ? (
+                                                            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">
+                                                                Tidak ada pilihan paket untuk jenjang ini pada program yang dipilih. Silakan pilih tab jenjang lain atau tab "Semua Jenjang".
+                                                            </div>
+                                                        ) : (
+                                                            <div className="grid gap-3 sm:grid-cols-2">
+                                                                {filteredPackageOptions.map((option) => {
+                                                                    const isSelected = option.id
+                                                                        ? String(studentForm.data.package_id) === String(option.id)
+                                                                        : studentForm.data.package === option.label;
+
+                                                                    return (
+                                                                        <button
+                                                                            key={option.id ?? option.value}
+                                                                            type="button"
+                                                                            onClick={() => handlePackageChange(option)}
+                                                                            aria-pressed={isSelected}
+                                                                            className={`rounded-2xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-violet-300 ${
+                                                                                isSelected
+                                                                                    ? 'border-violet-500 bg-violet-50 shadow-sm'
+                                                                                    : 'border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40'
+                                                                            }`}
+                                                                        >
+                                                                            <div className="flex items-start justify-between gap-3">
+                                                                                <div>
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <p className="text-sm font-bold text-slate-900">
+                                                                                            {option.level || option.label}
+                                                                                        </p>
+                                                                                        {option.level && (
+                                                                                            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">
+                                                                                                {option.level}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    {option.sessions && (
+                                                                                        <p className="mt-1 text-xs text-slate-600">
+                                                                                            {option.sessions} pertemuan/bulan
+                                                                                            {option.intensity ? ` • ${option.intensity}` : ''}
+                                                                                        </p>
+                                                                                    )}
+                                                                                </div>
+                                                                                <span className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border ${
+                                                                                    isSelected ? 'border-violet-600 bg-violet-600' : 'border-slate-300 bg-white'
+                                                                                }`}>
+                                                                                    {isSelected && <span className="h-2 w-2 rounded-full bg-white" />}
+                                                                                </span>
+                                                                            </div>
+                                                                            {option.price != null && (
+                                                                                <p className="mt-3 font-display text-lg font-extrabold tabular-nums text-violet-700">
+                                                                                    {formatCurrency(option.price)}
+                                                                                    <span className="ml-1 text-[11px] font-medium text-slate-500">/ bulan</span>
                                                                                 </p>
                                                                             )}
-                                                                        </div>
-                                                                        <span className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border ${
-                                                                            isSelected ? 'border-violet-600 bg-violet-600' : 'border-slate-300 bg-white'
-                                                                        }`}>
-                                                                            {isSelected && <span className="h-2 w-2 rounded-full bg-white" />}
-                                                                        </span>
-                                                                    </div>
-                                                                    {option.price != null && (
-                                                                        <p className="mt-3 font-display text-lg font-extrabold tabular-nums text-violet-700">
-                                                                            {formatCurrency(option.price)}
-                                                                            <span className="ml-1 text-[11px] font-medium text-slate-500">/ bulan</span>
-                                                                        </p>
-                                                                    )}
-                                                                    {option.maxParticipants && (
-                                                                        <p className="mt-2 text-[11px] font-medium text-slate-500">
-                                                                            Maksimal {option.maxParticipants} siswa
-                                                                        </p>
-                                                                    )}
-                                                                </button>
-                                                            );
-                                                        })}
+                                                                            {option.maxParticipants && (
+                                                                                <p className="mt-2 text-[11px] font-medium text-slate-500">
+                                                                                    Maksimal {option.maxParticipants} siswa
+                                                                                </p>
+                                                                            )}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                                 {(fieldError('package_id') || fieldError('package')) && (
@@ -701,7 +914,7 @@ export default function Register() {
                                                     <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Kontak WA</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.parent_contact || '-'}</dd></div>
                                                     <div className="sm:col-span-2"><dt className="font-semibold uppercase tracking-wide text-slate-500">Alamat</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.address || '-'}</dd></div>
                                                     <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Sekolah</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.school_name || '-'}</dd></div>
-                                                    <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Jenjang</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.level || '-'}</dd></div>
+                                                    <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Jenjang & Kelas</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.level ? `${studentForm.data.level}${studentForm.data.class_level ? ` • ${studentForm.data.class_level}` : ''}` : '-'}</dd></div>
                                                     <div className="sm:col-span-2"><dt className="font-semibold uppercase tracking-wide text-slate-500">Mata Pelajaran</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.subjects || '-'}</dd></div>
                                                     <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Program</dt><dd className="mt-0.5 font-bold text-slate-900">{selectedProgramLabel}</dd></div>
                                                     <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Paket & Mode</dt><dd className="mt-0.5 font-bold text-slate-900">{selectedPackageLabel} • {studentForm.data.preferred_mode || '-'}</dd></div>

@@ -38,6 +38,7 @@ export default function DetailModal({
                                     <Field label="Nama">{detailModal.data.student_name}</Field>
                                     <Field label="No. Tiket" mono>{detailModal.data.registration_no || '-'}</Field>
                                     <Field label="Jenjang">{detailModal.data.level || '-'}</Field>
+                                    <Field label="Kelas">{detailModal.data.class_level || '-'}</Field>
                                     <Field label="Alamat">{detailModal.data.address || '-'}</Field>
                                     <Field label="Sekolah">{detailModal.data.school_name || '-'}</Field>
                                     <Field label="Program">{detailModal.data.program || '-'}</Field>

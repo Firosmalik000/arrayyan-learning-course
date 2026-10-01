@@ -28,6 +28,7 @@ class StoreStudentRegistrationRequest extends FormRequest
             'address' => ['required', 'string', 'max:500'],
             'school_name' => ['required', 'string', 'max:255'],
             'level' => ['required', 'string', 'max:100'],
+            'class_level' => ['nullable', 'string', 'max:100'],
             'subjects' => ['required', 'string', 'max:255'],
             'program_id' => [
                 'required',
