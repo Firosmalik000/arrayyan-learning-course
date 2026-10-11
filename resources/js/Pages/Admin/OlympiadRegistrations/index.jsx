@@ -1,6 +1,7 @@
 import { Head, usePage, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import {
+    ActionDropdown,
     FlashMessage,
     Modal,
     PageHeader,
@@ -176,72 +177,95 @@ export default function OlympiadRegistrations() {
                         </div>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                        <table className="w-full min-w-[720px] text-left text-sm">
                             <thead>
                                 <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                    <th className="w-12 px-4 py-3 text-center font-medium">No</th>
+                                    <th className="w-14 px-4 py-3 text-center font-medium">Aksi</th>
                                     <th className="px-5 py-3 font-medium">Tiket</th>
                                     <th className="px-5 py-3 font-medium">Nama</th>
                                     <th className="px-5 py-3 font-medium">Lomba</th>
                                     <th className="px-5 py-3 font-medium">Kontak</th>
                                     <th className="px-5 py-3 font-medium">Biaya</th>
                                     <th className="px-5 py-3 font-medium">Status</th>
-                                    <th className="px-5 py-3 font-medium text-right">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {rows.map((item) => (
-                                    <tr key={item.id} className="transition hover:bg-slate-50">
-                                        <td className="px-5 py-4 font-mono text-xs font-semibold text-slate-800">{item.ticket_no}</td>
-                                        <td className="px-5 py-4">
-                                            <p className="font-medium text-slate-800">{item.name}</p>
-                                            <p className="text-xs text-slate-500">{item.school || '-'} • {item.level || '-'}</p>
-                                        </td>
-                                        <td className="px-5 py-4 text-slate-600">{item.olympiad}</td>
-                                        <td className="px-5 py-4 text-slate-600">{item.contact}</td>
-                                        <td className="px-5 py-4">
-                                            <div className="flex items-center gap-1.5">
-                                                {feeBadge(item.fee_status)}
-                                                {item.fee_status === 'unpaid' && canApprove && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleFeePaid(item.id)}
-                                                        className="rounded-lg px-2 py-1 text-xs font-semibold text-emerald-700 underline hover:bg-emerald-50"
-                                                        title="Tandai lunas"
-                                                    >
-                                                        Lunas?
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-5 py-4">{statusBadge(item.status)}</td>
-                                        <td className="px-5 py-4">
-                                            <div className="flex justify-end gap-1">
-                                                {item.status === 'pending' && canApprove && (
-                                                    <button type="button" onClick={() => handleApprove(item.id)} className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-100 hover:text-emerald-600" title="Setujui">
-                                                        {icons.check}
-                                                    </button>
-                                                )}
-                                                {item.status === 'pending' && canReject && (
-                                                    <button type="button" onClick={() => { setRejectModal(item); setAdminNote(''); }} className="rounded-lg p-2 text-slate-400 transition hover:bg-amber-100 hover:text-amber-600" title="Tolak">
-                                                        {icons.x}
-                                                    </button>
-                                                )}
-                                                {canDelete && (
-                                                    <button type="button" onClick={() => setDeleteModal(item)} className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600" title="Hapus">
-                                                        {icons.trash}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {rows.map((item, idx) => {
+                                    const rowNum = (meta?.from ?? 1) + idx;
+                                    const actions = [
+                                        item.status === 'pending' && canApprove && {
+                                            label: 'Setujui Peserta',
+                                            icon: icons.check,
+                                            onClick: () => handleApprove(item.id),
+                                        },
+                                        item.status === 'pending' && canReject && {
+                                            label: 'Tolak Peserta',
+                                            icon: icons.x,
+                                            danger: true,
+                                            onClick: () => {
+                                                setRejectModal(item);
+                                                setAdminNote('');
+                                            },
+                                        },
+                                        item.fee_status === 'unpaid' && canApprove && {
+                                            label: 'Tandai Biaya Lunas',
+                                            onClick: () => handleFeePaid(item.id),
+                                        },
+                                        canDelete && {
+                                            label: 'Hapus Pendaftar',
+                                            icon: icons.trash,
+                                            danger: true,
+                                            onClick: () => setDeleteModal(item),
+                                        },
+                                    ].filter(Boolean);
+
+                                    return (
+                                        <tr key={item.id} className="transition hover:bg-slate-50">
+                                            <td className="px-4 py-4 text-center font-semibold text-slate-400">
+                                                {rowNum}
+                                            </td>
+                                            <td className="px-4 py-4 text-center">
+                                                <ActionDropdown actions={actions} />
+                                            </td>
+                                            <td className="px-5 py-4 font-mono text-xs font-semibold text-slate-800">{item.ticket_no}</td>
+                                            <td className="px-5 py-4">
+                                                <p className="font-medium text-slate-800">{item.name}</p>
+                                                <p className="text-xs text-slate-500">{item.school || '-'} • {item.level || '-'}</p>
+                                            </td>
+                                            <td className="px-5 py-4 text-slate-600">{item.olympiad}</td>
+                                            <td className="px-5 py-4 text-slate-600">{item.contact}</td>
+                                            <td className="px-5 py-4">
+                                                <div className="flex items-center gap-1.5">
+                                                    {feeBadge(item.fee_status)}
+                                                    {item.fee_status === 'unpaid' && canApprove && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleFeePaid(item.id)}
+                                                            className="rounded-lg px-2 py-1 text-xs font-semibold text-emerald-700 underline hover:bg-emerald-50"
+                                                            title="Tandai lunas"
+                                                        >
+                                                            Lunas?
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-4">{statusBadge(item.status)}</td>
+                                        </tr>
+                                    );
+                                })}
                                 {rows.length === 0 && (
-                                    <tr><td colSpan={7} className="px-5 py-12 text-center text-slate-500">Tidak ada data yang ditemukan</td></tr>
+                                    <tr><td colSpan={8} className="px-5 py-12 text-center text-slate-500">Tidak ada data yang ditemukan</td></tr>
                                 )}
                             </tbody>
                         </table>
                     </div>
-                    <Pagination meta={meta} onPage={(page) => fetchPage({ page })} />
+                    <Pagination
+                        meta={meta}
+                        perPage={filters.per_page ?? 10}
+                        onPage={(page) => fetchPage({ page })}
+                        onPerPageChange={(per_page) => fetchPage({ per_page, page: 1 })}
+                    />
                 </div>
             </div>
 

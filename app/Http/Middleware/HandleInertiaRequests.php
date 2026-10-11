@@ -63,7 +63,7 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * @return array{name: string, contact: string, type: string}|null
+     * @return array<string, mixed>|null
      */
     private function getPortalAuth(Request $request): ?array
     {
@@ -77,10 +77,41 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
+        if ($user->isTeacher()) {
+            return [
+                'name' => $user->name,
+                'contact' => $user->contact,
+                'email' => $user->email,
+                'type' => 'teacher',
+            ];
+        }
+
+        $students = $user->students()->where('is_active', true)->get();
+        if ($students->isEmpty() && $user->student) {
+            $students = collect([$user->student]);
+        }
+
+        $selectedId = (int) $request->session()->get('portal.selected_student_id');
+        if (! $students->contains('id', $selectedId)) {
+            $selectedId = $students->first()?->id;
+            if ($selectedId) {
+                $request->session()->put('portal.selected_student_id', $selectedId);
+            }
+        }
+
         return [
             'name' => $user->name,
             'contact' => $user->contact,
-            'type' => $user->type,
+            'email' => $user->email,
+            'type' => 'parent',
+            'students' => $students->map(fn ($s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'level' => $s->level,
+                'school_name' => $s->school_name,
+                'program' => $s->program,
+            ])->values()->all(),
+            'selected_student_id' => $selectedId,
         ];
     }
 

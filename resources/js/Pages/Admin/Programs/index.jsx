@@ -1,6 +1,6 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
-import { ConfirmModal, FlashMessage, FormInput, FormSelect, FormTextarea, Modal, PageHeader } from '@/Components/Admin';
+import { ActionDropdown, ConfirmModal, FlashMessage, FormInput, FormSelect, FormTextarea, Modal, PageHeader, Pagination } from '@/Components/Admin';
 
 const normalizeSubjects = (value) => {
     if (Array.isArray(value)) return value.filter(Boolean);
@@ -128,6 +128,8 @@ export default function Programs() {
     const [programDetail, setProgramDetail] = useState(null);
     const [currentProgramImageUrl, setCurrentProgramImageUrl] = useState(null);
     const [activePriceProgramId, setActivePriceProgramId] = useState(programsData[0]?.id ? String(programsData[0].id) : '');
+    const [packagePage, setPackagePage] = useState(1);
+    const [packagePerPage, setPackagePerPage] = useState(10);
 
     const resolvedPriceProgramId = programs.some((program) => String(program.id) === activePriceProgramId)
         ? activePriceProgramId
@@ -135,6 +137,10 @@ export default function Programs() {
     const activePriceProgram = programs.find((program) => String(program.id) === resolvedPriceProgramId) ?? null;
     const visiblePackages = packages.filter((pkg) => String(pkg.program_id) === resolvedPriceProgramId);
     const activeStartingPrice = visiblePackages.length > 0 ? Math.min(...visiblePackages.map((pkg) => Number(pkg.price ?? 0))) : null;
+    const paginatedPackages = useMemo(() => {
+        const start = (packagePage - 1) * packagePerPage;
+        return visiblePackages.slice(start, start + packagePerPage);
+    }, [visiblePackages, packagePage, packagePerPage]);
 
     // Program form state
     const programForm = useForm({
@@ -497,7 +503,10 @@ export default function Programs() {
                                                 role="tab"
                                                 aria-selected={isActive}
                                                 aria-controls="program-price-panel"
-                                                onClick={() => setActivePriceProgramId(String(program.id))}
+                                                onClick={() => {
+                                                    setActivePriceProgramId(String(program.id));
+                                                    setPackagePage(1);
+                                                }}
                                                 className={`rounded-t-xl px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
                                                     isActive ? 'bg-brand-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                                 }`}
@@ -537,20 +546,42 @@ export default function Programs() {
                                     <table className="min-w-[760px] w-full text-left text-sm">
                                         <thead>
                                             <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                                <th className="w-12 px-5 py-3 text-center font-medium">No</th>
+                                                <th className="w-14 px-3 py-3 text-center font-medium">Aksi</th>
                                                 <th className="px-5 py-3 font-medium">Jenjang</th>
                                                 <th className="px-5 py-3 font-medium">Pertemuan</th>
                                                 <th className="px-5 py-3 font-medium">Harga</th>
                                                 <th className="px-5 py-3 font-medium">Kapasitas</th>
                                                 <th className="px-5 py-3 font-medium">Status</th>
-                                                <th className="px-5 py-3 font-medium text-right">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {visiblePackages.map((pkg) => {
+                                            {paginatedPackages.map((pkg, idx) => {
+                                                const rowNumber = (packagePage - 1) * packagePerPage + idx + 1;
                                                 const statusLabel = pkg.is_active ? 'Aktif' : 'Nonaktif';
+                                                const actionItems = [];
+                                                if (canEdit) {
+                                                    actionItems.push({
+                                                        label: 'Edit',
+                                                        icon: icons.edit,
+                                                        onClick: () => openPackageModal(pkg),
+                                                    });
+                                                }
+                                                if (canDelete) {
+                                                    actionItems.push({
+                                                        label: 'Hapus',
+                                                        icon: icons.trash,
+                                                        danger: true,
+                                                        onClick: () => openDeleteModal('package', pkg),
+                                                    });
+                                                }
 
                                                 return (
                                                     <tr key={pkg.id} className="transition hover:bg-slate-50">
+                                                        <td className="px-5 py-4 text-center font-medium text-slate-400">{rowNumber}</td>
+                                                        <td className="px-3 py-4 text-center">
+                                                            <ActionDropdown items={actionItems} />
+                                                        </td>
                                                         <td className="px-5 py-4 font-medium text-slate-700">{pkg.level || '-'}</td>
                                                         <td className="px-5 py-4 text-slate-600">
                                                             <p className="font-medium text-slate-800">{pkg.sessions ? `${pkg.sessions}x / bulan` : '-'}</p>
@@ -569,36 +600,12 @@ export default function Programs() {
                                                                 {statusLabel}
                                                             </span>
                                                         </td>
-                                                        <td className="px-5 py-4">
-                                                            <div className="flex justify-end gap-1">
-                                                                {canEdit && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => openPackageModal(pkg)}
-                                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600"
-                                                                        title="Edit"
-                                                                    >
-                                                                        {icons.edit}
-                                                                    </button>
-                                                                )}
-                                                                {canDelete && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => openDeleteModal('package', pkg)}
-                                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
-                                                                        title="Hapus"
-                                                                    >
-                                                                        {icons.trash}
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        </td>
                                                     </tr>
                                                 );
                                             })}
                                             {visiblePackages.length === 0 && (
                                                 <tr>
-                                                    <td colSpan="6" className="px-5 py-10 text-center text-sm text-slate-500">
+                                                    <td colSpan="7" className="px-5 py-10 text-center text-sm text-slate-500">
                                                         Belum ada pilihan harga untuk {activePriceProgram.name}. Tambahkan harga pertama agar customer dapat
                                                         memilihnya saat mendaftar.
                                                     </td>
@@ -607,6 +614,23 @@ export default function Programs() {
                                         </tbody>
                                     </table>
                                 </div>
+
+                                <Pagination
+                                    pagination={{
+                                        current_page: packagePage,
+                                        last_page: Math.ceil(visiblePackages.length / packagePerPage) || 1,
+                                        per_page: packagePerPage,
+                                        total: visiblePackages.length,
+                                        from: visiblePackages.length === 0 ? 0 : (packagePage - 1) * packagePerPage + 1,
+                                        to: Math.min(packagePage * packagePerPage, visiblePackages.length),
+                                    }}
+                                    onPageChange={(page) => setPackagePage(page)}
+                                    perPage={packagePerPage}
+                                    onPerPageChange={(perPage) => {
+                                        setPackagePerPage(perPage);
+                                        setPackagePage(1);
+                                    }}
+                                />
                             </div>
                         </>
                     ) : (

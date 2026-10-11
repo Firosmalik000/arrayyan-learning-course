@@ -128,7 +128,7 @@ export default function StatusCheck() {
                     <div className="mx-auto max-w-2xl">
                         <form
                             onSubmit={handleSubmit}
-                            className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs sm:p-8"
+                            className="rounded-3xl border border-slate-200/80 bg-white p-4.5 xs:p-6 sm:p-8 shadow-xs"
                         >
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
@@ -162,7 +162,7 @@ export default function StatusCheck() {
                         </form>
 
                         {result && (
-                            <div className="mt-8 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs sm:p-8">
+                            <div className="mt-8 rounded-3xl border border-slate-200/80 bg-white p-4.5 xs:p-6 sm:p-8 shadow-xs">
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div>
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -206,21 +206,21 @@ export default function StatusCheck() {
                                             {result.invoices.map((inv) => {
                                                 const im = invoiceMeta[inv.status] ?? invoiceMeta.unpaid;
                                                 return (
-                                                    <li key={inv.invoice_no} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-xs">
+                                                    <li key={inv.invoice_no} className="flex flex-col xs:flex-row xs:items-center justify-between gap-2.5 rounded-2xl bg-slate-50 p-3.5 xs:px-4 xs:py-3 text-xs">
                                                         <div>
                                                             <p className="font-mono font-bold text-slate-800">{inv.invoice_no}</p>
                                                             <p className="mt-0.5 text-slate-500">
                                                                 Rp {Number(inv.amount ?? 0).toLocaleString('id-ID')} • Jatuh tempo {formatDate(inv.due_date)}
                                                             </p>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex items-center gap-2 self-start xs:self-auto">
                                                             <Badge variant={im.variant}>{im.label}</Badge>
                                                             {inv.status !== 'paid' && (
                                                                 <Link
-                                                                    href={`/pembayaran?invoice=${encodeURIComponent(inv.invoice_no)}`}
+                                                                    href="/portal/tagihan"
                                                                     className="rounded-full bg-brand-primary px-3 py-1.5 font-bold text-white transition hover:opacity-90"
                                                                 >
-                                                                    Bayar
+                                                                    Bayar di Portal
                                                                 </Link>
                                                             )}
                                                         </div>

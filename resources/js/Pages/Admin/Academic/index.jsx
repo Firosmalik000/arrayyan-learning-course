@@ -5,15 +5,15 @@ import {
     FlashMessage,
     PageHeader,
 } from '@/Components/Admin';
-import AttendanceSection, { todayStr } from './components/AttendanceSection';
-import ClassCards from './components/ClassCards';
-import ClassHeader from './components/ClassHeader';
+import AttendanceModal from './components/AttendanceModal';
+import ClassDetailView from './components/ClassDetailView';
 import ClassModal from './components/ClassModal';
-import GradeSection from './components/GradeSection';
+import ClassTable from './components/ClassTable';
+import GenerateSessionsModal from './components/GenerateSessionsModal';
+import GradeModal from './components/GradeModal';
 import MemberModal from './components/MemberModal';
-import MemberSection from './components/MemberSection';
 import ScheduleModal from './components/ScheduleModal';
-import ScheduleSection from './components/ScheduleSection';
+import StudentDetailModal from './components/StudentDetailModal';
 
 const icons = {
     plus: (
@@ -55,25 +55,37 @@ export default function Academic() {
     const canDelete = can('delete');
     const canExport = can('export');
 
-    const [selectedId, setSelectedId] = useState(classes[0]?.id ?? null);
-    const selected = useMemo(
-        () => classes.find((c) => c.id === selectedId) ?? classes[0] ?? null,
-        [classes, selectedId]
-    );
+    // Selected class ID to view in detail (default is null for Datatable view)
+    const [selectedClassId, setSelectedClassId] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const kelasParam = params.get('kelas');
+            if (kelasParam) return Number(kelasParam);
+        }
+        return null;
+    });
+
+    const selected = useMemo(() => {
+        if (!selectedClassId) return null;
+        return classes.find((c) => c.id === selectedClassId) ?? null;
+    }, [classes, selectedClassId]);
+
     const activeMembers = useMemo(
         () => (selected?.members ?? []).filter((m) => m.status === 'active'),
         [selected]
     );
 
-    // Class modal
+    // Class modal (Create / Edit)
     const [showClassModal, setShowClassModal] = useState(false);
     const [editingClass, setEditingClass] = useState(null);
     const classForm = useForm({
         program_id: '',
+        level: '',
+        package_id: '',
+        total_sessions: '',
         teacher_id: '',
         name: '',
         quota: '',
-        room: '',
         is_active: true,
     });
 
@@ -85,54 +97,72 @@ export default function Academic() {
     const [memberSearch, setMemberSearch] = useState('');
     const [memberChecked, setMemberChecked] = useState([]);
     const [scholarship, setScholarship] = useState(false);
+    const [viewingStudent, setViewingStudent] = useState(null);
 
     // Schedule modal
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [editingSchedule, setEditingSchedule] = useState(null);
-    const scheduleForm = useForm({ day_of_week: '', start_time: '', end_time: '', room: '' });
+    const scheduleForm = useForm({ day_of_week: '', start_time: '', end_time: '' });
 
-    // Attendance
-    const [attDate, setAttDate] = useState(todayStr());
-    const [attRows, setAttRows] = useState({});
+    // Attendance modal & generate modal
+    const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+    const [attendanceModalDate, setAttendanceModalDate] = useState('');
+    const [showGenerateModal, setShowGenerateModal] = useState(false);
 
-    // Grades
-    const [gradeSubject, setGradeSubject] = useState('');
-    const [gradeTerm, setGradeTerm] = useState('');
-    const [gradeRows, setGradeRows] = useState({});
+    // Grade modal
+    const [showGradeModal, setShowGradeModal] = useState(false);
 
-    useEffect(() => {
-        if (!classes.find((c) => c.id === selectedId) && classes[0]) {
-            setSelectedId(classes[0].id);
-        }
-    }, [classes, selectedId]);
-
-    useEffect(() => {
-        const init = {};
-        activeMembers.forEach((m) => { init[m.student_id] = 'hadir'; });
-        setAttRows(init);
-        setGradeRows({});
-    }, [selected?.id, activeMembers.length]); // eslint-disable-line react-hooks/exhaustive-deps
+    const remainingQuota = useMemo(() => {
+        if (!selected || selected.quota == null) return null;
+        return Math.max(0, selected.quota - activeMembers.length);
+    }, [selected, activeMembers.length]);
 
     const eligibleStudents = useMemo(() => {
         if (!selected) return [];
         const memberIds = new Set((selected.members ?? []).map((m) => m.student_id));
-        const q = memberSearch.toLowerCase();
+        const q = memberSearch.toLowerCase().trim();
         return students.filter((s) => {
             if (memberIds.has(s.id)) return false;
-            if (q && !s.name.toLowerCase().includes(q)) return false;
+            if (q) {
+                const matchName = s.name.toLowerCase().includes(q);
+                const matchSchool = (s.school_name || '').toLowerCase().includes(q);
+                const matchLevel = (s.level || '').toLowerCase().includes(q);
+                const matchContact = (s.parent_contact || '').toLowerCase().includes(q);
+                if (!matchName && !matchSchool && !matchLevel && !matchContact) return false;
+            }
             return true;
         });
     }, [students, selected, memberSearch]);
 
+    const selectAllEligible = () => {
+        const available = eligibleStudents
+            .filter((s) => scholarship || s.has_paid)
+            .map((s) => s.id);
+
+        if (remainingQuota != null) {
+            setMemberChecked(available.slice(0, remainingQuota));
+        } else {
+            setMemberChecked(available);
+        }
+    };
+
+    const unselectAll = () => {
+        setMemberChecked([]);
+    };
+
     // Class handlers
     const openClassModal = (cls = null) => {
         setEditingClass(cls);
+        const initialProgramId = cls?.program_id ? String(cls.program_id) : '';
+        const selectedProg = programs.find((p) => String(p.id) === initialProgramId);
         classForm.setData({
-            program_id: cls?.program_id ? String(cls.program_id) : '',
+            program_id: initialProgramId,
+            level: cls?.level || '',
+            package_id: cls?.package_id ? String(cls.package_id) : '',
+            total_sessions: cls?.total_sessions != null ? String(cls.total_sessions) : '',
             teacher_id: cls?.teacher_id ? String(cls.teacher_id) : '',
             name: cls?.name || '',
-            quota: cls?.quota ?? '',
-            room: cls?.room || '',
+            quota: cls?.quota != null ? String(cls.quota) : (selectedProg?.quota != null ? String(selectedProg.quota) : ''),
             is_active: cls ? !!cls.is_active : true,
         });
         classForm.clearErrors();
@@ -144,6 +174,9 @@ export default function Academic() {
         const payload = {
             ...classForm.data,
             program_id: Number(classForm.data.program_id),
+            level: classForm.data.level || null,
+            package_id: classForm.data.package_id ? Number(classForm.data.package_id) : null,
+            total_sessions: classForm.data.total_sessions ? Number(classForm.data.total_sessions) : null,
             teacher_id: classForm.data.teacher_id === '' ? null : Number(classForm.data.teacher_id),
             quota: classForm.data.quota === '' ? null : Number(classForm.data.quota),
             is_active: classForm.data.is_active ? 1 : 0,
@@ -152,7 +185,10 @@ export default function Academic() {
         const url = editingClass ? `/admin/akademik/kelas/${editingClass.id}` : '/admin/akademik/kelas';
         classForm.post(url, {
             preserveScroll: true,
-            onSuccess: () => { setShowClassModal(false); setSelectedId(editingClass?.id ?? null); },
+            onSuccess: () => {
+                setShowClassModal(false);
+                if (editingClass) setSelectedClassId(editingClass.id);
+            },
             onFinish: () => classForm.transform((data) => data),
         });
     };
@@ -162,7 +198,7 @@ export default function Academic() {
         if (deleteModal.kind === 'class') {
             router.delete(`/admin/akademik/kelas/${deleteModal.id}`, {
                 preserveScroll: true,
-                onSuccess: () => { setDeleteModal(null); setSelectedId(null); },
+                onSuccess: () => { setDeleteModal(null); setSelectedClassId(null); },
             });
         } else if (deleteModal.kind === 'member') {
             router.delete(`/admin/akademik/anggota/${deleteModal.id}`, {
@@ -207,7 +243,6 @@ export default function Academic() {
             day_of_week: sch ? String(sch.day_of_week) : '',
             start_time: sch ? sch.start_time : '',
             end_time: sch ? sch.end_time : '',
-            room: sch?.room || '',
         });
         scheduleForm.clearErrors();
         setShowScheduleModal(true);
@@ -227,28 +262,34 @@ export default function Academic() {
     };
 
     // Attendance handlers
-    const submitAttendance = () => {
+    const openAttendanceModal = (date = '') => {
+        setAttendanceModalDate(date);
+        setShowAttendanceModal(true);
+    };
+
+    const submitAttendance = (date, rows) => {
         if (!selected) return;
-        const rows = Object.entries(attRows).map(([student_id, status]) => ({
-            student_id: Number(student_id),
-            status,
-        }));
         router.post(`/admin/akademik/kelas/${selected.id}/absensi`, {
-            date: attDate,
+            date,
             rows,
         }, { preserveScroll: true });
     };
 
+    const handleGenerateSessions = (startDate, count, dates) => {
+        if (!selected) return;
+        router.post(`/admin/akademik/kelas/${selected.id}/generate-pertemuan`, {
+            start_date: startDate,
+            count: count,
+            dates: dates,
+        }, { preserveScroll: true });
+    };
+
     // Grade handlers
-    const submitGrades = () => {
-        if (!selected || !gradeSubject.trim() || !gradeTerm.trim()) return;
-        const rows = Object.entries(gradeRows)
-            .filter(([, score]) => score !== '' && score != null)
-            .map(([student_id, score]) => ({ student_id: Number(student_id), score: Number(score) }));
-        if (rows.length === 0) return;
+    const submitGrades = (subject, term, rows) => {
+        if (!selected || rows.length === 0) return;
         router.post(`/admin/akademik/kelas/${selected.id}/nilai`, {
-            subject: gradeSubject.trim(),
-            term: gradeTerm.trim(),
+            subject,
+            term,
             rows,
         }, { preserveScroll: true });
     };
@@ -258,90 +299,62 @@ export default function Academic() {
             <Head title="Akademik" />
 
             <div className="space-y-6">
-                <PageHeader
-                    title="Akademik"
-                    subtitle="Kelola kelas, jadwal, absensi, dan nilai."
-                    actions={canCreate && (
-                        <button
-                            type="button"
-                            onClick={() => openClassModal()}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
-                        >
-                            {icons.plus} Tambah Kelas
-                        </button>
-                    )}
-                />
-
                 <FlashMessage flash={flash} />
 
-                {classes.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-12 text-center text-sm text-slate-500">
-                        Belum ada kelas. Klik “Tambah Kelas” untuk mulai.
-                    </div>
-                )}
-
-                <ClassCards classes={classes} selectedId={selected?.id} onSelect={setSelectedId} />
-
-                {selected && (
-                    <div className="space-y-6 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
-                        <ClassHeader
-                            selected={selected}
-                            canEdit={canEdit}
-                            canDelete={canDelete}
-                            canExport={canExport}
-                            onEdit={() => openClassModal(selected)}
-                            onDelete={() => setDeleteModal({ kind: 'class', id: selected.id, name: selected.name })}
-                            icons={icons}
+                {/* Main Datatable View when no class selected */}
+                {!selected ? (
+                    <div className="space-y-6">
+                        <PageHeader
+                            title="Akademik"
+                            actions={canCreate && (
+                                <button
+                                    type="button"
+                                    onClick={() => openClassModal()}
+                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                                >
+                                    {icons.plus} Tambah Kelas
+                                </button>
+                            )}
                         />
 
-                        <MemberSection
-                            selected={selected}
-                            activeMemberCount={activeMembers.length}
-                            canCreate={canCreate}
-                            canDelete={canDelete}
-                            onAdd={openMemberModal}
-                            onRemove={(m) => setDeleteModal({ kind: 'member', id: m.id, name: m.student_name })}
-                            icons={icons}
-                        />
-
-                        <ScheduleSection
-                            schedules={selected.schedules}
+                        <ClassTable
+                            classes={classes}
+                            programs={programs}
                             canCreate={canCreate}
                             canEdit={canEdit}
                             canDelete={canDelete}
-                            onAdd={() => openScheduleModal()}
-                            onEdit={openScheduleModal}
-                            onDelete={(sch) => setDeleteModal({ kind: 'schedule', id: sch.id, name: `${sch.day} ${sch.start_time}` })}
-                            icons={icons}
+                            onSelectClass={(cls) => setSelectedClassId(cls.id)}
+                            onEditClass={(cls) => openClassModal(cls)}
+                            onDeleteClass={(cls) => setDeleteModal({ kind: 'class', id: cls.id, name: cls.name })}
+                            onAddClass={() => openClassModal()}
                         />
-
-                        {canEdit && activeMembers.length > 0 && (
-                            <AttendanceSection
-                                members={activeMembers}
-                                attDate={attDate}
-                                setAttDate={setAttDate}
-                                attRows={attRows}
-                                setAttRows={setAttRows}
-                                onSubmit={submitAttendance}
-                            />
-                        )}
-
-                        {canEdit && activeMembers.length > 0 && (
-                            <GradeSection
-                                members={activeMembers}
-                                subject={gradeSubject}
-                                setSubject={setGradeSubject}
-                                term={gradeTerm}
-                                setTerm={setGradeTerm}
-                                gradeRows={gradeRows}
-                                setGradeRows={setGradeRows}
-                                onSubmit={submitGrades}
-                            />
-                        )}
                     </div>
+                ) : (
+                    /* Detailed Class View */
+                    <ClassDetailView
+                        selectedClass={selected}
+                        canEdit={canEdit}
+                        canCreate={canCreate}
+                        canDelete={canDelete}
+                        canExport={canExport}
+                        onBack={() => setSelectedClassId(null)}
+                        onEditClass={() => openClassModal(selected)}
+                        onDeleteClass={() => setDeleteModal({ kind: 'class', id: selected.id, name: selected.name })}
+                        onOpenMemberModal={openMemberModal}
+                        onRemoveMember={(m) => setDeleteModal({ kind: 'member', id: m.id, name: m.student_name })}
+                        onViewStudentDetail={setViewingStudent}
+                        onOpenScheduleModal={() => openScheduleModal(null)}
+                        onEditSchedule={(sch) => openScheduleModal(sch)}
+                        onDeleteSchedule={(sch) => setDeleteModal({ kind: 'schedule', id: sch.id, name: `${sch.day} ${sch.start_time}` })}
+                        onOpenAttendanceModal={openAttendanceModal}
+                        onOpenGenerateModal={() => setShowGenerateModal(true)}
+                        onOpenGradeModal={() => setShowGradeModal(true)}
+                        icons={icons}
+                    />
                 )}
             </div>
 
+            {/* Modals */}
             <ClassModal
                 show={showClassModal}
                 onClose={() => setShowClassModal(false)}
@@ -356,6 +369,8 @@ export default function Academic() {
                 show={showMemberModal}
                 onClose={() => setShowMemberModal(false)}
                 className={selected?.name}
+                remainingQuota={remainingQuota}
+                totalQuota={selected?.quota}
                 memberSearch={memberSearch}
                 setMemberSearch={setMemberSearch}
                 scholarship={scholarship}
@@ -363,8 +378,18 @@ export default function Academic() {
                 eligibleStudents={eligibleStudents}
                 memberChecked={memberChecked}
                 toggleCheck={toggleMemberCheck}
+                selectAllEligible={selectAllEligible}
+                unselectAll={unselectAll}
                 selectedProgramId={selected?.program_id}
                 onSubmit={submitMembers}
+            />
+
+            <StudentDetailModal
+                show={!!viewingStudent}
+                onClose={() => setViewingStudent(null)}
+                member={viewingStudent}
+                className={selected?.name}
+                classAttendances={selected?.attendances ?? []}
             />
 
             <ScheduleModal
@@ -375,6 +400,35 @@ export default function Academic() {
                 days={days}
                 onSubmit={saveSchedule}
             />
+
+            {selected && (
+                <>
+                    <AttendanceModal
+                        show={showAttendanceModal}
+                        onClose={() => setShowAttendanceModal(false)}
+                        selectedClass={selected}
+                        members={activeMembers}
+                        initialDate={attendanceModalDate}
+                        attendances={selected.attendances ?? []}
+                        onSubmit={submitAttendance}
+                    />
+
+                    <GenerateSessionsModal
+                        show={showGenerateModal}
+                        onClose={() => setShowGenerateModal(false)}
+                        selectedClass={selected}
+                        onSubmit={handleGenerateSessions}
+                    />
+
+                    <GradeModal
+                        show={showGradeModal}
+                        onClose={() => setShowGradeModal(false)}
+                        selectedClass={selected}
+                        members={activeMembers}
+                        onSubmit={submitGrades}
+                    />
+                </>
+            )}
 
             <ConfirmModal
                 isOpen={!!deleteModal}

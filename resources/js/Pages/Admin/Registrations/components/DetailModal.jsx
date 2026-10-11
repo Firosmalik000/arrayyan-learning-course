@@ -17,6 +17,8 @@ export default function DetailModal({
     onApprove,
     onReject,
     onCreateInvoice,
+    onResendEmail,
+    resendingEmail = false,
     canApprove,
     canReject,
     canCreateInvoice,
@@ -46,6 +48,7 @@ export default function DetailModal({
                                     <Field label="Mata Pelajaran">{detailModal.data.subjects || '-'}</Field>
                                     <Field label="Mode">{detailModal.data.preferred_mode || '-'}</Field>
                                     <Field label="Kontak Orang Tua">{detailModal.data.parent_contact || '-'}</Field>
+                                    <Field label="Email Orang Tua">{detailModal.data.parent_email || '-'}</Field>
                                     <Field label="Status">{statusBadge(detailModal.data.status)}</Field>
                                     <Field label="Tanggal Daftar">{formatDate(detailModal.data.created_at)}</Field>
                                 </>
@@ -58,6 +61,7 @@ export default function DetailModal({
                                     <Field label="Mata Pelajaran">{detailModal.data.subjects || '-'}</Field>
                                     <Field label="Pengalaman">{detailModal.data.experience || '-'}</Field>
                                     <Field label="Kontak">{detailModal.data.contact || '-'}</Field>
+                                    <Field label="Email">{detailModal.data.email || '-'}</Field>
                                     <div>
                                         <p className="text-xs text-slate-500">CV</p>
                                         {detailModal.data.cv_url ? (
@@ -82,39 +86,58 @@ export default function DetailModal({
                             <p className="mt-2">{detailModal.data.admin_note}</p>
                         </div>
                     )}
-                    {detailModal.data.status === 'pending' && (canApprove || canReject) && (
-                        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-                            {canReject && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4">
+                        <div>
+                            {Boolean(detailModal.type === 'student' ? detailModal.data.parent_email : detailModal.data.email) && onResendEmail && (
                                 <button
                                     type="button"
-                                    onClick={() => onReject(detailModal.type, detailModal.data)}
-                                    className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100"
+                                    disabled={resendingEmail}
+                                    onClick={() => onResendEmail(detailModal.type, detailModal.data.id)}
+                                    className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-100 disabled:opacity-50 cursor-pointer"
+                                    title="Kirim ulang email notifikasi ke pendaftar"
                                 >
-                                    {icons.x} Tolak
-                                </button>
-                            )}
-                            {canApprove && (
-                                <button
-                                    type="button"
-                                    onClick={() => onApprove(detailModal.type, detailModal.data.id)}
-                                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                                >
-                                    {icons.check} Setujui
+                                    <svg className={`h-3.5 w-3.5 ${resendingEmail ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                    {resendingEmail ? 'Mengirim...' : 'Kirim Ulang Email'}
                                 </button>
                             )}
                         </div>
-                    )}
-                    {detailModal.type === 'student' && detailModal.data.status === 'approved' && canCreateInvoice && (
-                        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-                            <button
-                                type="button"
-                                onClick={() => onCreateInvoice(detailModal.data.id)}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
-                            >
-                                Buatkan Invoice
-                            </button>
+
+                        <div className="flex items-center gap-2">
+                            {detailModal.data.status === 'pending' && (
+                                <>
+                                    {canReject && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onReject(detailModal.type, detailModal.data)}
+                                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 cursor-pointer"
+                                        >
+                                            {icons.x} Tolak
+                                        </button>
+                                    )}
+                                    {canApprove && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onApprove(detailModal.type, detailModal.data.id)}
+                                            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 cursor-pointer"
+                                        >
+                                            {icons.check} Setujui
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                            {detailModal.type === 'student' && detailModal.data.status === 'approved' && canCreateInvoice && (
+                                <button
+                                    type="button"
+                                    onClick={() => onCreateInvoice(detailModal.data.id)}
+                                    className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-100 cursor-pointer"
+                                >
+                                    Buatkan Invoice
+                                </button>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
             )}
         </Modal>

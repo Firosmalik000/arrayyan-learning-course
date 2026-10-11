@@ -140,11 +140,11 @@ export default function OlympiadDetail() {
                             )}
                         </div>
 
-                        <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                        <h1 className="font-display text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
                             {name}
                         </h1>
 
-                        <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed max-w-3xl">
+                        <p className="mt-4 text-sm sm:text-base lg:text-lg text-slate-600 leading-relaxed max-w-3xl">
                             {description}
                         </p>
                     </div>
@@ -152,11 +152,11 @@ export default function OlympiadDetail() {
             </section>
 
             {/* Detail Content */}
-            <section className="py-12 sm:py-16 bg-white">
+            <section className="py-10 sm:py-16 bg-white">
                 <Container>
-                    <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12 items-start">
+                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12 2xl:gap-16 items-start">
                         {/* Left Main (8 cols) */}
-                        <div className="lg:col-span-8 space-y-10">
+                        <div className="lg:col-span-8 space-y-8 sm:space-y-10">
                             {/* Poster / Media Area */}
                             <div className="aspect-16/9 w-full overflow-hidden rounded-3xl border border-slate-200/90 bg-gradient-to-br from-amber-100 via-orange-50 to-violet-50 shadow-xs">
                                 {imageUrl ? (
@@ -167,11 +167,11 @@ export default function OlympiadDetail() {
                                     />
                                 ) : (
                                     <div className="flex h-full w-full items-center justify-center text-amber-600">
-                                        <div className="text-center p-8">
-                                            <svg className="mx-auto h-16 w-16 opacity-40 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                                        <div className="text-center p-6 xs:p-8">
+                                            <svg className="mx-auto h-12 w-12 xs:h-16 xs:w-16 opacity-40 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.504-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.982-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.25h13.5v1.986m-13.5 0A23.515 23.515 0 0112 3.75c2.617 0 5.12.395 7.5 1.125m-1.125.361c.982.143 1.954.317 2.916.52a6.003 6.003 0 01-5.396 4.972m2.48-5.492V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.01 6.01 0 01-4.75 0" />
                                             </svg>
-                                            <p className="text-xl font-bold text-slate-900">{name}</p>
+                                            <p className="text-lg xs:text-xl font-bold text-slate-900">{name}</p>
                                             <p className="text-xs text-slate-500 mt-1">Pusat Prestasi Ar Rayyan Learning Course</p>
                                         </div>
                                     </div>
@@ -179,8 +179,8 @@ export default function OlympiadDetail() {
                             </div>
 
                             {/* Sistem Seleksi & Mekanisme */}
-                            <div className="rounded-3xl border border-slate-200/90 bg-slate-50/60 p-6 sm:p-8">
-                                <h3 className="font-display text-xl font-bold text-slate-900 mb-3 flex items-center gap-2">
+                            <div className="rounded-3xl border border-slate-200/90 bg-slate-50/60 p-5 xs:p-6 sm:p-8">
+                                <h3 className="font-display text-lg xs:text-xl font-bold text-slate-900 mb-3 flex items-center gap-2">
                                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
                                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
@@ -192,7 +192,7 @@ export default function OlympiadDetail() {
                                     {selection !== '-' ? selection : 'Seleksi dilakukan secara terbuka dengan pembinaan intensif dari tutor ALC.'}
                                 </p>
 
-                                <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                <div className="mt-6 grid grid-cols-1 xs:grid-cols-3 gap-3 text-xs">
                                     <div className="rounded-2xl border border-slate-200 bg-white p-4">
                                         <span className="font-bold text-amber-600">Tahap 1</span>
                                         <p className="font-bold text-slate-900 mt-1">Pendaftaran & Seleksi</p>
@@ -213,8 +213,8 @@ export default function OlympiadDetail() {
 
                             {/* Winners announcement */}
                             {winners.length > 0 && (
-                                <div className="rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-6 sm:p-8">
-                                    <h3 className="font-display text-xl font-bold text-slate-900 mb-1 flex items-center gap-2">
+                                <div className="rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 xs:p-6 sm:p-8">
+                                    <h3 className="font-display text-lg xs:text-xl font-bold text-slate-900 mb-1 flex items-center gap-2">
                                         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
                                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 5h8v4a4 4 0 01-8 0V5Zm-2 0H5a1 1 0 00-1 1c0 2.5 2 4.5 4.5 4.5M18 5h1a1 1 0 011 1c0 2.5-2 4.5-4.5 4.5M12 13v4m-3 4h6m-6 0-1 3m7-3-1 3" />
@@ -241,7 +241,7 @@ export default function OlympiadDetail() {
 
                             {/* Keuntungan Mengikuti */}
                             <div>
-                                <h3 className="font-display text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <h3 className="font-display text-lg xs:text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
                                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-brand-primary">
                                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -250,7 +250,7 @@ export default function OlympiadDetail() {
                                     <span>Fasilitas Pembinaan ALC</span>
                                 </h3>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                <div className="grid grid-cols-1 xs:grid-cols-2 gap-3.5">
                                     {[
                                         'Mentor berprestasi dan berpengalaman membimbing lomba',
                                         'Kumpulan paket soal olimpiade tahun-tahun sebelumnya',
@@ -270,7 +270,7 @@ export default function OlympiadDetail() {
 
                         {/* Right Sidebar (4 cols - Sticky Card) */}
                         <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
-                            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-xl">
+                            <div className="rounded-3xl border border-slate-200/90 bg-white p-5 xs:p-6 sm:p-7 shadow-xl">
                                 <h4 className="font-bold text-slate-900 text-base pb-3 border-b border-slate-100">
                                     Ringkasan Event
                                 </h4>

@@ -9,6 +9,7 @@ use App\Models\Grade;
 use App\Models\Invoice;
 use App\Models\Schedule;
 use App\Models\Student;
+use App\Models\StudentRegistration;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -40,7 +41,7 @@ class AcademicService
                 throw new RuntimeException('Murid sudah menjadi anggota aktif kelas ini.');
             }
 
-            $otherActive = ClassMember::query()
+            $activeInProgram = ClassMember::query()
                 ->where('student_id', $student->id)
                 ->where('status', ClassMember::STATUS_ACTIVE)
                 ->whereHas('classGroup', function ($query) use ($classGroup): void {
@@ -48,9 +49,15 @@ class AcademicService
                         ->where('is_active', true)
                         ->where('id', '<>', $classGroup->id);
                 })
-                ->exists();
+                ->count();
 
-            if ($otherActive) {
+            $allowedInProgram = max(1, StudentRegistration::query()
+                ->where('student_id', $student->id)
+                ->where('program_id', $classGroup->program_id)
+                ->where('status', 'approved')
+                ->count());
+
+            if ($activeInProgram >= $allowedInProgram) {
                 throw new RuntimeException('Murid sudah aktif di kelas lain pada program yang sama.');
             }
 
@@ -126,6 +133,21 @@ class AcademicService
             if ($record) {
                 $record->update($payload);
             } else {
+                $student = Student::with('packageItem')->find($studentId);
+                $targetSessions = $student?->packageItem?->sessions ?? $classGroup->total_sessions;
+
+                if ($targetSessions !== null) {
+                    $attendedCount = Attendance::query()
+                        ->where('class_group_id', $classGroup->id)
+                        ->where('student_id', $studentId)
+                        ->where('status', '!=', 'belum_absen')
+                        ->count();
+
+                    if ($attendedCount >= $targetSessions) {
+                        throw new RuntimeException("Murid {$student?->name} sudah mencapai batas {$targetSessions} pertemuan paketnya.");
+                    }
+                }
+
                 Attendance::create([
                     'class_group_id' => $classGroup->id,
                     'student_id' => $studentId,

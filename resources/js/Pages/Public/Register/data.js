@@ -75,6 +75,7 @@ export const formFields = {
             program: 'Program',
             package: 'Pilihan pertemuan dan harga',
             parentContact: 'Kontak orang tua',
+            parentEmail: 'Email orang tua',
             preferredMode: 'Sistem belajar (offline/online)',
             notes: 'Catatan tambahan',
         },
@@ -88,6 +89,7 @@ export const formFields = {
             program: 'Program',
             package: 'Sessions and price option',
             parentContact: 'Parent contact',
+            parentEmail: 'Parent email',
             preferredMode: 'Learning mode (offline/online)',
             notes: 'Additional notes',
         },
@@ -95,6 +97,7 @@ export const formFields = {
     teacher: {
         id: {
             name: 'Nama',
+            email: 'Email Pengajar',
             address: 'Alamat',
             education: 'Pendidikan',
             subjects: 'Mata pelajaran dikuasai',
@@ -105,6 +108,7 @@ export const formFields = {
         },
         en: {
             name: 'Name',
+            email: 'Teacher email',
             address: 'Address',
             education: 'Education',
             subjects: 'Subjects expertise',
@@ -127,6 +131,7 @@ export const initialStudentForm = {
     package_id: '',
     package: '',
     parent_contact: '',
+    parent_email: '',
     preferred_mode: '',
     notes: '',
     website: '',
@@ -135,6 +140,7 @@ export const initialStudentForm = {
 
 export const initialTeacherForm = {
     name: '',
+    email: '',
     address: '',
     education: '',
     subjects: '',

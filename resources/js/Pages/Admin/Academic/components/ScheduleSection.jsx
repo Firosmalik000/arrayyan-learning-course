@@ -23,7 +23,7 @@ export default function ScheduleSection({
                     <div key={sch.id} className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
                         <div>
                             <p className="text-sm font-semibold text-slate-800">{sch.day}</p>
-                            <p className="text-xs text-slate-500">{sch.start_time}–{sch.end_time}{sch.room ? ` • ${sch.room}` : ''}</p>
+                            <p className="text-xs text-slate-500">{sch.start_time}–{sch.end_time}</p>
                         </div>
                         <div className="flex gap-1">
                             {canEdit && (

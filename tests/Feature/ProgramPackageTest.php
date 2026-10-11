@@ -217,6 +217,7 @@ class ProgramPackageTest extends TestCase
             'package_id' => $package->id,
             'package' => $package->name,
             'parent_contact' => '081234567890',
+            'parent_email' => 'package.parent@example.com',
             'preferred_mode' => 'offline',
         ];
     }

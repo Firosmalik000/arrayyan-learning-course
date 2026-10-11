@@ -110,11 +110,11 @@ export default function BlogDetail() {
                                 {formatDate(post.published_at)} • {post.reading_minutes} mnt baca
                             </span>
                         </div>
-                        <h1 className="mt-4 font-display text-3xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-4xl">
+                        <h1 className="mt-4 font-display text-2xl xs:text-3xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-4xl">
                             {post.title}
                         </h1>
                         {post.excerpt && (
-                            <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-slate-500">
+                            <p className="mx-auto mt-3 max-w-2xl text-sm sm:text-base leading-relaxed text-slate-500">
                                 {post.excerpt}
                             </p>
                         )}
@@ -134,14 +134,14 @@ export default function BlogDetail() {
                         )}
                         <ArticleBody content={post.content} />
 
-                        <div className="mt-10 rounded-3xl bg-gradient-to-br from-violet-600 to-violet-800 p-6 text-center text-white sm:p-8">
-                            <h3 className="font-display text-xl font-bold">Siap Belajar Lebih Terarah?</h3>
-                            <p className="mx-auto mt-1 max-w-md text-sm text-violet-100">
+                        <div className="mt-10 rounded-3xl bg-gradient-to-br from-violet-600 to-violet-800 p-5 xs:p-6 text-center text-white sm:p-8">
+                            <h3 className="font-display text-lg xs:text-xl font-bold">Siap Belajar Lebih Terarah?</h3>
+                            <p className="mx-auto mt-1 max-w-md text-xs xs:text-sm text-violet-100">
                                 Bergabung dengan ALC dan rasakan pendampingan belajar yang personal.
                             </p>
-                            <div className="mt-4 flex flex-wrap justify-center gap-2">
-                                <Button href="/pendaftaran" variant="white">Daftar Sekarang</Button>
-                                <Button href="/cek-status" variant="outline" className="!border-white/40 !text-white hover:!bg-white/10">
+                            <div className="mt-4 flex flex-col xs:flex-row justify-center gap-2">
+                                <Button href="/pendaftaran" variant="white" className="justify-center">Daftar Sekarang</Button>
+                                <Button href="/cek-status" variant="outline" className="!border-white/40 !text-white hover:!bg-white/10 justify-center">
                                     Cek Status
                                 </Button>
                             </div>
@@ -151,7 +151,7 @@ export default function BlogDetail() {
                     {related.length > 0 && (
                         <div className="mx-auto mt-14 max-w-5xl">
                             <h3 className="font-display text-xl font-bold text-slate-900">Bacaan Terkait</h3>
-                            <div className="mt-4 grid gap-5 sm:grid-cols-3">
+                            <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                                 {related.map((r) => (
                                     <Link
                                         key={r.id}

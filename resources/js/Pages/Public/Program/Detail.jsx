@@ -248,16 +248,16 @@ export default function ProgramDetail() {
                                             <span>Mata Pelajaran yang Dipelajari</span>
                                         </h3>
 
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2.5 xs:gap-3">
                                             {program.subjects.map((subj, idx) => (
                                                 <div
                                                     key={idx}
-                                                    className="flex items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 shadow-2xs"
+                                                    className="flex items-center gap-2.5 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 xs:p-3.5 shadow-2xs"
                                                 >
-                                                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-100 text-brand-primary text-xs font-bold">
+                                                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-100 text-brand-primary text-xs font-bold shrink-0">
                                                         ✓
                                                     </span>
-                                                    <span className="text-sm font-semibold text-slate-800">{subj}</span>
+                                                    <span className="text-xs xs:text-sm font-semibold text-slate-800 truncate">{subj}</span>
                                                 </div>
                                             ))}
                                         </div>

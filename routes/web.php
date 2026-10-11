@@ -201,14 +201,16 @@ Route::post('/pendaftaran/murid', [RegistrationController::class, 'storeStudent'
 Route::post('/pendaftaran/pengajar', [RegistrationController::class, 'storeTeacher'])
     ->middleware('throttle:10,1')
     ->name('registrations.teacher');
+Route::get('/pendaftaran/berhasil/{registrationType}/{ticket}', [RegistrationController::class, 'success'])
+    ->where('registrationType', 'murid|pengajar')
+    ->where('ticket', 'ALC-\d{4}-\d{5}')
+    ->name('registrations.success');
 Route::get('/cek-status', [StatusCheckController::class, 'show'])
     ->middleware('throttle:60,1')
     ->name('status.check');
-Route::get('/pembayaran', [PaymentController::class, 'show'])
-    ->middleware('throttle:60,1')
+Route::get('/pembayaran', fn () => redirect()->route('portal.invoices'))
     ->name('payments.show');
-Route::get('/bayar', [PaymentController::class, 'show'])
-    ->middleware('throttle:60,1')
+Route::get('/bayar', fn () => redirect()->route('portal.invoices'))
     ->name('bayar');
 Route::post('/bayar/{invoice}/upload', [PaymentController::class, 'upload'])
     ->middleware('throttle:10,1')
@@ -232,10 +234,19 @@ Route::prefix('portal')->name('portal.')->middleware('auth:portal')->group(funct
         Route::get('/absensi', [PortalController::class, 'attendance'])->name('attendance');
         Route::get('/nilai', [PortalController::class, 'grades'])->name('grades');
         Route::get('/tagihan', [PortalController::class, 'invoices'])->name('invoices');
+        Route::post('/tagihan/{invoice}/bayar', [PortalController::class, 'uploadPayment'])
+            ->middleware('throttle:10,1')
+            ->name('invoices.pay');
         Route::get('/kelas/{classGroup}', [PortalController::class, 'classDetail'])->name('classes.show');
         Route::post('/kelas/{classGroup}/absensi', [PortalController::class, 'storeClassAttendance'])->name('classes.attendance.store');
         Route::post('/kelas/{classGroup}/nilai', [PortalController::class, 'storeClassGrades'])->name('classes.grades.store');
+        Route::post('/kelas/{classGroup}/jadwal', [PortalController::class, 'storeClassSchedule'])->name('classes.schedules.store');
+        Route::put('/jadwal/{schedule}', [PortalController::class, 'updateClassSchedule'])->name('classes.schedules.update');
+        Route::delete('/jadwal/{schedule}', [PortalController::class, 'destroyClassSchedule'])->name('classes.schedules.destroy');
+        Route::post('/kelas/{classGroup}/generate-pertemuan', [PortalController::class, 'generateClassSessions'])->name('classes.sessions.generate');
         Route::get('/profil', [PortalController::class, 'profile'])->name('profile');
+        Route::post('/pilih-anak/{student}', [PortalController::class, 'switchStudent'])->name('switch_student');
+        Route::post('/tambah-program', [PortalController::class, 'storeProgram'])->name('programs.store');
     });
 
     Route::get('/password', [PortalController::class, 'password'])->name('password');
@@ -330,6 +341,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::post('/pendaftaran/murid/{studentRegistration}/reject', [AdminRegistrationController::class, 'rejectStudent'])
         ->middleware('role_or_permission:administrator|pendaftaran.reject,admin')
         ->name('registrations.student.reject');
+    Route::post('/pendaftaran/murid/{studentRegistration}/resend-email', [AdminRegistrationController::class, 'resendStudentEmail'])
+        ->middleware('role_or_permission:administrator|pendaftaran.approve,admin')
+        ->name('registrations.student.resend-email');
     Route::delete('/pendaftaran/murid/{studentRegistration}', [AdminRegistrationController::class, 'destroyStudent'])
         ->middleware('role_or_permission:administrator|pendaftaran.delete,admin')
         ->name('registrations.student.destroy');
@@ -342,6 +356,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::post('/pendaftaran/pengajar/{teacherRegistration}/reject', [AdminRegistrationController::class, 'rejectTeacher'])
         ->middleware('role_or_permission:administrator|pendaftaran.reject,admin')
         ->name('registrations.teacher.reject');
+    Route::post('/pendaftaran/pengajar/{teacherRegistration}/resend-email', [AdminRegistrationController::class, 'resendTeacherEmail'])
+        ->middleware('role_or_permission:administrator|pendaftaran.approve,admin')
+        ->name('registrations.teacher.resend-email');
     Route::delete('/pendaftaran/pengajar/{teacherRegistration}', [AdminRegistrationController::class, 'destroyTeacher'])
         ->middleware('role_or_permission:administrator|pendaftaran.delete,admin')
         ->name('registrations.teacher.destroy');
@@ -375,6 +392,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::post('/akademik/kelas/{classGroup}/absensi', [AcademicController::class, 'storeAttendance'])
         ->middleware('role_or_permission:administrator|akademik.edit,admin')
         ->name('academic.attendance.store');
+    Route::post('/akademik/kelas/{classGroup}/generate-pertemuan', [AcademicController::class, 'generateSessions'])
+        ->middleware('role_or_permission:administrator|akademik.edit,admin')
+        ->name('academic.sessions.generate');
     Route::post('/akademik/kelas/{classGroup}/nilai', [AcademicController::class, 'storeGrades'])
         ->middleware('role_or_permission:administrator|akademik.edit,admin')
         ->name('academic.grades.store');
@@ -448,6 +468,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::get('/keuangan', [InvoiceController::class, 'index'])
         ->middleware('role_or_permission:administrator|keuangan.view,admin')
         ->name('keuangan');
+    Route::post('/keuangan/invoice/{invoice}/confirm', [InvoiceController::class, 'confirm'])
+        ->middleware('role_or_permission:administrator|keuangan.approve,admin')
+        ->name('keuangan.invoice.confirm');
+    Route::post('/keuangan/invoice/{invoice}/decline', [InvoiceController::class, 'declineInvoice'])
+        ->middleware('role_or_permission:administrator|keuangan.reject,admin')
+        ->name('keuangan.invoice.decline');
     Route::post('/keuangan/payment/{payment}/verify', [InvoiceController::class, 'verify'])
         ->middleware('role_or_permission:administrator|keuangan.approve,admin')
         ->name('keuangan.verify');

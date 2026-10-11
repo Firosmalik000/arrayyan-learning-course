@@ -24,13 +24,17 @@ createInertiaApp({
         }
 
         if (!page.default.layout) {
-            page.default.layout = name.startsWith('Admin/')
-                ? (pageContent) => (
-                      <AdminLayout>{pageContent}</AdminLayout>
-                  )
-                : (pageContent) => (
-                      <PublicLayout>{pageContent}</PublicLayout>
-                  );
+            if (name.startsWith('Admin/')) {
+                page.default.layout = (pageContent) => (
+                    <AdminLayout>{pageContent}</AdminLayout>
+                );
+            } else if (name.startsWith('Portal/') || name.startsWith('Auth/')) {
+                page.default.layout = (pageContent) => pageContent;
+            } else {
+                page.default.layout = (pageContent) => (
+                    <PublicLayout>{pageContent}</PublicLayout>
+                );
+            }
         }
 
         if (name === 'Admin/Login') {

@@ -1,6 +1,6 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import { ConfirmModal, FlashMessage, Modal, SearchInput } from '@/Components/Admin';
+import { ActionDropdown, ConfirmModal, FlashMessage, Modal, Pagination, SearchInput } from '@/Components/Admin';
 
 const toneStyles = {
     violet: 'bg-violet-50 text-violet-700',
@@ -207,7 +207,7 @@ export default function Roles() {
                         <div>
                             <h3 className="text-sm font-semibold text-slate-800">Daftar Role</h3>
                             <p className="mt-1 text-xs text-slate-500">
-                                Menampilkan {startIndex}-{endIndex} dari {sortedRoles.length} role
+                                Total {sortedRoles.length} role terdaftar
                             </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -217,36 +217,57 @@ export default function Roles() {
                                 placeholder="Filter nama role"
                                 className="sm:max-w-[220px]"
                             />
-                            <select
-                                value={pageSize}
-                                onChange={(event) => setPageSize(Number(event.target.value))}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 outline-none sm:text-sm"
-                            >
-                                {[5, 10, 20, 50].map((size) => (
-                                    <option key={size} value={size}>
-                                        {size} baris
-                                    </option>
-                                ))}
-                            </select>
                         </div>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="min-w-full text-left text-sm">
+                        <table className="w-full min-w-[600px] text-left text-sm">
                             <thead>
                                 <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                    <th className="w-12 px-4 py-3 text-center font-medium">No</th>
+                                    <th className="w-14 px-4 py-3 text-center font-medium">Aksi</th>
                                     <th className="px-5 py-3 font-medium">Nama Role</th>
                                     <th className="px-5 py-3 font-medium">Grup</th>
                                     <th className="px-5 py-3 font-medium">Admin</th>
                                     <th className="px-5 py-3 font-medium">Akses</th>
-                                    <th className="px-5 py-3 font-medium text-right">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {paginatedRoles.map((role) => {
+                                {paginatedRoles.map((role, idx) => {
+                                    const rowNum = (page - 1) * pageSize + idx + 1;
                                     const isLocked = role.raw_name === 'administrator' || role.key === 'administrator';
+                                    const actions = [
+                                        canView && {
+                                            label: 'Detail Role',
+                                            icon: icons.eye,
+                                            onClick: () => setDetailRole(role),
+                                        },
+                                        canAccessMenu && {
+                                            label: 'Atur Hak Akses',
+                                            href: `/admin/roles/${role.id}/permissions`,
+                                        },
+                                        canEdit && {
+                                            label: 'Edit Role',
+                                            icon: icons.edit,
+                                            disabled: isLocked,
+                                            onClick: () => openEditModal(role),
+                                        },
+                                        canDelete && {
+                                            label: 'Hapus Role',
+                                            icon: icons.trash,
+                                            danger: true,
+                                            disabled: isLocked,
+                                            onClick: () => setDeleteRole(role),
+                                        },
+                                    ].filter(Boolean);
 
                                     return (
                                         <tr key={role.id} className="transition hover:bg-slate-50">
+                                            <td className="px-4 py-4 text-center font-semibold text-slate-400">
+                                                {rowNum}
+                                            </td>
+                                            <td className="px-4 py-4 text-center">
+                                                <ActionDropdown actions={actions} />
+                                            </td>
                                             <td className="px-5 py-4">
                                                 <p className="font-semibold text-slate-800">{role.name}</p>
                                                 <p className="text-xs text-slate-500">{role.description}</p>
@@ -262,48 +283,12 @@ export default function Roles() {
                                                     {role.tag}
                                                 </span>
                                             </td>
-                                            <td className="px-5 py-4">
-                                                <div className="flex justify-end gap-1">
-                                                {canView && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setDetailRole(role)}
-                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                                                        title="Detail"
-                                                    >
-                                                        {icons.eye}
-                                                    </button>
-                                                )}
-                                                {canEdit && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openEditModal(role)}
-                                                        disabled={isLocked}
-                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-50"
-                                                        title="Edit"
-                                                    >
-                                                        {icons.edit}
-                                                    </button>
-                                                )}
-                                                {canDelete && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setDeleteRole(role)}
-                                                        disabled={isLocked}
-                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                                                        title="Hapus"
-                                                    >
-                                                        {icons.trash}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                                        </tr>
+                                    );
+                                })}
                                 {paginatedRoles.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="px-5 py-12 text-center text-slate-500">
+                                        <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
                                             Tidak ada role yang cocok dengan filter.
                                         </td>
                                     </tr>
@@ -311,43 +296,20 @@ export default function Roles() {
                             </tbody>
                         </table>
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 p-4">
-                        <p className="text-xs text-slate-500">
-                            Menampilkan {startIndex}-{endIndex} dari {sortedRoles.length} role
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setPage((current) => Math.max(current - 1, 1))}
-                                disabled={page === 1}
-                                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:border-violet-200 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                Prev
-                            </button>
-                            {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
-                                <button
-                                    key={pageNumber}
-                                    type="button"
-                                    onClick={() => setPage(pageNumber)}
-                                    className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
-                                        pageNumber === page
-                                            ? 'bg-violet-600 text-white shadow-sm'
-                                            : 'border border-slate-200 text-slate-600 hover:border-violet-200 hover:text-violet-700'
-                                    }`}
-                                >
-                                    {pageNumber}
-                                </button>
-                            ))}
-                            <button
-                                type="button"
-                                onClick={() => setPage((current) => Math.min(current + 1, totalPages))}
-                                disabled={page === totalPages}
-                                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:border-violet-200 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
+
+                    {sortedRoles.length > 0 && (
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={sortedRoles.length}
+                            perPage={pageSize}
+                            onPageChange={setPage}
+                            onPerPageChange={(val) => {
+                                setPageSize(val);
+                                setPage(1);
+                            }}
+                        />
+                    )}
                 </div>
             </div>
 

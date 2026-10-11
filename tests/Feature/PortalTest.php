@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Mail\ParentRegistrationApprovedExistingAccountMail;
+use App\Mail\ParentRegistrationApprovedNewAccountMail;
+use App\Models\Attendance;
 use App\Models\ClassGroup;
 use App\Models\Invoice;
 use App\Models\NotificationLog;
@@ -15,7 +18,10 @@ use App\Models\TeacherRegistration;
 use App\Models\User;
 use App\Support\PermissionCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PortalTest extends TestCase
@@ -64,7 +70,7 @@ class PortalTest extends TestCase
         );
 
         $account = PortalAccount::query()
-            ->where('type', 'student')
+            ->whereIn('type', ['parent', 'student'])
             ->where('contact', '081234567890')
             ->first();
 
@@ -75,9 +81,10 @@ class PortalTest extends TestCase
         $log = NotificationLog::query()
             ->where('event', 'approved')
             ->where('registration_id', $reg->id)
+            ->where('channel', 'whatsapp')
             ->first();
         $this->assertNotNull($log);
-        $this->assertStringContainsString('Akun portal', $log->message);
+        $this->assertStringContainsString('portal', strtolower($log->message));
         $this->assertStringContainsString('password sementara', $log->message);
     }
 
@@ -115,9 +122,135 @@ class PortalTest extends TestCase
         $this->actingAs($user, $guard)->post(route('admin.registrations.student.approve', $reg->fresh()));
 
         $this->assertEquals(1, PortalAccount::query()
-            ->where('type', 'student')
+            ->whereIn('type', ['parent', 'student'])
             ->where('contact', '081234567890')
             ->count());
+    }
+
+    public function test_approve_first_student_with_email_creates_parent_account_and_sends_email(): void
+    {
+        Mail::fake();
+
+        $user = $this->actingAsAdmin();
+        $program = Program::create(['name' => 'Tahfidz', 'level' => 'SD', 'is_active' => true]);
+        $reg = StudentRegistration::factory()->create([
+            'student_name' => 'Anak Pertama',
+            'parent_email' => 'orangtua@example.com',
+            'parent_contact' => '081234567899',
+            'program_id' => $program->id,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.registrations.student.approve', $reg)
+        );
+
+        $account = PortalAccount::query()
+            ->where('email', 'orangtua@example.com')
+            ->where('type', 'parent')
+            ->first();
+
+        $this->assertNotNull($account);
+        $this->assertEquals('081234567899', $account->contact);
+        $this->assertTrue($account->must_change_password);
+
+        // Child linked
+        $student = Student::where('name', 'Anak Pertama')->first();
+        $this->assertNotNull($student);
+        $this->assertEquals($account->id, $student->parent_portal_account_id);
+        $this->assertEquals('orangtua@example.com', $student->parent_email);
+
+        Mail::assertSent(ParentRegistrationApprovedNewAccountMail::class, function ($mail) {
+            return $mail->hasTo('orangtua@example.com') && $mail->studentName === 'Anak Pertama';
+        });
+    }
+
+    public function test_approve_second_student_for_same_parent_email_links_to_existing_account(): void
+    {
+        Mail::fake();
+
+        $user = $this->actingAsAdmin();
+        $program = Program::create(['name' => 'Olimpiade', 'level' => 'SMP', 'is_active' => true]);
+
+        // First registration
+        $reg1 = StudentRegistration::factory()->create([
+            'student_name' => 'Kakak',
+            'parent_email' => 'bunda@example.com',
+            'parent_contact' => '08111222333',
+            'program_id' => $program->id,
+            'status' => 'pending',
+        ]);
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.student.approve', $reg1));
+
+        $existingAccount = PortalAccount::where('email', 'bunda@example.com')->first();
+        $originalPassword = $existingAccount->password;
+
+        // Second registration with same parent_email
+        $reg2 = StudentRegistration::factory()->create([
+            'student_name' => 'Adik',
+            'parent_email' => 'bunda@example.com',
+            'parent_contact' => '08111222333',
+            'program_id' => $program->id,
+            'status' => 'pending',
+        ]);
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.student.approve', $reg2));
+
+        // Account count is still 1
+        $this->assertEquals(1, PortalAccount::where('email', 'bunda@example.com')->count());
+
+        // Password not reset
+        $existingAccount->refresh();
+        $this->assertEquals($originalPassword, $existingAccount->password);
+
+        // Both children belong to the same parent account
+        $children = $existingAccount->students()->get();
+        $this->assertCount(2, $children);
+        $this->assertTrue($children->contains('name', 'Kakak'));
+        $this->assertTrue($children->contains('name', 'Adik'));
+
+        Mail::assertSent(ParentRegistrationApprovedExistingAccountMail::class, function ($mail) {
+            return $mail->hasTo('bunda@example.com') && $mail->studentName === 'Adik';
+        });
+    }
+
+    public function test_login_with_parent_email_and_switch_child(): void
+    {
+        $parent = PortalAccount::create([
+            'type' => 'parent',
+            'name' => 'Orang Tua Hebat',
+            'email' => 'parent@example.com',
+            'contact' => '08555666777',
+            'password' => Hash::make('secret123'),
+            'must_change_password' => false,
+            'is_active' => true,
+        ]);
+
+        $child1 = Student::create([
+            'name' => 'Anak Satu',
+            'parent_portal_account_id' => $parent->id,
+            'parent_email' => 'parent@example.com',
+            'is_active' => true,
+        ]);
+
+        $child2 = Student::create([
+            'name' => 'Anak Dua',
+            'parent_portal_account_id' => $parent->id,
+            'parent_email' => 'parent@example.com',
+            'is_active' => true,
+        ]);
+
+        // Login using email
+        $response = $this->post(route('portal.login.store'), [
+            'contact' => 'parent@example.com',
+            'password' => 'secret123',
+        ]);
+        $response->assertRedirect(route('portal.dashboard'));
+        $this->assertAuthenticatedAs($parent, 'portal');
+
+        // Switch child
+        $switch = $this->actingAs($parent, 'portal')->post(route('portal.switch_student', $child2));
+        $switch->assertRedirect();
+        $this->assertEquals($child2->id, session('portal.selected_student_id'));
     }
 
     public function test_login_with_contact_and_password(): void
@@ -271,5 +404,225 @@ class PortalTest extends TestCase
         $response = $this->get(route('portal.dashboard'));
 
         $response->assertRedirect(route('portal.login'));
+    }
+
+    public function test_unified_login_page_authenticates_admin_user(): void
+    {
+        $admin = $this->actingAsAdmin();
+        auth('admin')->logout();
+        auth('web')->logout();
+
+        $response = $this->post(route('login.store'), [
+            'identity' => $admin->email,
+            'password' => 'password',
+        ]);
+
+        $response->assertRedirect(route('admin.dashboard'));
+        $this->assertAuthenticatedAs($admin, 'admin');
+    }
+
+    public function test_unified_login_page_authenticates_portal_parent_by_email(): void
+    {
+        $account = $this->makeAccount('parent', [
+            'email' => 'wali.murid@example.com',
+            'contact' => '081233334444',
+            'password' => Hash::make('rahasia123'),
+            'must_change_password' => false,
+        ]);
+
+        $response = $this->post(route('login.store'), [
+            'identity' => 'wali.murid@example.com',
+            'password' => 'rahasia123',
+        ]);
+
+        $response->assertRedirect(route('portal.dashboard'));
+        $this->assertAuthenticatedAs($account, 'portal');
+    }
+
+    public function test_unified_login_page_authenticates_portal_parent_by_phone(): void
+    {
+        $account = $this->makeAccount('parent', [
+            'email' => 'wali.phone@example.com',
+            'contact' => '081255556666',
+            'password' => Hash::make('rahasia123'),
+            'must_change_password' => false,
+        ]);
+
+        $response = $this->post(route('login.store'), [
+            'identity' => '0812-5555-6666',
+            'password' => 'rahasia123',
+        ]);
+
+        $response->assertRedirect(route('portal.dashboard'));
+        $this->assertAuthenticatedAs($account, 'portal');
+    }
+
+    public function test_parent_can_upload_payment_proof_in_portal(): void
+    {
+        Storage::fake('public');
+        $program = Program::create(['name' => 'Reguler', 'level' => 'SMP', 'is_active' => true]);
+        $student = Student::create([
+            'name' => 'Anak Portal',
+            'program_id' => $program->id,
+            'parent_contact' => '081234567890',
+            'is_active' => true,
+        ]);
+        $invoice = Invoice::create([
+            'invoice_no' => 'INV-2026-99001',
+            'student_id' => $student->id,
+            'program_id' => $program->id,
+            'amount' => 500000,
+            'status' => 'unpaid',
+            'due_date' => now()->addDays(7)->toDateString(),
+        ]);
+
+        $account = $this->makeAccount('parent', [
+            'contact' => '081234567890',
+            'student_id' => $student->id,
+        ]);
+
+        $response = $this->actingAs($account, 'portal')->post(
+            route('portal.invoices.pay', $invoice),
+            [
+                'proof' => UploadedFile::fake()->image('bukti_transfer.jpg'),
+                'note' => 'Transfer via BCA an Fulan',
+            ]
+        );
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+        $this->assertEquals('pending', $invoice->fresh()->status);
+        $this->assertDatabaseHas('payments', [
+            'invoice_id' => $invoice->id,
+            'status' => 'pending',
+            'note' => 'Transfer via BCA an Fulan',
+        ]);
+    }
+
+    public function test_parent_cannot_upload_payment_proof_for_unowned_invoice(): void
+    {
+        Storage::fake('public');
+        $program = Program::create(['name' => 'Reguler', 'level' => 'SMP', 'is_active' => true]);
+        $studentA = Student::create(['name' => 'Murid A', 'program_id' => $program->id, 'parent_contact' => '081111111111', 'is_active' => true]);
+        $studentB = Student::create(['name' => 'Murid B', 'program_id' => $program->id, 'parent_contact' => '082222222222', 'is_active' => true]);
+
+        $invoiceB = Invoice::create([
+            'invoice_no' => 'INV-2026-99002',
+            'student_id' => $studentB->id,
+            'amount' => 200000,
+            'status' => 'unpaid',
+        ]);
+
+        $accountA = $this->makeAccount('parent', [
+            'contact' => '081111111111',
+            'student_id' => $studentA->id,
+        ]);
+
+        $response = $this->actingAs($accountA, 'portal')->post(
+            route('portal.invoices.pay', $invoiceB),
+            [
+                'proof' => UploadedFile::fake()->image('bukti.jpg'),
+            ]
+        );
+
+        $response->assertForbidden();
+    }
+
+    public function test_parent_cannot_upload_payment_for_already_paid_invoice(): void
+    {
+        Storage::fake('public');
+        $program = Program::create(['name' => 'Reguler', 'level' => 'SMP', 'is_active' => true]);
+        $student = Student::create(['name' => 'Murid Lunas', 'program_id' => $program->id, 'parent_contact' => '081234567890', 'is_active' => true]);
+        $invoice = Invoice::create([
+            'invoice_no' => 'INV-2026-99003',
+            'student_id' => $student->id,
+            'amount' => 300000,
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
+
+        $account = $this->makeAccount('parent', [
+            'contact' => '081234567890',
+            'student_id' => $student->id,
+        ]);
+
+        $response = $this->actingAs($account, 'portal')->post(
+            route('portal.invoices.pay', $invoice),
+            [
+                'proof' => UploadedFile::fake()->image('bukti.jpg'),
+            ]
+        );
+
+        $response->assertSessionHas('error');
+    }
+
+    public function test_teacher_can_manage_schedule_and_record_attendance_on_any_date_in_portal(): void
+    {
+        $program = Program::create(['name' => 'Reguler', 'level' => 'SMP', 'is_active' => true]);
+        $teacher = Teacher::create(['name' => 'Guru Hebat', 'contact' => '081233333333', 'is_active' => true]);
+        $class = ClassGroup::create([
+            'program_id' => $program->id,
+            'teacher_id' => $teacher->id,
+            'name' => 'Kelas Hebat',
+            'is_active' => true,
+        ]);
+        $student = Student::create([
+            'name' => 'Anak Hebat',
+            'program_id' => $program->id,
+            'parent_contact' => '081244444444',
+            'is_active' => true,
+        ]);
+        $class->members()->create([
+            'student_id' => $student->id,
+            'status' => 'active',
+        ]);
+
+        $teacherAccount = $this->makeAccount('teacher', [
+            'contact' => '081233333333',
+            'teacher_id' => $teacher->id,
+        ]);
+
+        // Teacher adds schedule
+        $schResponse = $this->actingAs($teacherAccount, 'portal')->post(
+            route('portal.classes.schedules.store', $class),
+            [
+                'day_of_week' => 1,
+                'start_time' => '15:00',
+                'end_time' => '16:30',
+            ]
+        );
+        $schResponse->assertRedirect();
+        $this->assertDatabaseHas('schedules', [
+            'class_group_id' => $class->id,
+            'day_of_week' => 1,
+        ]);
+
+        // Teacher records attendance on upcoming/future date (e.g. 5 days from now)
+        $futureDate = now()->addDays(5)->toDateString();
+        $attResponse = $this->actingAs($teacherAccount, 'portal')->post(
+            route('portal.classes.attendance.store', $class),
+            [
+                'date' => $futureDate,
+                'rows' => [
+                    ['student_id' => $student->id, 'status' => 'hadir'],
+                ],
+            ]
+        );
+        $attResponse->assertRedirect();
+        $this->assertEquals(1, Attendance::query()
+            ->where('class_group_id', $class->id)
+            ->where('student_id', $student->id)
+            ->whereDate('date', $futureDate)
+            ->where('status', 'hadir')
+            ->count());
+
+        // Teacher generates sessions with custom dates
+        $genResponse = $this->actingAs($teacherAccount, 'portal')->post(
+            route('portal.classes.sessions.generate', $class),
+            ['dates' => ['2026-10-18', '2026-10-25']]
+        );
+        $genResponse->assertRedirect();
+        $this->assertEquals(3, Attendance::query()->where('class_group_id', $class->id)->count());
+        $this->assertEquals('belum_absen', Attendance::query()->where('class_group_id', $class->id)->whereDate('date', '2026-10-18')->first()->status);
     }
 }

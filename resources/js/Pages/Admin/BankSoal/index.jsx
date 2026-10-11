@@ -1,6 +1,7 @@
 import { Head, usePage, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
+    ActionDropdown,
     ConfirmModal,
     FlashMessage,
     FormInput,
@@ -8,6 +9,7 @@ import {
     FormTextarea,
     Modal,
     PageHeader,
+    Pagination,
 } from '@/Components/Admin';
 
 const normalizeModule = (item, index) => ({
@@ -89,6 +91,8 @@ export default function BankSoal() {
     const [filterLevel, setFilterLevel] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
     const [filterFormat, setFilterFormat] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
 
     // Modal states
     const [showModal, setShowModal] = useState(false);
@@ -121,15 +125,23 @@ export default function BankSoal() {
     });
 
     // Filtered modules
-    const filteredModules = modules.filter((m) => {
-        const matchSearch =
-            m.name.toLowerCase().includes(search.toLowerCase()) ||
-            m.category.toLowerCase().includes(search.toLowerCase());
-        const matchLevel = !filterLevel || m.level === filterLevel;
-        const matchCategory = !filterCategory || m.category === filterCategory;
-        const matchFormat = !filterFormat || m.format === filterFormat;
-        return matchSearch && matchLevel && matchCategory && matchFormat;
-    });
+    const filteredModules = useMemo(() => {
+        return modules.filter((m) => {
+            const matchSearch =
+                m.name.toLowerCase().includes(search.toLowerCase()) ||
+                m.category.toLowerCase().includes(search.toLowerCase());
+            const matchLevel = !filterLevel || m.level === filterLevel;
+            const matchCategory = !filterCategory || m.category === filterCategory;
+            const matchFormat = !filterFormat || m.format === filterFormat;
+            return matchSearch && matchLevel && matchCategory && matchFormat;
+        });
+    }, [modules, search, filterLevel, filterCategory, filterFormat]);
+
+    const totalPages = Math.ceil(filteredModules.length / perPage) || 1;
+    const paginatedModules = useMemo(() => {
+        const start = (currentPage - 1) * perPage;
+        return filteredModules.slice(start, start + perPage);
+    }, [filteredModules, currentPage, perPage]);
 
     // Stats
     const stats = [
@@ -308,7 +320,10 @@ export default function BankSoal() {
                             <input
                                 type="text"
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                onChange={(e) => {
+                                    setSearch(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                                 placeholder="Cari modul..."
                                 className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                             />
@@ -316,7 +331,10 @@ export default function BankSoal() {
                         <div className="flex flex-wrap gap-2">
                             <select
                                 value={filterLevel}
-                                onChange={(e) => setFilterLevel(e.target.value)}
+                                onChange={(e) => {
+                                    setFilterLevel(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400"
                             >
                                 <option value="">Semua Jenjang</option>
@@ -326,7 +344,10 @@ export default function BankSoal() {
                             </select>
                             <select
                                 value={filterCategory}
-                                onChange={(e) => setFilterCategory(e.target.value)}
+                                onChange={(e) => {
+                                    setFilterCategory(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400"
                             >
                                 <option value="">Semua Kategori</option>
@@ -336,7 +357,10 @@ export default function BankSoal() {
                             </select>
                             <select
                                 value={filterFormat}
-                                onChange={(e) => setFilterFormat(e.target.value)}
+                                onChange={(e) => {
+                                    setFilterFormat(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400"
                             >
                                 <option value="">Semua Format</option>
@@ -349,9 +373,11 @@ export default function BankSoal() {
 
                     {/* Table */}
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                        <table className="w-full min-w-[850px] text-left text-sm">
                             <thead>
                                 <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                    <th className="w-12 px-4 py-3 text-center font-medium">No</th>
+                                    <th className="w-14 px-4 py-3 text-center font-medium">Aksi</th>
                                     <th className="px-5 py-3 font-medium">Nama Modul</th>
                                     <th className="px-5 py-3 font-medium">Kategori</th>
                                     <th className="px-5 py-3 font-medium">Jenjang</th>
@@ -360,90 +386,85 @@ export default function BankSoal() {
                                     <th className="px-5 py-3 font-medium">Akses</th>
                                     <th className="px-5 py-3 font-medium">Status</th>
                                     <th className="px-5 py-3 font-medium">Slug</th>
-                                    <th className="px-5 py-3 font-medium text-right">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filteredModules.map((item) => {
+                                {paginatedModules.map((item, idx) => {
+                                    const rowNum = (currentPage - 1) * perPage + idx + 1;
                                     const statusLabel = item.is_active ? 'Aktif' : 'Nonaktif';
+                                    const actions = [
+                                        canView && {
+                                            label: 'Detail Modul',
+                                            icon: icons.eye,
+                                            onClick: () => openDetailModal(item),
+                                        },
+                                        canEdit && {
+                                            label: 'Edit Modul',
+                                            icon: icons.edit,
+                                            onClick: () => openModal(item),
+                                        },
+                                        item.slug && {
+                                            label: 'Buka Halaman Publik',
+                                            href: `/bank-soal/${item.slug}`,
+                                            external: true,
+                                        },
+                                        canDelete && {
+                                            label: 'Hapus Modul',
+                                            icon: icons.trash,
+                                            danger: true,
+                                            onClick: () => openDeleteModal(item),
+                                        },
+                                    ].filter(Boolean);
 
                                     return (
                                         <tr key={item.id} className="transition hover:bg-slate-50">
-                                        <td className="px-5 py-4">
-                                            <div className="flex items-center gap-3">
-                                                {item.image_url ? (
-                                                    <img
-                                                        src={item.image_url}
-                                                        alt={item.name}
-                                                        className="h-10 w-10 rounded-xl object-cover"
-                                                        loading="lazy"
-                                                    />
-                                                ) : (
-                                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-                                                        {icons.file}
-                                                    </div>
-                                                )}
-                                                <span className="font-medium text-slate-800">{item.name}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-5 py-4 text-slate-600">{item.category || '-'}</td>
-                                        <td className="px-5 py-4 text-slate-600">{item.level || '-'}</td>
-                                        <td className="px-5 py-4 text-slate-600">{item.format || '-'}</td>
-                                        <td className="px-5 py-4 text-slate-600">{item.links?.length ?? 0}</td>
-                                        <td className="px-5 py-4">
-                                            <div className="flex flex-col gap-1 text-xs">
-                                                {item.has_passkey
-                                                    ? <span className="inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">🔒 Passkey</span>
-                                                    : <span className="inline-flex w-fit rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">Terbuka</span>}
-                                                <span className="text-slate-400">{item.view_count ?? 0} dilihat • {item.download_count ?? 0} unduhan</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[statusLabel]}`}>
-                                                {statusLabel}
-                                            </span>
-                                        </td>
-                                        <td className="px-5 py-4 text-slate-500">{item.slug || '-'}</td>
-                                        <td className="px-5 py-4">
-                                            <div className="flex justify-end gap-1">
-                                                {canView && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openDetailModal(item)}
-                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                                                        title="Detail"
-                                                    >
-                                                        {icons.eye}
-                                                    </button>
-                                                )}
-                                                {canEdit && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openModal(item)}
-                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600"
-                                                        title="Edit"
-                                                    >
-                                                        {icons.edit}
-                                                    </button>
-                                                )}
-                                                {canDelete && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openDeleteModal(item)}
-                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
-                                                        title="Hapus"
-                                                    >
-                                                        {icons.trash}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
+                                            <td className="px-4 py-4 text-center font-semibold text-slate-400">
+                                                {rowNum}
+                                            </td>
+                                            <td className="px-4 py-4 text-center">
+                                                <ActionDropdown actions={actions} />
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    {item.image_url ? (
+                                                        <img
+                                                            src={item.image_url}
+                                                            alt={item.name}
+                                                            className="h-10 w-10 rounded-xl object-cover"
+                                                            loading="lazy"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                                                            {icons.file}
+                                                        </div>
+                                                    )}
+                                                    <span className="font-medium text-slate-800">{item.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-4 text-slate-600">{item.category || '-'}</td>
+                                            <td className="px-5 py-4 text-slate-600">{item.level || '-'}</td>
+                                            <td className="px-5 py-4 text-slate-600">{item.format || '-'}</td>
+                                            <td className="px-5 py-4 text-slate-600">{item.links?.length ?? 0}</td>
+                                            <td className="px-5 py-4">
+                                                <div className="flex flex-col gap-1 text-xs">
+                                                    {item.has_passkey
+                                                        ? <span className="inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">🔒 Passkey</span>
+                                                        : <span className="inline-flex w-fit rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">Terbuka</span>}
+                                                    <span className="text-slate-400">{item.view_count ?? 0} dilihat • {item.download_count ?? 0} unduhan</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[statusLabel]}`}>
+                                                    {statusLabel}
+                                                </span>
+                                            </td>
+                                            <td className="px-5 py-4 text-slate-500">{item.slug || '-'}</td>
+                                        </tr>
                                     );
                                 })}
                                 {filteredModules.length === 0 && (
                                     <tr>
-                                        <td colSpan={9} className="px-5 py-12 text-center text-slate-500">
+                                        <td colSpan={10} className="px-5 py-12 text-center text-slate-500">
                                             Tidak ada modul yang ditemukan
                                         </td>
                                     </tr>
@@ -451,6 +472,20 @@ export default function BankSoal() {
                             </tbody>
                         </table>
                     </div>
+
+                    {filteredModules.length > 0 && (
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            totalItems={filteredModules.length}
+                            perPage={perPage}
+                            onPageChange={setCurrentPage}
+                            onPerPageChange={(val) => {
+                                setPerPage(val);
+                                setCurrentPage(1);
+                            }}
+                        />
+                    )}
                 </div>
             </div>
 

@@ -17,14 +17,14 @@ export default function GradeSection({
                         type="text"
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
-                        placeholder="Mapel (cth: Matematika)"
+                        placeholder="Mata Pelajaran"
                         className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 outline-none"
                     />
                     <input
                         type="text"
                         value={term}
                         onChange={(e) => setTerm(e.target.value)}
-                        placeholder="Term (cth: UTS Ganjil)"
+                        placeholder="Semester / Term"
                         className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 outline-none"
                     />
                     <button type="button" onClick={onSubmit} className="rounded-xl bg-brand-primary px-4 py-1.5 text-xs font-semibold text-white transition hover:opacity-90">
@@ -33,7 +33,7 @@ export default function GradeSection({
                 </div>
             </div>
             <div className="mt-3 overflow-x-auto rounded-xl border border-slate-100">
-                <table className="w-full text-left text-sm">
+                <table className="w-full min-w-[360px] text-left text-sm">
                     <tbody className="divide-y divide-slate-100">
                         {members.map((m) => (
                             <tr key={m.student_id} className="hover:bg-slate-50">
@@ -46,7 +46,7 @@ export default function GradeSection({
                                         step="0.5"
                                         value={gradeRows[m.student_id] ?? ''}
                                         onChange={(e) => setGradeRows((prev) => ({ ...prev, [m.student_id]: e.target.value }))}
-                                        placeholder="0–100"
+                                        placeholder="Nilai"
                                         className="w-28 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-violet-400"
                                     />
                                 </td>

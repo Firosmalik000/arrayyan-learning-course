@@ -73,13 +73,13 @@ export default function PublicLayout({ children }) {
     return (
         <div className="min-h-screen bg-[#fafbfc] text-slate-900 flex flex-col antialiased selection:bg-violet-100 selection:text-brand-primary">
             {/* Top Announcement Bar */}
-            <div className="bg-slate-900 text-white text-[12px] sm:text-xs py-2 px-4">
-                <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+            <div className="bg-slate-900 text-white text-[11px] sm:text-xs py-1.5 sm:py-2 px-3 sm:px-4">
+                <div className="max-w-7xl 2xl:max-w-[92rem] mx-auto flex items-center justify-between gap-3 sm:gap-4">
+                    <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/20 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-amber-300 shrink-0">
                             TERBARU
                         </span>
-                        <span className="text-slate-300">
+                        <span className="text-slate-300 truncate">
                             Pendaftaran Siswa Baru Periode 2026/2027 Telah Dibuka!
                         </span>
                     </div>
@@ -108,13 +108,13 @@ export default function PublicLayout({ children }) {
             <header
                 className={`sticky top-0 z-40 w-full transition-all duration-300 ${
                     scrolled
-                        ? 'bg-white/95 backdrop-blur-md shadow-xs border-b border-slate-200/80 py-2.5'
-                        : 'bg-white/90 backdrop-blur-sm border-b border-slate-100 py-3 sm:py-4'
+                        ? 'bg-white/95 backdrop-blur-md shadow-xs border-b border-slate-200/80 py-2 sm:py-2.5'
+                        : 'bg-white/90 backdrop-blur-sm border-b border-slate-100 py-2.5 xs:py-3 sm:py-4'
                 }`}
             >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+                <div className="max-w-7xl 2xl:max-w-[92rem] mx-auto px-3.5 xs:px-4 sm:px-6 lg:px-8 2xl:px-10 flex items-center justify-between gap-3 sm:gap-4">
                     {/* Brand Logo */}
-                    <Link href="/" className="flex items-center gap-3 shrink-0 group">
+                    <Link href="/" className="flex items-center gap-2.5 sm:gap-3 shrink-0 group">
                         <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-violet-50 overflow-hidden border border-slate-200/60 p-1 shadow-xs transition-transform group-hover:scale-105">
                             <img
                                 src={logoSrc}
@@ -260,7 +260,7 @@ export default function PublicLayout({ children }) {
                 href={waLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="fixed bottom-6 right-6 z-30 flex items-center gap-2.5 rounded-full bg-emerald-600 px-4 py-3 text-white shadow-xl hover:bg-emerald-700 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group"
+                className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-30 flex items-center gap-2 sm:gap-2.5 rounded-full bg-emerald-600 px-3.5 sm:px-4 py-2.5 sm:py-3 text-white shadow-xl hover:bg-emerald-700 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group"
                 aria-label="Konsultasi WhatsApp"
             >
                 <span className="relative flex h-3 w-3">
@@ -276,9 +276,9 @@ export default function PublicLayout({ children }) {
             </a>
 
             {/* Premium Educational Institution Footer */}
-            <footer className="mt-auto border-t border-slate-200/80 bg-white pt-16 pb-12 text-slate-600">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12">
+            <footer className="mt-auto border-t border-slate-200/80 bg-white pt-12 sm:pt-16 pb-10 sm:pb-12 text-slate-600">
+                <div className="max-w-7xl 2xl:max-w-[92rem] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-10">
+                    <div className="grid grid-cols-1 gap-8 xs:grid-cols-2 lg:grid-cols-4 lg:gap-12 2xl:gap-16">
                         {/* Col 1: Brand & Profile */}
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">

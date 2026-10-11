@@ -102,7 +102,7 @@ export default function BlogIndex() {
                         </div>
                     ) : (
                         <>
-                            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                                 {rows.map((post) => (
                                     <Link
                                         key={post.id}
@@ -125,7 +125,7 @@ export default function BlogIndex() {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex flex-1 flex-col p-5">
+                                        <div className="flex flex-1 flex-col p-4.5 xs:p-5">
                                             <div className="flex items-center gap-2">
                                                 <Badge variant={post.type === 'pengumuman' ? 'warning' : 'primary'}>
                                                     {post.type === 'pengumuman' ? 'Pengumuman' : 'Artikel'}
@@ -149,23 +149,23 @@ export default function BlogIndex() {
                             </div>
 
                             {meta && meta.last_page > 1 && (
-                                <div className="mt-8 flex items-center justify-center gap-2">
+                                <div className="mt-8 flex flex-col xs:flex-row items-center justify-center gap-2">
                                     <button
                                         type="button"
                                         disabled={meta.current_page <= 1}
                                         onClick={() => goPage(meta.current_page - 1)}
-                                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:border-violet-300 disabled:opacity-50"
+                                        className="w-full xs:w-auto rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:border-violet-300 disabled:opacity-50 text-center"
                                     >
                                         ← Sebelumnya
                                     </button>
-                                    <span className="text-xs text-slate-500">
+                                    <span className="text-xs text-slate-500 py-1 xs:py-0">
                                         Hal {meta.current_page} dari {meta.last_page}
                                     </span>
                                     <button
                                         type="button"
                                         disabled={meta.current_page >= meta.last_page}
                                         onClick={() => goPage(meta.current_page + 1)}
-                                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:border-violet-300 disabled:opacity-50"
+                                        className="w-full xs:w-auto rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:border-violet-300 disabled:opacity-50 text-center"
                                     >
                                         Berikutnya →
                                     </button>
@@ -181,9 +181,9 @@ export default function BlogIndex() {
                                 title="Testimoni Orang Tua & Murid"
                                 align="center"
                             />
-                            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                                 {testimonials.map((t) => (
-                                    <figure key={t.id} className="flex flex-col rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
+                                    <figure key={t.id} className="flex flex-col rounded-3xl border border-slate-200/80 bg-white p-5 xs:p-6 shadow-xs">
                                         <Stars value={t.rating ?? 5} />
                                         <blockquote className="mt-3 flex-1 text-sm leading-relaxed text-slate-600">
                                             “{t.message}”

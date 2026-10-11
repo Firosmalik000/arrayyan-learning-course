@@ -16,6 +16,7 @@ class OpsController extends Controller
         $search = trim((string) $request->query('search', ''));
         $event = trim((string) $request->query('event', ''));
         $status = trim((string) $request->query('status', ''));
+        $perPage = min(max($request->integer('per_page', 10), 5), 100);
 
         $logs = NotificationLog::query()
             ->when($search !== '', function ($query) use ($search): void {
@@ -27,7 +28,7 @@ class OpsController extends Controller
             ->when($event !== '', fn ($query) => $query->where('event', $event))
             ->when($status !== '', fn ($query) => $query->where('status', $status))
             ->latest()
-            ->paginate(20)
+            ->paginate($perPage)
             ->withQueryString();
 
         return Inertia::render('Admin/Notifications', [
@@ -39,7 +40,7 @@ class OpsController extends Controller
                 ->pluck('event')
                 ->values()
                 ->all(),
-            'filters' => ['search' => $search, 'event' => $event, 'status' => $status],
+            'filters' => ['search' => $search, 'event' => $event, 'status' => $status, 'per_page' => $perPage],
         ]);
     }
 
@@ -47,6 +48,7 @@ class OpsController extends Controller
     {
         $search = trim((string) $request->query('search', ''));
         $event = trim((string) $request->query('event', ''));
+        $perPage = min(max($request->integer('per_page', 10), 5), 100);
 
         $logs = ActivityLog::query()
             ->when($search !== '', function ($query) use ($search): void {
@@ -57,7 +59,7 @@ class OpsController extends Controller
             })
             ->when($event !== '', fn ($query) => $query->where('event', $event))
             ->latest()
-            ->paginate(20)
+            ->paginate($perPage)
             ->withQueryString();
 
         return Inertia::render('Admin/Activities', [
@@ -69,7 +71,7 @@ class OpsController extends Controller
                 ->pluck('event')
                 ->values()
                 ->all(),
-            'filters' => ['search' => $search, 'event' => $event],
+            'filters' => ['search' => $search, 'event' => $event, 'per_page' => $perPage],
         ]);
     }
 }

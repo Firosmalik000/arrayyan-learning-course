@@ -77,7 +77,7 @@ export default function PasskeyModal({
 
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-screen items-center justify-center p-4">
+            <div className="flex min-h-full items-center justify-center p-3 xs:p-4 sm:p-6">
                 {/* Backdrop */}
                 <div
                     className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
@@ -85,7 +85,7 @@ export default function PasskeyModal({
                 />
 
                 {/* Modal Window */}
-                <div className="relative w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 shadow-2xl transition-all">
+                <div className="relative w-full max-w-md rounded-3xl bg-white p-5 xs:p-6 sm:p-8 shadow-2xl transition-all">
                     {/* Close button */}
                     <button
                         type="button"

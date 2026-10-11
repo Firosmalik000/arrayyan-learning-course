@@ -1,6 +1,7 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import {
+    ActionDropdown,
     ConfirmModal,
     FlashMessage,
     FormInput,
@@ -8,6 +9,7 @@ import {
     FormTextarea,
     Modal,
     PageHeader,
+    Pagination,
     SearchInput,
 } from '@/Components/Admin';
 
@@ -286,78 +288,73 @@ export default function Teachers() {
                         </div>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="min-w-full text-left text-sm">
+                        <table className="w-full min-w-[750px] text-left text-sm">
                             <thead>
                                 <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                    <th className="w-12 px-4 py-3 font-medium text-center">No</th>
+                                    <th className="w-14 px-3 py-3 font-medium text-center">Aksi</th>
                                     <th className="px-5 py-3 font-medium">Nama</th>
                                     <th className="px-5 py-3 font-medium">Pendidikan</th>
                                     <th className="px-5 py-3 font-medium">Mata Pelajaran</th>
                                     <th className="px-5 py-3 font-medium">Kontak</th>
                                     <th className="px-5 py-3 font-medium">Status</th>
-                                    <th className="px-5 py-3 font-medium">Tanggal</th>
-                                    <th className="px-5 py-3 font-medium text-right">Aksi</th>
+                                    <th className="px-5 py-3 font-medium text-right">Tanggal</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {paginatedData.map((teacher) => (
-                                    <tr key={teacher.id} className="transition hover:bg-slate-50">
-                                        <td className="px-5 py-4 font-medium text-slate-800">
-                                            {teacher.name}
-                                        </td>
-                                        <td className="px-5 py-4 text-slate-600">
-                                            {teacher.education || '-'}
-                                        </td>
-                                        <td className="px-5 py-4 text-slate-600">
-                                            {teacher.subjects || '-'}
-                                        </td>
-                                        <td className="px-5 py-4 text-slate-600">
-                                            {teacher.contact || '-'}
-                                        </td>
-                                        <td className="px-5 py-4">{statusBadge(teacher.is_active)}</td>
-                                        <td className="px-5 py-4 text-slate-600">
-                                            {teacher.created_at
-                                                ? new Date(teacher.created_at).toLocaleDateString('id-ID')
-                                                : '-'}
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <div className="flex justify-end gap-1">
-                                                {canView && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setDetailModal(teacher)}
-                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                                                        title="Detail"
-                                                    >
-                                                        {icons.eye}
-                                                    </button>
-                                                )}
-                                                {canEdit && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openModal(teacher)}
-                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600"
-                                                        title="Edit"
-                                                    >
-                                                        {icons.edit}
-                                                    </button>
-                                                )}
-                                                {canDelete && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openDeleteModal(teacher)}
-                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
-                                                        title="Nonaktifkan"
-                                                    >
-                                                        {icons.trash}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {paginatedData.map((teacher, index) => {
+                                    const rowNumber = (page - 1) * pageSize + index + 1;
+                                    const actionItems = [
+                                        canView && {
+                                            label: 'Lihat Detail',
+                                            icon: icons.eye,
+                                            onClick: () => setDetailModal(teacher),
+                                        },
+                                        canEdit && {
+                                            label: 'Edit Data',
+                                            icon: icons.edit,
+                                            onClick: () => openModal(teacher),
+                                        },
+                                        canDelete && {
+                                            label: 'Nonaktifkan',
+                                            icon: icons.trash,
+                                            danger: true,
+                                            onClick: () => openDeleteModal(teacher),
+                                        },
+                                    ];
+
+                                    return (
+                                        <tr key={teacher.id} className="transition hover:bg-slate-50">
+                                            <td className="w-12 px-4 py-4 text-center font-mono text-xs font-bold text-slate-400">
+                                                {rowNumber}
+                                            </td>
+                                            <td className="w-14 px-3 py-4 text-center">
+                                                <ActionDropdown items={actionItems} label={`Aksi ${teacher.name}`} />
+                                            </td>
+                                            <td className="px-5 py-4 font-medium text-slate-800">
+                                                {teacher.name}
+                                            </td>
+                                            <td className="px-5 py-4 text-slate-600">
+                                                {teacher.education || '-'}
+                                            </td>
+                                            <td className="px-5 py-4 text-slate-600">
+                                                {teacher.subjects || '-'}
+                                            </td>
+                                            <td className="px-5 py-4 text-slate-600">
+                                                {teacher.contact || '-'}
+                                            </td>
+                                            <td className="px-5 py-4">{statusBadge(teacher.is_active)}</td>
+                                            <td className="px-5 py-4 text-right text-slate-600">
+                                                {teacher.created_at
+                                                    ? new Date(teacher.created_at).toLocaleDateString('id-ID')
+                                                    : '-'}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                                 {paginatedData.length === 0 && (
                                     <tr>
-                                        <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
+                                        <td colSpan={8} className="px-5 py-12 text-center text-slate-500">
                                             Tidak ada data pengajar yang ditemukan
                                         </td>
                                     </tr>
@@ -365,43 +362,16 @@ export default function Teachers() {
                             </tbody>
                         </table>
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 p-4">
-                        <p className="text-xs text-slate-500">
-                            Menampilkan {startIndex}-{endIndex} dari {sortedData.length} data
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setPage((current) => Math.max(current - 1, 1))}
-                                disabled={page === 1}
-                                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:border-violet-200 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                Prev
-                            </button>
-                            {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
-                                <button
-                                    key={pageNumber}
-                                    type="button"
-                                    onClick={() => setPage(pageNumber)}
-                                    className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
-                                        pageNumber === page
-                                            ? 'bg-violet-600 text-white shadow-sm'
-                                            : 'border border-slate-200 text-slate-600 hover:border-violet-200 hover:text-violet-700'
-                                    }`}
-                                >
-                                    {pageNumber}
-                                </button>
-                            ))}
-                            <button
-                                type="button"
-                                onClick={() => setPage((current) => Math.min(current + 1, totalPages))}
-                                disabled={page === totalPages}
-                                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:border-violet-200 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
+                    <Pagination
+                        currentPage={page}
+                        totalItems={sortedData.length}
+                        perPage={pageSize}
+                        onPageChange={(p) => setPage(p)}
+                        onPerPageChange={(n) => {
+                            setPageSize(n);
+                            setPage(1);
+                        }}
+                    />
                 </div>
             </div>
 

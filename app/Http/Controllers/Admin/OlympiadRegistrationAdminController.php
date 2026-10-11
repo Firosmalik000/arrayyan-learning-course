@@ -35,9 +35,11 @@ class OlympiadRegistrationAdminController extends Controller
             ->when(in_array($status, self::STATUSES, true), fn ($query) => $query->where('status', $status))
             ->when($olympiadId, fn ($query) => $query->where('olympiad_id', $olympiadId));
 
+        $perPage = min(max($request->integer('per_page', 10), 5), 100);
+
         $registrations = (clone $query)
             ->latest()
-            ->paginate(15)
+            ->paginate($perPage)
             ->withQueryString();
         $registrations->through(fn (OlympiadRegistration $registration) => [
             'id' => $registration->id,
@@ -82,6 +84,7 @@ class OlympiadRegistrationAdminController extends Controller
                 'search' => $search,
                 'status' => $status,
                 'olympiad_id' => $olympiadId,
+                'per_page' => $perPage,
             ],
         ]);
     }

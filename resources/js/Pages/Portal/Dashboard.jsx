@@ -1,6 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Head } from '@inertiajs/react';
+import { useState } from 'react';
 import PortalLayout from '@/Layouts/PortalLayout';
+import AddProgramModal from './components/AddProgramModal';
 
 const formatRupiah = (v) => `Rp ${Number(v ?? 0).toLocaleString('id-ID')}`;
 const formatDate = (v) => {
@@ -14,9 +16,9 @@ const formatDate = (v) => {
 
 function Card({ title, children, action, className = '' }) {
     return (
-        <div className={`rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6 transition hover:border-violet-200 hover:shadow-sm ${className}`}>
+        <div className={`rounded-3xl border border-slate-200/80 bg-white p-4 xs:p-5 sm:p-6 shadow-xs transition hover:border-violet-200 hover:shadow-sm ${className}`}>
             <div className="mb-4 flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                <h3 className="font-display text-sm font-bold text-slate-900">{title}</h3>
+                <h3 className="font-display text-sm font-bold text-slate-900 truncate">{title}</h3>
                 {action}
             </div>
             {children}
@@ -24,144 +26,232 @@ function Card({ title, children, action, className = '' }) {
     );
 }
 
-function StudentDashboard({ summary }) {
+function ParentDashboard({ summary, selectedStudent, availablePrograms = [] }) {
+    const [showAddProgramModal, setShowAddProgramModal] = useState(false);
+
     return (
-        <div className="grid gap-5 sm:grid-cols-2">
-            {/* Tagihan Card */}
-            <Card
-                title="Tagihan Aktif"
-                action={
-                    <Link href="/portal/tagihan" className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-brand-primary hover:bg-violet-100 transition">
-                        Detail
-                    </Link>
-                }
-            >
-                {summary.unpaid_count > 0 ? (
+        <div className="space-y-5 sm:space-y-6">
+            {selectedStudent && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl bg-gradient-to-r from-violet-600 to-purple-700 p-4 xs:p-5 sm:p-6 text-white shadow-sm">
                     <div>
-                        <p className="font-display text-2xl sm:text-3xl font-extrabold text-amber-600">
-                            {formatRupiah(summary.unpaid_total)}
+                        <p className="text-[11px] sm:text-xs font-medium text-violet-200 uppercase tracking-wider">
+                            Memantau Perkembangan
                         </p>
-                        <div className="mt-3 flex items-center gap-2">
-                            <span className="rounded-full bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 text-xs font-bold text-amber-700">
-                                {summary.unpaid_count} Tagihan
+                        <h2 className="font-display text-lg xs:text-xl sm:text-2xl font-bold tracking-tight">
+                            {selectedStudent.name}
+                        </h2>
+                        {selectedStudent.level && (
+                            <p className="text-xs text-violet-200 mt-0.5">
+                                Jenjang: {selectedStudent.level}
+                            </p>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setShowAddProgramModal(true)}
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-2xl bg-white px-4 py-2.5 text-xs font-bold text-violet-700 shadow-xs hover:bg-violet-50 transition active:scale-95 cursor-pointer"
+                        >
+                            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            Tambah Program / Pelajaran
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {summary.pending_registrations && summary.pending_registrations.length > 0 && (
+                <div className="rounded-3xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5">
+                    <div className="flex items-center justify-between gap-2 border-b border-amber-200/60 pb-3 mb-3">
+                        <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-200 text-amber-900 text-xs font-bold">
+                                ⏳
                             </span>
+                            <h4 className="font-display text-xs sm:text-sm font-bold text-amber-900">
+                                Pendaftaran Program Sedang Diverifikasi Admin
+                            </h4>
                         </div>
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-2.5 py-2">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
-                            ✓
+                        <span className="rounded-full bg-amber-200/80 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-amber-900 shrink-0">
+                            {summary.pending_registrations.length} Pengajuan
                         </span>
-                        <p className="text-sm font-bold text-emerald-800">Semua Lunas</p>
                     </div>
-                )}
-            </Card>
-
-            {/* Kelas Card */}
-            <Card
-                title="Kelas Terdaftar"
-                action={
-                    <Link href="/portal/jadwal" className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-brand-primary hover:bg-violet-100 transition">
-                        Jadwal
-                    </Link>
-                }
-            >
-                {summary.classes.length > 0 ? (
-                    <ul className="space-y-2">
-                        {summary.classes.map((c) => (
-                            <li key={c.id} className="flex items-center justify-between rounded-2xl bg-slate-50/80 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-800">
-                                <span>{c.name}</span>
-                                <span className="rounded-md bg-white border border-slate-200/80 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                                    Aktif
-                                </span>
-                            </li>
+                    <div className="space-y-2">
+                        {summary.pending_registrations.map((p) => (
+                            <div key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl bg-white border border-amber-200/80 p-3 text-xs shadow-2xs">
+                                <div>
+                                    <span className="font-bold text-slate-800">{p.program}</span>
+                                    {p.subjects && <span className="text-slate-600"> • Mapel: <strong className="text-violet-700">{p.subjects}</strong></span>}
+                                    {p.package && <span className="text-slate-500"> • {p.package}</span>}
+                                    {p.preferred_mode && <span className="text-slate-400"> • {p.preferred_mode}</span>}
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <span className="font-mono font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-lg border border-violet-100">
+                                        {p.ticket}
+                                    </span>
+                                    <span className="rounded-full bg-amber-100 px-2.5 py-0.5 font-bold text-amber-800 text-[10px]">
+                                        Menunggu Admin
+                                    </span>
+                                </div>
+                            </div>
                         ))}
-                    </ul>
-                ) : (
-                    <p className="py-2 text-xs text-slate-400">Belum ada kelas.</p>
-                )}
-            </Card>
+                    </div>
+                </div>
+            )}
 
-            {/* Absensi Card */}
-            <Card
-                title="Absensi Terakhir"
-                action={
-                    <Link href="/portal/absensi" className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-brand-primary hover:bg-violet-100 transition">
-                        Semua
-                    </Link>
-                }
-            >
-                {summary.recent_attendance.length > 0 ? (
-                    <ul className="space-y-2 text-xs">
-                        {summary.recent_attendance.map((a, i) => {
-                            const isHadir = a.status === 'hadir';
-                            return (
-                                <li key={i} className="flex items-center justify-between gap-2 rounded-2xl bg-slate-50/80 px-3.5 py-2.5">
-                                    <div className="min-w-0">
-                                        <p className="font-bold text-slate-800 truncate">{a.class}</p>
-                                        <p className="text-[11px] text-slate-400">{formatDate(a.date)}</p>
-                                    </div>
-                                    <span
-                                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
-                                            isHadir
-                                                ? 'bg-emerald-100 text-emerald-700'
-                                                : a.status === 'alpa'
-                                                ? 'bg-rose-100 text-rose-700'
-                                                : 'bg-amber-100 text-amber-700'
-                                        }`}
-                                    >
-                                        {a.status}
+            <div className="grid gap-4 xs:gap-5 grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4">
+                {/* Tagihan Card */}
+                <Card
+                    title="Tagihan Belajar"
+                    action={
+                        <Link href="/portal/tagihan" className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-brand-primary hover:bg-violet-100 transition">
+                            Detail
+                        </Link>
+                    }
+                >
+                    {summary.unpaid_count > 0 ? (
+                        <div>
+                            <p className="font-display text-2xl sm:text-3xl font-extrabold text-amber-600">
+                                {formatRupiah(summary.unpaid_total)}
+                            </p>
+                            <div className="mt-3 flex items-center gap-2">
+                                <span className="rounded-full bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 text-xs font-bold text-amber-700">
+                                    {summary.unpaid_count} Tagihan Aktif
+                                </span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2.5 py-2">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
+                                ✓
+                            </span>
+                            <p className="text-sm font-bold text-emerald-800">Semua Tagihan Lunas</p>
+                        </div>
+                    )}
+                </Card>
+
+                {/* Kelas Card */}
+                <Card
+                    title="Kelas Terdaftar"
+                    action={
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => setShowAddProgramModal(true)}
+                                className="rounded-full bg-violet-600 px-2.5 py-0.5 text-xs font-bold text-white hover:bg-violet-700 transition cursor-pointer"
+                            >
+                                + Tambah
+                            </button>
+                            <Link href="/portal/jadwal" className="rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-bold text-brand-primary hover:bg-violet-100 transition">
+                                Jadwal
+                            </Link>
+                        </div>
+                    }
+                >
+                    {summary.classes && summary.classes.length > 0 ? (
+                        <ul className="space-y-2">
+                            {summary.classes.map((c) => (
+                                <li key={c.id} className="flex items-center justify-between rounded-2xl bg-slate-50/80 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-800">
+                                    <span>{c.name}</span>
+                                    <span className="rounded-md bg-white border border-slate-200/80 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                                        Aktif
                                     </span>
                                 </li>
-                            );
-                        })}
-                    </ul>
-                ) : (
-                    <p className="py-2 text-xs text-slate-400">Belum ada absensi.</p>
-                )}
-            </Card>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="py-2 text-xs text-slate-400">Belum ada kelas terdaftar.</p>
+                    )}
+                </Card>
 
-            {/* Nilai Card */}
-            <Card
-                title="Nilai Terakhir"
-                action={
-                    <Link href="/portal/nilai" className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-brand-primary hover:bg-violet-100 transition">
-                        Semua
-                    </Link>
-                }
-            >
-                {summary.recent_grades.length > 0 ? (
-                    <ul className="space-y-2 text-xs">
-                        {summary.recent_grades.map((g, i) => (
-                            <li key={i} className="flex items-center justify-between gap-2 rounded-2xl bg-slate-50/80 px-3.5 py-2.5">
-                                <div className="min-w-0">
-                                    <p className="font-bold text-slate-800 truncate">{g.subject}</p>
-                                    <p className="text-[11px] text-slate-400">{g.term}</p>
-                                </div>
-                                <span className="font-display text-sm font-extrabold text-slate-900 bg-white border border-slate-200/80 px-2.5 py-1 rounded-xl">
-                                    {g.score}
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="py-2 text-xs text-slate-400">Belum ada nilai.</p>
-                )}
-            </Card>
+                {/* Absensi Card */}
+                <Card
+                    title="Absensi Terakhir"
+                    action={
+                        <Link href="/portal/absensi" className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-brand-primary hover:bg-violet-100 transition">
+                            Semua
+                        </Link>
+                    }
+                >
+                    {summary.recent_attendance && summary.recent_attendance.length > 0 ? (
+                        <ul className="space-y-2 text-xs">
+                            {summary.recent_attendance.map((a, i) => {
+                                const isHadir = a.status === 'hadir';
+                                return (
+                                    <li key={i} className="flex items-center justify-between gap-2 rounded-2xl bg-slate-50/80 px-3.5 py-2.5">
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-slate-800 truncate">{a.class}</p>
+                                            <p className="text-[11px] text-slate-400">{formatDate(a.date)}</p>
+                                        </div>
+                                        <span
+                                            className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
+                                                isHadir
+                                                    ? 'bg-emerald-100 text-emerald-700'
+                                                    : a.status === 'alpa'
+                                                    ? 'bg-rose-100 text-rose-700'
+                                                    : 'bg-amber-100 text-amber-700'
+                                            }`}
+                                        >
+                                            {a.status}
+                                        </span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    ) : (
+                        <p className="py-2 text-xs text-slate-400">Belum ada catatan absensi.</p>
+                    )}
+                </Card>
+
+                {/* Nilai Card */}
+                <Card
+                    title="Nilai Terakhir"
+                    action={
+                        <Link href="/portal/nilai" className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-brand-primary hover:bg-violet-100 transition">
+                            Semua
+                        </Link>
+                    }
+                >
+                    {summary.recent_grades && summary.recent_grades.length > 0 ? (
+                        <ul className="space-y-2 text-xs">
+                            {summary.recent_grades.map((g, i) => (
+                                <li key={i} className="flex items-center justify-between gap-2 rounded-2xl bg-slate-50/80 px-3.5 py-2.5">
+                                    <div className="min-w-0">
+                                        <p className="font-bold text-slate-800 truncate">{g.subject}</p>
+                                        <p className="text-[11px] text-slate-400">{g.term}</p>
+                                    </div>
+                                    <span className="font-display text-sm font-extrabold text-slate-900 bg-white border border-slate-200/80 px-2.5 py-1 rounded-xl">
+                                        {g.score}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="py-2 text-xs text-slate-400">Belum ada nilai tercatat.</p>
+                    )}
+                </Card>
+            </div>
+
+            <AddProgramModal
+                isOpen={showAddProgramModal}
+                onClose={() => setShowAddProgramModal(false)}
+                selectedStudent={selectedStudent}
+                availablePrograms={availablePrograms}
+            />
         </div>
     );
 }
 
 function TeacherDashboard({ summary }) {
     return (
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-4 xs:gap-5 grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3">
             {summary.classes.length === 0 && (
-                <div className="rounded-3xl border border-slate-200/80 bg-white p-8 text-center text-xs text-slate-400 sm:col-span-2">
+                <div className="rounded-3xl border border-slate-200/80 bg-white p-8 text-center text-xs text-slate-400 sm:col-span-2 2xl:col-span-3">
                     Belum ada kelas yang diampu.
                 </div>
             )}
             {summary.classes.map((c) => (
-                <div key={c.id} className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs transition hover:border-violet-200 hover:shadow-sm">
+                <div key={c.id} className="rounded-3xl border border-slate-200/80 bg-white p-4 xs:p-5 sm:p-6 shadow-xs transition hover:border-violet-200 hover:shadow-sm">
                     <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
                         <div>
                             <h3 className="font-display text-base font-bold text-slate-900">{c.name}</h3>
@@ -197,23 +287,34 @@ function TeacherDashboard({ summary }) {
 
 export default function Dashboard() {
     const { props } = usePage();
-    const type = props.account_type || 'student';
+    const type = props.account_type || 'parent';
     const summary = props.summary || {};
+    const selectedStudent = props.selected_student || null;
+    const availablePrograms = props.available_programs || [];
 
     return (
         <PortalLayout>
-            <Head title="Dashboard Portal" />
+            <Head title="Dashboard Portal Orang Tua" />
             <div className="mb-6 flex items-center justify-between">
                 <div>
                     <h1 className="font-display text-2xl font-extrabold tracking-tight text-slate-900">
-                        Halo, {props.portalAuth?.name || 'ALC'}
+                        Halo, {props.portalAuth?.name || 'Bapak/Ibu'}
                     </h1>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                        {type === 'teacher'
+                            ? 'Pantau aktivitas mengajar dan kelola absensi serta nilai kelas.'
+                            : 'Selamat datang di Portal Orang Tua Ar Rayyan Learning Course.'}
+                    </p>
                 </div>
             </div>
             {type === 'teacher' ? (
                 <TeacherDashboard summary={summary} />
             ) : (
-                <StudentDashboard summary={summary} />
+                <ParentDashboard
+                    summary={summary}
+                    selectedStudent={selectedStudent}
+                    availablePrograms={availablePrograms}
+                />
             )}
         </PortalLayout>
     );

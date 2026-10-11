@@ -17,6 +17,7 @@ class Teacher extends Model
         'subjects',
         'experience',
         'contact',
+        'email',
         'cv_path',
         'notes',
         'is_active',

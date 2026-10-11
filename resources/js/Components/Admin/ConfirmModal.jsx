@@ -19,18 +19,18 @@ export default function ConfirmModal({
                 <p className="text-slate-600">{message}</p>
                 <p className="mt-1 text-sm text-slate-500">Tindakan ini tidak dapat dibatalkan.</p>
             </div>
-            <div className="mt-6 flex justify-center gap-3">
+            <div className="mt-6 flex flex-col-reverse xs:flex-row justify-center gap-2 xs:gap-3">
                 <button
                     type="button"
                     onClick={onClose}
-                    className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                    className="w-full xs:w-auto rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
                 >
                     Batal
                 </button>
                 <button
                     type="button"
                     onClick={onConfirm}
-                    className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
+                    className="w-full xs:w-auto rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
                 >
                     {confirmLabel}
                 </button>

@@ -35,12 +35,6 @@ export default function ScheduleModal({
                         error={form.errors.end_time}
                     />
                 </div>
-                <FormInput
-                    label="Ruangan"
-                    value={form.data.room}
-                    onChange={(v) => form.setData('room', v)}
-                    placeholder="cth: R1"
-                />
                 <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
                     <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
                         Batal

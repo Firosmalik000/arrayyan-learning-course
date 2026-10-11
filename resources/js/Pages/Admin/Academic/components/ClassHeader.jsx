@@ -12,8 +12,10 @@ export default function ClassHeader({
             <div>
                 <h2 className="text-lg font-bold text-slate-800">{selected.name}</h2>
                 <p className="mt-0.5 text-sm text-slate-500">
-                    {selected.program} • {selected.teacher || 'Tanpa pengajar'}
-                    {selected.room ? ` • Ruang ${selected.room}` : ''}
+                    {selected.program}
+                    {selected.level ? ` • Jenjang ${selected.level}` : ''}
+                    {selected.total_sessions ? ` • Target ${selected.total_sessions} Pertemuan` : ''}
+                    {selected.teacher ? ` • Pengajar: ${selected.teacher}` : ' • Tanpa pengajar'}
                 </p>
             </div>
             <div className="flex flex-wrap gap-2">

@@ -10,7 +10,7 @@ class Attendance extends Model
 {
     use HasFactory;
 
-    public const STATUSES = ['hadir', 'izin', 'sakit', 'alpa'];
+    public const STATUSES = ['hadir', 'izin', 'sakit', 'alpa', 'belum_absen'];
 
     protected $fillable = [
         'class_group_id',

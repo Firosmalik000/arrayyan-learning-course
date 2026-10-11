@@ -14,16 +14,19 @@ class ClassGroup extends Model
 
     protected $fillable = [
         'program_id',
+        'level',
+        'package_id',
+        'total_sessions',
         'teacher_id',
         'name',
         'quota',
-        'room',
         'is_active',
     ];
 
     protected function casts(): array
     {
         return [
+            'total_sessions' => 'integer',
             'quota' => 'integer',
             'is_active' => 'boolean',
         ];
@@ -32,6 +35,11 @@ class ClassGroup extends Model
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class, 'program_id');
+    }
+
+    public function package(): BelongsTo
+    {
+        return $this->belongsTo(Package::class, 'package_id');
     }
 
     public function teacher(): BelongsTo

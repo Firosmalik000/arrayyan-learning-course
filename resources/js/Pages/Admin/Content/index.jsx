@@ -1,6 +1,6 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import { FlashMessage, Modal, PageHeader } from '@/Components/Admin';
+import { useMemo, useState } from 'react';
+import { ActionDropdown, FlashMessage, Modal, PageHeader, Pagination } from '@/Components/Admin';
 
 const icons = {
     plus: (
@@ -59,6 +59,20 @@ export default function Content() {
     } = usePage().props;
 
     const [activeTab, setActiveTab] = useState(initialTab);
+    const [postPage, setPostPage] = useState(1);
+    const [postPerPage, setPostPerPage] = useState(10);
+    const paginatedPosts = useMemo(() => {
+        const start = (postPage - 1) * postPerPage;
+        return posts.slice(start, start + postPerPage);
+    }, [posts, postPage, postPerPage]);
+
+    const [revPage, setRevPage] = useState(1);
+    const [revPerPage, setRevPerPage] = useState(10);
+    const paginatedRevisions = useMemo(() => {
+        const start = (revPage - 1) * revPerPage;
+        return revisions.slice(start, start + revPerPage);
+    }, [revisions, revPage, revPerPage]);
+
     const can = (action) => (allowedActions.konten ?? []).includes(action);
     const canCreate = can('create');
     const canEdit = can('edit');
@@ -238,52 +252,80 @@ export default function Content() {
                             )}
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm">
+                            <table className="w-full min-w-[640px] text-left text-sm">
                                 <thead>
                                     <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                        <th className="w-12 px-5 py-3 text-center font-medium">No</th>
+                                        <th className="w-14 px-3 py-3 text-center font-medium">Aksi</th>
                                         <th className="px-5 py-3 font-medium">Judul</th>
                                         <th className="px-5 py-3 font-medium">Tipe</th>
                                         <th className="px-5 py-3 font-medium">Terbit</th>
                                         <th className="px-5 py-3 font-medium">Aktif</th>
-                                        <th className="px-5 py-3 font-medium text-right">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {posts.map((post) => (
-                                        <tr key={post.id} className="hover:bg-slate-50">
-                                            <td className="px-5 py-3 font-medium text-slate-800">{post.title}</td>
-                                            <td className="px-5 py-3">
-                                                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${post.type === 'pengumuman' ? 'bg-amber-50 text-amber-700' : 'bg-violet-50 text-violet-700'}`}>
-                                                    {post.type === 'pengumuman' ? 'Pengumuman' : 'Artikel'}
-                                                </span>
-                                            </td>
-                                            <td className="px-5 py-3 text-slate-600">{formatDateTime(post.published_at) || 'Draf'}</td>
-                                            <td className="px-5 py-3 text-slate-600">{post.is_active ? 'Ya' : 'Tidak'}</td>
-                                            <td className="px-5 py-3">
-                                                <div className="flex justify-end gap-1">
-                                                    <a href={`/blog/${post.slug}`} target="_blank" rel="noreferrer" className={actionBtn} title="Lihat">
-                                                        {icons.eye}
-                                                    </a>
-                                                    {canEdit && (
-                                                        <button type="button" onClick={() => openPostModal(post)} className={actionBtn} title="Edit">
-                                                            {icons.edit}
-                                                        </button>
-                                                    )}
-                                                    {canDelete && (
-                                                        <button type="button" onClick={() => deletePost(post.id)} className={actionBtn} title="Hapus">
-                                                            {icons.trash}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {paginatedPosts.map((post, idx) => {
+                                        const rowNumber = (postPage - 1) * postPerPage + idx + 1;
+                                        const actionItems = [
+                                            {
+                                                label: 'Lihat',
+                                                icon: icons.eye,
+                                                href: `/blog/${post.slug}`,
+                                                isExternal: true,
+                                            },
+                                            canEdit && {
+                                                label: 'Edit',
+                                                icon: icons.edit,
+                                                onClick: () => openPostModal(post),
+                                            },
+                                            canDelete && {
+                                                label: 'Hapus',
+                                                icon: icons.trash,
+                                                danger: true,
+                                                onClick: () => deletePost(post.id),
+                                            },
+                                        ].filter(Boolean);
+
+                                        return (
+                                            <tr key={post.id} className="hover:bg-slate-50">
+                                                <td className="px-5 py-3 text-center font-medium text-slate-400">{rowNumber}</td>
+                                                <td className="px-3 py-3 text-center">
+                                                    <ActionDropdown items={actionItems} />
+                                                </td>
+                                                <td className="px-5 py-3 font-medium text-slate-800">{post.title}</td>
+                                                <td className="px-5 py-3">
+                                                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${post.type === 'pengumuman' ? 'bg-amber-50 text-amber-700' : 'bg-violet-50 text-violet-700'}`}>
+                                                        {post.type === 'pengumuman' ? 'Pengumuman' : 'Artikel'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-5 py-3 text-slate-600">{formatDateTime(post.published_at) || 'Draf'}</td>
+                                                <td className="px-5 py-3 text-slate-600">{post.is_active ? 'Ya' : 'Tidak'}</td>
+                                            </tr>
+                                        );
+                                    })}
                                     {posts.length === 0 && (
-                                        <tr><td colSpan={5} className="px-5 py-12 text-center text-slate-500">Belum ada konten.</td></tr>
+                                        <tr><td colSpan={6} className="px-5 py-12 text-center text-slate-500">Belum ada konten.</td></tr>
                                     )}
                                 </tbody>
                             </table>
                         </div>
+
+                        <Pagination
+                            pagination={{
+                                current_page: postPage,
+                                last_page: Math.ceil(posts.length / postPerPage) || 1,
+                                per_page: postPerPage,
+                                total: posts.length,
+                                from: posts.length === 0 ? 0 : (postPage - 1) * postPerPage + 1,
+                                to: Math.min(postPage * postPerPage, posts.length),
+                            }}
+                            onPageChange={(page) => setPostPage(page)}
+                            perPage={postPerPage}
+                            onPerPageChange={(perPage) => {
+                                setPostPerPage(perPage);
+                                setPostPage(1);
+                            }}
+                        />
                     </div>
                 )}
 
@@ -372,42 +414,63 @@ export default function Content() {
                             <p className="mt-0.5 text-xs text-slate-500">Snapshot otomatis dibuat setiap kali konten landing disimpan. Maksimal 50 terakhir.</p>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm">
+                            <table className="w-full min-w-[640px] text-left text-sm">
                                 <thead>
                                     <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                        <th className="w-12 px-5 py-3 text-center font-medium">No</th>
+                                        <th className="w-14 px-3 py-3 text-center font-medium">Aksi</th>
                                         <th className="px-5 py-3 font-medium">Bagian</th>
                                         <th className="px-5 py-3 font-medium">Catatan</th>
                                         <th className="px-5 py-3 font-medium">Oleh</th>
                                         <th className="px-5 py-3 font-medium">Waktu</th>
-                                        <th className="px-5 py-3 font-medium text-right">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {revisions.map((r) => (
-                                        <tr key={r.id} className="hover:bg-slate-50">
-                                            <td className="px-5 py-3 font-mono text-xs font-semibold text-slate-800">{r.slug}</td>
-                                            <td className="px-5 py-3 text-slate-600">{r.note || '-'}</td>
-                                            <td className="px-5 py-3 text-slate-600">{r.created_by_name || '-'}</td>
-                                            <td className="px-5 py-3 text-slate-600">{formatDateTime(r.created_at)}</td>
-                                            <td className="px-5 py-3 text-right">
-                                                {canEdit && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => restoreRevision(r.id)}
-                                                        className="rounded-lg bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-100"
-                                                    >
-                                                        Kembalikan
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {paginatedRevisions.map((r, idx) => {
+                                        const rowNumber = (revPage - 1) * revPerPage + idx + 1;
+                                        const actionItems = [
+                                            canEdit && {
+                                                label: 'Kembalikan',
+                                                onClick: () => restoreRevision(r.id),
+                                            },
+                                        ].filter(Boolean);
+
+                                        return (
+                                            <tr key={r.id} className="hover:bg-slate-50">
+                                                <td className="px-5 py-3 text-center font-medium text-slate-400">{rowNumber}</td>
+                                                <td className="px-3 py-3 text-center">
+                                                    <ActionDropdown items={actionItems} />
+                                                </td>
+                                                <td className="px-5 py-3 font-mono text-xs font-semibold text-slate-800">{r.slug}</td>
+                                                <td className="px-5 py-3 text-slate-600">{r.note || '-'}</td>
+                                                <td className="px-5 py-3 text-slate-600">{r.created_by_name || '-'}</td>
+                                                <td className="px-5 py-3 text-slate-600">{formatDateTime(r.created_at)}</td>
+                                            </tr>
+                                        );
+                                    })}
                                     {revisions.length === 0 && (
-                                        <tr><td colSpan={5} className="px-5 py-12 text-center text-slate-500">Belum ada revisi tersimpan.</td></tr>
+                                        <tr><td colSpan={6} className="px-5 py-12 text-center text-slate-500">Belum ada revisi tersimpan.</td></tr>
                                     )}
                                 </tbody>
                             </table>
                         </div>
+
+                        <Pagination
+                            pagination={{
+                                current_page: revPage,
+                                last_page: Math.ceil(revisions.length / revPerPage) || 1,
+                                per_page: revPerPage,
+                                total: revisions.length,
+                                from: revisions.length === 0 ? 0 : (revPage - 1) * revPerPage + 1,
+                                to: Math.min(revPage * revPerPage, revisions.length),
+                            }}
+                            onPageChange={(page) => setRevPage(page)}
+                            perPage={revPerPage}
+                            onPerPageChange={(perPage) => {
+                                setRevPerPage(perPage);
+                                setRevPage(1);
+                            }}
+                        />
                     </div>
                 )}
             </div>

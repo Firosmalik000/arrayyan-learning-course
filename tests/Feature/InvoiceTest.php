@@ -366,4 +366,66 @@ class InvoiceTest extends TestCase
             ->where('event', 'invoice_due')
             ->count());
     }
+
+    public function test_admin_can_confirm_invoice(): void
+    {
+        $user = $this->actingAsAdmin();
+        $reg = $this->approvedRegistration();
+        $invoice = Invoice::create([
+            'invoice_no' => 'INV-2026-00013',
+            'student_registration_id' => $reg->id,
+            'amount' => 350000,
+            'status' => 'pending',
+        ]);
+        $payment = Payment::create([
+            'invoice_id' => $invoice->id,
+            'proof_path' => 'payment-proofs/bukti.jpg',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.invoice.confirm', $invoice)
+        );
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+        $this->assertEquals('paid', $invoice->fresh()->status);
+        $this->assertNotNull($invoice->fresh()->paid_at);
+        $this->assertEquals('verified', $payment->fresh()->status);
+        $this->assertEquals($user->id, $payment->fresh()->verified_by);
+    }
+
+    public function test_admin_can_decline_invoice(): void
+    {
+        $user = $this->actingAsAdmin();
+        $reg = $this->approvedRegistration();
+        $invoice = Invoice::create([
+            'invoice_no' => 'INV-2026-00014',
+            'student_registration_id' => $reg->id,
+            'amount' => 350000,
+            'status' => 'pending',
+        ]);
+        $payment = Payment::create([
+            'invoice_id' => $invoice->id,
+            'proof_path' => 'payment-proofs/bukti.jpg',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.invoice.decline', $invoice),
+            ['note' => 'Bukti buram']
+        );
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+        $this->assertEquals('unpaid', $invoice->fresh()->status);
+        $this->assertEquals('rejected', $payment->fresh()->status);
+        $this->assertEquals('Bukti buram', $payment->fresh()->note);
+    }
+
+    public function test_public_pembayaran_redirects_to_portal_invoices(): void
+    {
+        $response = $this->get('/pembayaran?invoice=INV-2026-00001&phone=085236446961');
+        $response->assertRedirect(route('portal.invoices'));
+    }
 }

@@ -10,11 +10,20 @@ use App\Models\Program;
 use App\Models\StudentRegistration;
 use App\Models\TeacherRegistration;
 use App\Support\RegistrationTicket;
+use App\Support\StudentRegistrationEmailService;
+use App\Support\TeacherRegistrationEmailService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class RegistrationController extends Controller
 {
+    public function __construct(
+        private StudentRegistrationEmailService $studentRegistrationEmailService,
+        private TeacherRegistrationEmailService $teacherRegistrationEmailService,
+    ) {}
+
     public function storeStudent(StoreStudentRegistrationRequest $request): RedirectResponse
     {
         $data = $request->validated();
@@ -66,7 +75,12 @@ class RegistrationController extends Controller
             registrationId: $registration->id,
         );
 
-        return back()
+        $this->studentRegistrationEmailService->sendReceived($registration);
+
+        return to_route('registrations.success', [
+            'registrationType' => 'murid',
+            'ticket' => $registration->registration_no,
+        ])
             ->with('success', 'Pendaftaran murid berhasil dikirim. No. tiket Anda: '.$registration->registration_no)
             ->with('ticket', $registration->registration_no);
     }
@@ -99,8 +113,52 @@ class RegistrationController extends Controller
             registrationId: $registration->id,
         );
 
-        return back()
+        $this->teacherRegistrationEmailService->sendReceived($registration);
+
+        return to_route('registrations.success', [
+            'registrationType' => 'pengajar',
+            'ticket' => $registration->registration_no,
+        ])
             ->with('success', 'Pendaftaran pengajar berhasil dikirim. No. tiket Anda: '.$registration->registration_no)
             ->with('ticket', $registration->registration_no);
+    }
+
+    public function success(string $registrationType, string $ticket): Response
+    {
+        $registration = $registrationType === 'murid'
+            ? StudentRegistration::query()->with(['programItem', 'packageItem'])->where('registration_no', $ticket)->first()
+            : TeacherRegistration::query()->where('registration_no', $ticket)->first();
+
+        abort_unless($registration !== null, 404);
+
+        $details = $registrationType === 'murid'
+            ? [
+                'name' => $registration->student_name,
+                'program' => $registration->programItem?->name ?? $registration->program ?? 'Reguler',
+                'package' => $registration->packageItem?->name ?? $registration->package,
+                'level' => $registration->level ? ($registration->level.($registration->class_level ? ' • '.$registration->class_level : '')) : null,
+                'mode' => $registration->preferred_mode ? ucfirst($registration->preferred_mode) : 'Offline',
+                'phone' => $registration->parent_contact,
+                'email' => $registration->parent_email,
+                'school' => $registration->school_name,
+                'createdAt' => $registration->created_at?->format('d M Y, H:i'),
+            ]
+            : [
+                'name' => $registration->name,
+                'program' => $registration->subjects ?? 'Pengajar',
+                'package' => null,
+                'level' => $registration->education,
+                'mode' => null,
+                'phone' => $registration->contact,
+                'email' => $registration->email,
+                'school' => null,
+                'createdAt' => $registration->created_at?->format('d M Y, H:i'),
+            ];
+
+        return Inertia::render('Public/Register/Success', [
+            'registrationType' => $registrationType,
+            'ticket' => $ticket,
+            'registration' => $details,
+        ]);
     }
 }

@@ -119,7 +119,7 @@ export default function ProgramCard({
             </div>
 
             {/* Card Content */}
-            <div className="flex flex-1 flex-col p-5 sm:p-6">
+            <div className="flex flex-1 flex-col p-4.5 xs:p-5 sm:p-6">
                 <div className="flex-1">
                     <h3 className="font-display text-lg font-bold text-slate-900 group-hover:text-brand-primary transition-colors line-clamp-1">
                         <Link href={`/program/${program.slug || program.id}`}>
@@ -154,7 +154,7 @@ export default function ProgramCard({
                 </div>
 
                 {/* Price & Action Row */}
-                <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-2.5 border-t border-slate-100 pt-4">
                     <div>
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
                             {language === 'en' ? 'Starts from' : 'Mulai dari'}

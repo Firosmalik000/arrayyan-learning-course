@@ -1,6 +1,6 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
-import { useState } from 'react';
-import { FlashMessage, Modal } from '@/Components/Admin';
+import { useState, useMemo } from 'react';
+import { FlashMessage, Modal, ActionDropdown, Pagination } from '@/Components/Admin';
 
 const toneStyles = {
     violet: 'bg-violet-50 text-violet-700',
@@ -55,6 +55,8 @@ export default function Users() {
     const [editModal, setEditModal] = useState(null);
     const [deleteModal, setDeleteModal] = useState(null);
     const [inviteModal, setInviteModal] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
 
     const inviteForm = useForm({
         name: '',
@@ -76,11 +78,19 @@ export default function Users() {
     const canApprove = can('approve');
     const canExport = can('export');
 
-    const filteredUsers = users.filter((user) => {
-        const matchRole = !filterRole || user.primary_role === filterRole;
-        const matchStatus = !filterStatus || user.status === filterStatus;
-        return matchRole && matchStatus;
-    });
+    const filteredUsers = useMemo(() => {
+        return users.filter((user) => {
+            const matchRole = !filterRole || user.primary_role === filterRole;
+            const matchStatus = !filterStatus || user.status === filterStatus;
+            return matchRole && matchStatus;
+        });
+    }, [users, filterRole, filterStatus]);
+
+    const totalPages = Math.ceil(filteredUsers.length / perPage) || 1;
+    const paginatedUsers = useMemo(() => {
+        const start = (currentPage - 1) * perPage;
+        return filteredUsers.slice(start, start + perPage);
+    }, [filteredUsers, currentPage, perPage]);
 
     const openEditModal = (user) => {
         editForm.setData({
@@ -196,7 +206,10 @@ export default function Users() {
                             <div className="flex shrink-0 flex-wrap gap-2">
                                 <select
                                     value={filterRole}
-                                    onChange={(event) => setFilterRole(event.target.value)}
+                                    onChange={(event) => {
+                                        setFilterRole(event.target.value);
+                                        setCurrentPage(1);
+                                    }}
                                     className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-600 sm:px-3 sm:py-1 sm:text-xs"
                                 >
                                     <option value="">Semua role</option>
@@ -208,7 +221,10 @@ export default function Users() {
                                 </select>
                                 <select
                                     value={filterStatus}
-                                    onChange={(event) => setFilterStatus(event.target.value)}
+                                    onChange={(event) => {
+                                        setFilterStatus(event.target.value);
+                                        setCurrentPage(1);
+                                    }}
                                     className="hidden rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 sm:block"
                                 >
                                     <option value="">Semua status</option>
@@ -218,9 +234,11 @@ export default function Users() {
                             </div>
                         </div>
                         <div className="-mx-4 mt-4 overflow-x-auto px-4 sm:-mx-6 sm:mt-5 sm:px-6">
-                            <table className="min-w-full text-left text-xs text-slate-600 sm:text-sm">
+                            <table className="w-full min-w-[550px] text-left text-xs text-slate-600 sm:text-sm">
                                 <thead>
                                     <tr className="text-[10px] uppercase tracking-[0.15em] text-slate-400 sm:text-xs sm:tracking-[0.2em]">
+                                        <th className="w-12 whitespace-nowrap pb-2 pr-3 text-center sm:pb-3">No</th>
+                                        <th className="w-14 whitespace-nowrap pb-2 pr-3 text-center sm:pb-3">Aksi</th>
                                         <th className="whitespace-nowrap pb-2 pr-3 sm:pb-3">Nama</th>
                                         <th className="hidden whitespace-nowrap pb-3 pr-3 md:table-cell">Email</th>
                                         <th className="whitespace-nowrap pb-2 pr-3 sm:pb-3">Role</th>
@@ -228,97 +246,83 @@ export default function Users() {
                                         <th className="whitespace-nowrap pb-2 text-right sm:pb-3">
                                             Status
                                         </th>
-                                        <th className="whitespace-nowrap pb-2 text-right sm:pb-3">
-                                            Aksi
-                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredUsers.map((user) => (
-                                        <tr
-                                            key={user.email}
-                                            className="border-t border-slate-100"
-                                        >
-                                            <td className="whitespace-nowrap py-2 pr-3 font-semibold text-slate-800 sm:py-3">
-                                                {user.name}
-                                            </td>
-                                            <td className="hidden whitespace-nowrap py-3 pr-3 md:table-cell">
-                                                {user.email}
-                                            </td>
-                                            <td className="whitespace-nowrap py-2 pr-3 sm:py-3">
-                                                {user.primary_role}
-                                            </td>
-                                            <td className="hidden whitespace-nowrap py-3 pr-3 lg:table-cell">
-                                                {user.created_at
-                                                    ? new Date(
-                                                        user.created_at
-                                                    ).toLocaleDateString(
-                                                        'id-ID'
-                                                    )
-                                                    : '-'}
-                                            </td>
-                                            <td className="whitespace-nowrap py-2 text-right sm:py-3">
-                                                <span
-                                                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold sm:px-3 sm:py-1 sm:text-xs ${
-                                                        statusStyles[
-                                                            user.status
-                                                        ] ??
-                                                        statusStyles.Aktif
-                                                    }`}
-                                                >
-                                                    {user.status}
-                                                </span>
-                                            </td>
-                                            <td className="whitespace-nowrap py-2 text-right sm:py-3">
-                                                <div className="flex justify-end gap-1">
-                                                    {canView && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setDetailModal(user)}
-                                                            className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                                                            title="Detail"
-                                                        >
-                                                            {icons.eye}
-                                                        </button>
-                                                    )}
-                                                    {canEdit && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openEditModal(user)}
-                                                            className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600"
-                                                            title="Edit"
-                                                        >
-                                                            {icons.edit}
-                                                        </button>
-                                                    )}
-                                                    {canDelete && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setDeleteModal(user)}
-                                                            className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
-                                                            title="Hapus"
-                                                        >
-                                                            {icons.trash}
-                                                        </button>
-                                                    )}
-                                                    {canImpersonate && canApprove && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleImpersonate(user)}
-                                                            className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-100 hover:text-emerald-600"
-                                                            title="Impersonate"
-                                                        >
-                                                            {icons.masquerade}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {paginatedUsers.map((user, idx) => {
+                                        const rowNum = (currentPage - 1) * perPage + idx + 1;
+                                        const actions = [
+                                            canView && {
+                                                label: 'Detail Info',
+                                                icon: icons.eye,
+                                                onClick: () => setDetailModal(user),
+                                            },
+                                            canEdit && {
+                                                label: 'Edit User',
+                                                icon: icons.edit,
+                                                onClick: () => openEditModal(user),
+                                            },
+                                            canImpersonate && canApprove && {
+                                                label: 'Impersonate',
+                                                icon: icons.masquerade,
+                                                onClick: () => handleImpersonate(user),
+                                            },
+                                            canDelete && {
+                                                label: 'Hapus User',
+                                                icon: icons.trash,
+                                                danger: true,
+                                                onClick: () => setDeleteModal(user),
+                                            },
+                                        ].filter(Boolean);
+
+                                        return (
+                                            <tr
+                                                key={user.email}
+                                                className="border-t border-slate-100 hover:bg-slate-50/50"
+                                            >
+                                                <td className="whitespace-nowrap py-2 pr-3 text-center text-xs font-semibold text-slate-400 sm:py-3">
+                                                    {rowNum}
+                                                </td>
+                                                <td className="whitespace-nowrap py-2 pr-3 text-center sm:py-3">
+                                                    <ActionDropdown actions={actions} />
+                                                </td>
+                                                <td className="whitespace-nowrap py-2 pr-3 font-semibold text-slate-800 sm:py-3">
+                                                    {user.name}
+                                                </td>
+                                                <td className="hidden whitespace-nowrap py-3 pr-3 md:table-cell">
+                                                    {user.email}
+                                                </td>
+                                                <td className="whitespace-nowrap py-2 pr-3 sm:py-3">
+                                                    {user.primary_role}
+                                                </td>
+                                                <td className="hidden whitespace-nowrap py-3 pr-3 lg:table-cell">
+                                                    {user.created_at
+                                                        ? new Date(
+                                                            user.created_at
+                                                        ).toLocaleDateString(
+                                                            'id-ID'
+                                                        )
+                                                        : '-'}
+                                                </td>
+                                                <td className="whitespace-nowrap py-2 text-right sm:py-3">
+                                                    <span
+                                                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold sm:px-3 sm:py-1 sm:text-xs ${
+                                                            statusStyles[
+                                                                user.status
+                                                            ] ??
+                                                            statusStyles.Aktif
+                                                        }`}
+                                                    >
+                                                        {user.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                     {filteredUsers.length === 0 && (
                                         <tr className="border-t border-slate-100">
                                             <td
-                                                colSpan={6}
+                                                colSpan={7}
                                                 className="py-6 text-center text-xs text-slate-500 sm:text-sm"
                                             >
                                                 Tidak ada user yang cocok dengan
@@ -329,6 +333,20 @@ export default function Users() {
                                 </tbody>
                             </table>
                         </div>
+
+                        {filteredUsers.length > 0 && (
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                totalItems={filteredUsers.length}
+                                perPage={perPage}
+                                onPageChange={setCurrentPage}
+                                onPerPageChange={(val) => {
+                                    setPerPage(val);
+                                    setCurrentPage(1);
+                                }}
+                            />
+                        )}
                     </div>
 
                     <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">

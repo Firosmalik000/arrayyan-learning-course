@@ -93,6 +93,7 @@ class SecurityAuditTest extends TestCase
             'program_id' => $program->id,
             'package' => '8 Sesi/Bulan',
             'parent_contact' => '081234567890',
+            'parent_email' => 'bot.parent@example.com',
             'website' => 'http://spam.example',
         ]);
 
@@ -113,6 +114,7 @@ class SecurityAuditTest extends TestCase
             'program_id' => $program->id,
             'package' => '8 Sesi/Bulan',
             'parent_contact' => '081234567890',
+            'parent_email' => 'fast.parent@example.com',
             'form_started_at' => time(),
         ]);
 
@@ -162,6 +164,7 @@ class SecurityAuditTest extends TestCase
             'program_id' => $program->id,
             'package' => '8 Sesi/Bulan',
             'parent_contact' => '081234567890',
+            'parent_email' => 'spam.parent@example.com',
         ];
 
         for ($i = 0; $i < 3; $i++) {

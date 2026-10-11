@@ -139,12 +139,12 @@ export default function ProgramIndex() {
                     />
 
                     {/* Search & Filter Controls Bar */}
-                    <div className="mt-10 mx-auto max-w-4xl rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-lg">
-                        <div className="flex flex-col gap-4">
+                    <div className="mt-8 sm:mt-10 mx-auto max-w-4xl rounded-3xl border border-slate-200/80 bg-white p-3.5 xs:p-4 sm:p-5 shadow-lg">
+                        <div className="flex flex-col gap-3.5 sm:gap-4">
                             {/* Search Input */}
                             <div className="relative">
                                 <svg
-                                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
+                                    className="pointer-events-none absolute left-3.5 xs:left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -161,7 +161,7 @@ export default function ProgramIndex() {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Cari program belajar, jenjang, atau mata pelajaran..."
-                                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-11 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100"
+                                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/60 pl-10 xs:pl-11 pr-4 py-2.5 xs:py-3 text-xs xs:text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100"
                                 />
                                 {searchQuery && (
                                     <button
@@ -177,7 +177,7 @@ export default function ProgramIndex() {
                             </div>
 
                             {/* Filter Pills */}
-                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                            <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 pt-2 border-t border-slate-100">
                                 {/* Level Tabs */}
                                 <div className="flex flex-wrap items-center gap-1.5">
                                     <span className="text-xs font-bold text-slate-400 mr-1">Jenjang:</span>

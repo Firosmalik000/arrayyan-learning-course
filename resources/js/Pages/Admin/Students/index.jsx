@@ -1,6 +1,7 @@
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import {
+    ActionDropdown,
     ConfirmModal,
     FlashMessage,
     FormInput,
@@ -8,6 +9,7 @@ import {
     FormTextarea,
     Modal,
     PageHeader,
+    Pagination,
     SearchInput,
     StatusBadge,
 } from '@/Components/Admin';
@@ -66,6 +68,8 @@ export default function Students() {
     const [search, setSearch] = useState('');
     const [filterLevel, setFilterLevel] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
     const [detailModal, setDetailModal] = useState(null);
     const [editModal, setEditModal] = useState(null);
     const [deleteModal, setDeleteModal] = useState(null);
@@ -92,13 +96,19 @@ export default function Students() {
     const levelOptions = Array.from(new Set(students.map((s) => s.level).filter(Boolean)));
     const resolvedLevelOptions = levelOptions.length > 0 ? levelOptions : fallbackLevelOptions;
 
-    const filteredStudents = students.filter((student) => {
-        const matchSearch = student.name.toLowerCase().includes(search.toLowerCase());
-        const matchLevel = !filterLevel || student.level === filterLevel;
-        const statusLabel = student.is_active ? 'Aktif' : 'Nonaktif';
-        const matchStatus = !filterStatus || statusLabel === filterStatus;
-        return matchSearch && matchLevel && matchStatus;
-    });
+    const filteredStudents = useMemo(() => {
+        return students.filter((student) => {
+            const matchSearch = student.name.toLowerCase().includes(search.toLowerCase());
+            const matchLevel = !filterLevel || student.level === filterLevel;
+            const statusLabel = student.is_active ? 'Aktif' : 'Nonaktif';
+            const matchStatus = !filterStatus || statusLabel === filterStatus;
+            return matchSearch && matchLevel && matchStatus;
+        });
+    }, [students, search, filterLevel, filterStatus]);
+
+    const totalItems = filteredStudents.length;
+    const startIndex = (currentPage - 1) * perPage;
+    const paginatedStudents = filteredStudents.slice(startIndex, startIndex + perPage);
 
     const stats = [
         { label: 'Total Pelajar', value: students.length, tone: 'violet' },
@@ -201,81 +211,75 @@ export default function Students() {
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                        <table className="w-full min-w-[780px] text-left text-sm">
                             <thead>
                                 <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
+                                    <th className="w-12 px-4 py-3 font-medium text-center">No</th>
+                                    <th className="w-14 px-3 py-3 font-medium text-center">Aksi</th>
                                     <th className="px-5 py-3 font-medium">Nama</th>
                                     <th className="px-5 py-3 font-medium">Jenjang</th>
                                     <th className="px-5 py-3 font-medium">Program</th>
                                     <th className="px-5 py-3 font-medium">Paket</th>
                                     <th className="px-5 py-3 font-medium">Kontak Ortu</th>
                                     <th className="px-5 py-3 font-medium">Status</th>
-                                    <th className="px-5 py-3 font-medium">Tanggal</th>
-                                    <th className="px-5 py-3 font-medium text-right">Aksi</th>
+                                    <th className="px-5 py-3 font-medium text-right">Tanggal</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filteredStudents.map((student) => (
-                                    <tr key={student.id} className="transition hover:bg-slate-50">
-                                        <td className="px-5 py-4 font-medium text-slate-800">{student.name}</td>
-                                        <td className="px-5 py-4 text-slate-600">{student.level || '-'}</td>
-                                        <td className="px-5 py-4 text-slate-600">{student.program || '-'}</td>
-                                        <td className="px-5 py-4 text-slate-600">{student.package || '-'}</td>
-                                        <td className="px-5 py-4 text-slate-600">{student.parent_contact || '-'}</td>
-                                        <td className="px-5 py-4">{statusBadge(student.is_active)}</td>
-                                        <td className="px-5 py-4 text-slate-600">
-                                            {student.created_at ? new Date(student.created_at).toLocaleDateString('id-ID') : '-'}
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <div className="flex justify-end gap-1">
-                                                {canView && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setDetailModal(student)}
-                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                                                        title="Detail"
-                                                    >
-                                                        {icons.eye}
-                                                    </button>
-                                                )}
-                                                {canView && (
-                                                    <a
-                                                        href={`/admin/pelajar/${student.id}/kartu`}
-                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-100 hover:text-emerald-600"
-                                                        title="Cetak Kartu"
-                                                    >
-                                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5.25A2.25 2.25 0 003 8.25v7.5A2.25 2.25 0 005.25 18H19.5a1.5 1.5 0 001.5-1.5v-6a1.5 1.5 0 00-1.5-1.5H14m-4 0V6m0 0L8.5 7.5M10 6l-1.5 1.5M14 18h4" />
-                                                        </svg>
-                                                    </a>
-                                                )}
-                                                {canEdit && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openEditModal(student)}
-                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-violet-100 hover:text-violet-600"
-                                                        title="Edit"
-                                                    >
-                                                        {icons.edit}
-                                                    </button>
-                                                )}
-                                                {canDelete && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setDeleteModal(student)}
-                                                        className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
-                                                        title="Nonaktifkan"
-                                                    >
-                                                        {icons.trash}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {paginatedStudents.map((student, index) => {
+                                    const rowNumber = startIndex + index + 1;
+                                    const actionItems = [
+                                        canView && {
+                                            label: 'Lihat Detail',
+                                            icon: icons.eye,
+                                            onClick: () => setDetailModal(student),
+                                        },
+                                        canView && {
+                                            label: 'Cetak Kartu',
+                                            icon: (
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5.25A2.25 2.25 0 003 8.25v7.5A2.25 2.25 0 005.25 18H19.5a1.5 1.5 0 001.5-1.5v-6a1.5 1.5 0 00-1.5-1.5H14m-4 0V6m0 0L8.5 7.5M10 6l-1.5 1.5M14 18h4" />
+                                                </svg>
+                                            ),
+                                            href: `/admin/pelajar/${student.id}/kartu`,
+                                            isExternal: true,
+                                        },
+                                        canEdit && {
+                                            label: 'Edit Data',
+                                            icon: icons.edit,
+                                            onClick: () => openEditModal(student),
+                                        },
+                                        canDelete && {
+                                            label: 'Nonaktifkan',
+                                            icon: icons.trash,
+                                            danger: true,
+                                            onClick: () => setDeleteModal(student),
+                                        },
+                                    ];
+
+                                    return (
+                                        <tr key={student.id} className="transition hover:bg-slate-50">
+                                            <td className="w-12 px-4 py-4 text-center font-mono text-xs font-bold text-slate-400">
+                                                {rowNumber}
+                                            </td>
+                                            <td className="w-14 px-3 py-4 text-center">
+                                                <ActionDropdown items={actionItems} label={`Aksi ${student.name}`} />
+                                            </td>
+                                            <td className="px-5 py-4 font-medium text-slate-800">{student.name}</td>
+                                            <td className="px-5 py-4 text-slate-600">{student.level || '-'}</td>
+                                            <td className="px-5 py-4 text-slate-600">{student.program || '-'}</td>
+                                            <td className="px-5 py-4 text-slate-600">{student.package || '-'}</td>
+                                            <td className="px-5 py-4 text-slate-600">{student.parent_contact || '-'}</td>
+                                            <td className="px-5 py-4">{statusBadge(student.is_active)}</td>
+                                            <td className="px-5 py-4 text-right text-slate-600">
+                                                {student.created_at ? new Date(student.created_at).toLocaleDateString('id-ID') : '-'}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                                 {filteredStudents.length === 0 && (
                                     <tr>
-                                        <td colSpan={8} className="px-5 py-12 text-center text-slate-500">
+                                        <td colSpan={9} className="px-5 py-12 text-center text-slate-500">
                                             Tidak ada data pelajar yang ditemukan
                                         </td>
                                     </tr>
@@ -283,6 +287,16 @@ export default function Students() {
                             </tbody>
                         </table>
                     </div>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={totalItems}
+                        perPage={perPage}
+                        onPageChange={(p) => setCurrentPage(p)}
+                        onPerPageChange={(n) => {
+                            setPerPage(n);
+                            setCurrentPage(1);
+                        }}
+                    />
                 </div>
             </div>
 

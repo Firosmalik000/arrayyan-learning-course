@@ -21,7 +21,10 @@ export default function ClassCards({ classes, selectedId, onSelect }) {
                             <div className="min-w-0">
                                 <p className="truncate font-semibold text-slate-800">{cls.name}</p>
                                 <p className="mt-0.5 truncate text-xs text-slate-500">
-                                    {cls.program} • {cls.teacher || 'Tanpa pengajar'}
+                                    {cls.program}
+                                    {cls.level ? ` • ${cls.level}` : ''}
+                                    {cls.total_sessions ? ` • ${cls.total_sessions} Sesi` : ''}
+                                    {cls.teacher ? ` • ${cls.teacher}` : ' • Tanpa pengajar'}
                                 </p>
                             </div>
                             <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>

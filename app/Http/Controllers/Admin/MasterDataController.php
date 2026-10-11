@@ -481,11 +481,14 @@ class MasterDataController extends Controller
                 : 'pending',
         ];
 
+        $studentPerPage = min(max($request->integer('students_per_page', 10), 5), 100);
+        $teacherPerPage = min(max($request->integer('teachers_per_page', 10), 5), 100);
+
         $students = StudentRegistration::query()
             ->with(['approver:id,name', 'rejector:id,name', 'programItem:id,name'])
             ->tap(fn ($query) => $this->applyStudentFilters($query, $studentFilters, true))
             ->latest()
-            ->paginate(15, ['*'], 'students_page')
+            ->paginate($studentPerPage, ['*'], 'students_page')
             ->withQueryString();
         $students->through(fn (StudentRegistration $student) => $this->formatStudentRegistration($student));
 
@@ -493,7 +496,7 @@ class MasterDataController extends Controller
             ->with(['approver:id,name', 'rejector:id,name'])
             ->tap(fn ($query) => $this->applyTeacherFilters($query, $teacherFilters, true))
             ->latest()
-            ->paginate(15, ['*'], 'teachers_page')
+            ->paginate($teacherPerPage, ['*'], 'teachers_page')
             ->withQueryString();
         $teachers->through(fn (TeacherRegistration $teacher) => $this->formatTeacherRegistration($teacher));
 
@@ -515,8 +518,10 @@ class MasterDataController extends Controller
                 'student_search' => $studentFilters['search'],
                 'student_level' => $studentFilters['level'],
                 'student_status' => $studentFilters['status'],
+                'students_per_page' => $studentPerPage,
                 'teacher_search' => $teacherFilters['search'],
                 'teacher_status' => $teacherFilters['status'],
+                'teachers_per_page' => $teacherPerPage,
             ],
             'initialTab' => $initialTab,
         ]);
@@ -529,7 +534,8 @@ class MasterDataController extends Controller
             $query->where(function ($inner) use ($search): void {
                 $inner->where('student_name', 'like', "%{$search}%")
                     ->orWhere('school_name', 'like', "%{$search}%")
-                    ->orWhere('parent_contact', 'like', "%{$search}%");
+                    ->orWhere('parent_contact', 'like', "%{$search}%")
+                    ->orWhere('parent_email', 'like', "%{$search}%");
             });
         }
 
@@ -549,7 +555,8 @@ class MasterDataController extends Controller
             $query->where(function ($inner) use ($search): void {
                 $inner->where('name', 'like', "%{$search}%")
                     ->orWhere('subjects', 'like', "%{$search}%")
-                    ->orWhere('contact', 'like', "%{$search}%");
+                    ->orWhere('contact', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -600,6 +607,7 @@ class MasterDataController extends Controller
             'package_id' => $student->package_id,
             'package' => $student->package,
             'parent_contact' => $student->parent_contact,
+            'parent_email' => $student->parent_email,
             'preferred_mode' => $student->preferred_mode,
             'notes' => $student->notes,
             'admin_note' => $student->admin_note,
@@ -628,6 +636,7 @@ class MasterDataController extends Controller
             'subjects' => $teacher->subjects,
             'experience' => $teacher->experience,
             'contact' => $teacher->contact,
+            'email' => $teacher->email,
             'cv_path' => $teacher->cv_path,
             'cv_url' => $teacher->cv_path ? Storage::url($teacher->cv_path) : null,
             'notes' => $teacher->notes,

@@ -1,5 +1,6 @@
 import { Link, usePage, router } from '@inertiajs/react';
 import { useMemo, useState, useRef, useEffect } from 'react';
+import ToastContainer from '@/Components/Toast';
 
 const getMenu = (pendingCounts, allowedMenus) => {
     const isAllowed = (menuId) => !allowedMenus || allowedMenus.includes(menuId);
@@ -801,7 +802,7 @@ export default function AdminLayout({ children }) {
                     </header>
 
                     {/* Main Content */}
-                    <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">{children}</main>
+                    <main className="flex-1 px-3 py-5 xs:px-4 xs:py-6 sm:px-6 sm:py-8 lg:px-8">{children}</main>
                 </div>
             </div>
 
@@ -964,6 +965,8 @@ export default function AdminLayout({ children }) {
                     </div>
                 </aside>
             </div>
+
+            <ToastContainer />
         </div>
     );
 }

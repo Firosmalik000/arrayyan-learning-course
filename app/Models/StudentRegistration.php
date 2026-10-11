@@ -11,6 +11,7 @@ class StudentRegistration extends Model
     use HasFactory;
 
     protected $fillable = [
+        'student_id',
         'registration_no',
         'student_name',
         'address',
@@ -23,6 +24,7 @@ class StudentRegistration extends Model
         'program',
         'package',
         'parent_contact',
+        'parent_email',
         'preferred_mode',
         'notes',
         'admin_note',
@@ -58,6 +60,11 @@ class StudentRegistration extends Model
     public function programItem(): BelongsTo
     {
         return $this->belongsTo(Program::class, 'program_id');
+    }
+
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class, 'student_id');
     }
 
     public function packageItem(): BelongsTo

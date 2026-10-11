@@ -72,7 +72,7 @@ export default function OlympiadCard({
             </div>
 
             {/* Body */}
-            <div className="flex flex-1 flex-col p-5 sm:p-6">
+            <div className="flex flex-1 flex-col p-4.5 xs:p-5 sm:p-6">
                 <div className="flex-1">
                     {/* Schedule Date Badge */}
                     {schedule && (

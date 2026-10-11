@@ -1,171 +1,159 @@
+import { useState } from 'react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AuthLayout from '../../Layouts/AuthLayout';
 
 export default function Login() {
-    const { props } = usePage();
-    const context = props.context ?? 'public';
-    const isAdmin = context === 'admin';
+    const [showPassword, setShowPassword] = useState(false);
 
     const form = useForm({
+        identity: '',
         email: '',
+        contact: '',
         password: '',
         remember: false,
     });
 
-    const inputClass =
-        'w-full border-b border-slate-200 bg-transparent pb-2 text-sm text-slate-700 outline-none transition focus:border-brand-primary';
+    const handleIdentityChange = (e) => {
+        const val = e.target.value;
+        form.setData((prev) => ({
+            ...prev,
+            identity: val,
+            email: val,
+            contact: val,
+        }));
+    };
+
+    const handleSubmit = (event) => {
+        event.preventDefault();
+        form.post('/login', {
+            onFinish: () => form.reset('password'),
+        });
+    };
+
+    const identityError = form.errors.identity || form.errors.email || form.errors.contact;
 
     return (
         <>
-            <Head title={isAdmin ? 'Login Admin' : 'Login'} />
-            <div className="space-y-6">
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                    <Link
-                        href="/"
-                        className="flex items-center gap-2 font-semibold text-slate-500 lg:hidden"
-                    >
-                        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-soft text-brand-primary">
-                            ALC
-                        </span>
-                        Ar Rayyan LC
-                    </Link>
-                    <div className="ml-auto flex items-center gap-2">
-                        <span>English (UK)</span>
-                        <span className="text-slate-300">v</span>
-                    </div>
-                </div>
+            <Head title="Masuk ke Akun - ALC" />
 
-                <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-brand-primary">
-                        {isAdmin ? 'Admin Access' : 'Member Access'}
-                    </p>
-                    <h1 className="text-2xl font-semibold text-slate-800">
-                        {isAdmin ? 'Login Admin' : 'Login Akun'}
+            <div className="space-y-5">
+                <div className="text-center space-y-1">
+                    <h1 className="font-display text-xl font-bold tracking-tight text-slate-900">
+                        Masuk ke Akun
                     </h1>
-                    <p className="text-sm text-slate-500">
-                        {isAdmin
-                            ? 'Masuk untuk mengelola konten dan pendaftaran ALC.'
-                            : 'Masuk untuk melanjutkan proses pendaftaran.'}
+                    <p className="text-xs text-slate-500">
+                        Akses Portal Orang Tua, Pengajar, & Tim ALC
                     </p>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                    <button
-                        type="button"
-                        className="flex items-center justify-center gap-3 rounded-full border border-brand-soft bg-white px-4 py-2 text-xs font-semibold text-brand-primary shadow-sm transition hover:border-brand-soft"
-                    >
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand-primary">
-                            f
-                        </span>
-                        Masuk dengan Facebook
-                    </button>
-                    <button
-                        type="button"
-                        className="flex items-center justify-center gap-3 rounded-full border border-brand-soft bg-white px-4 py-2 text-xs font-semibold text-brand-primary shadow-sm transition hover:border-brand-soft"
-                    >
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-bold text-brand-primary shadow-sm">
-                            G
-                        </span>
-                        Masuk dengan Google
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    <div className="h-px flex-1 bg-slate-200" />
-                    <span className="text-xs text-slate-400">atau</span>
-                    <div className="h-px flex-1 bg-slate-200" />
-                </div>
-
-                <form
-                    onSubmit={(event) => {
-                        event.preventDefault();
-                        form.post('/login', {
-                            onFinish: () => form.reset('password'),
-                        });
-                    }}
-                    className="space-y-5"
-                >
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-500">
-                            Email
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Identifier: Email / No. WhatsApp */}
+                    <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-slate-700">
+                            Email atau No. WhatsApp
                         </label>
                         <input
-                            type="email"
-                            value={form.data.email}
-                            onChange={(event) =>
-                                form.setData('email', event.target.value)
-                            }
-                            className={inputClass}
-                            placeholder="Email Address"
-                            autoComplete="email"
+                            type="text"
+                            value={form.data.identity}
+                            onChange={handleIdentityChange}
+                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 focus:ring-violet-500/20 ${
+                                identityError
+                                    ? 'border-rose-400 focus:border-rose-500'
+                                    : 'border-slate-200 focus:border-brand-primary'
+                            }`}
+                            placeholder="nama@email.com atau 08xxxxxxxxxx"
+                            autoComplete="username"
+                            autoFocus
+                            required
                         />
-                        {form.errors.email ? (
-                            <p className="text-xs text-rose-500">
-                                {form.errors.email}
-                            </p>
-                        ) : null}
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-500">
-                            Password
-                        </label>
-                        <input
-                            type="password"
-                            value={form.data.password}
-                            onChange={(event) =>
-                                form.setData('password', event.target.value)
-                            }
-                            className={inputClass}
-                            placeholder="Password"
-                            autoComplete="current-password"
-                        />
-                        {form.errors.password ? (
-                            <p className="text-xs text-rose-500">
-                                {form.errors.password}
-                            </p>
-                        ) : null}
+                        {identityError && (
+                            <p className="text-xs text-rose-500 pt-0.5">{identityError}</p>
+                        )}
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-slate-500">
-                        <label className="flex items-center gap-2">
+                    {/* Password */}
+                    <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                            <label className="block text-xs font-semibold text-slate-700">
+                                Kata Sandi
+                            </label>
+                            <a
+                                href="https://wa.me/6281234567890?text=Halo%20Admin%20ALC,%20saya%20butuh%20bantuan%20masuk%20ke%20akun"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-slate-400 hover:text-brand-primary transition"
+                            >
+                                Butuh bantuan?
+                            </a>
+                        </div>
+                        <div className="relative">
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                value={form.data.password}
+                                onChange={(e) => form.setData('password', e.target.value)}
+                                className={`w-full rounded-xl border bg-white pl-3.5 pr-10 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 focus:ring-violet-500/20 ${
+                                    form.errors.password
+                                        ? 'border-rose-400 focus:border-rose-500'
+                                        : 'border-slate-200 focus:border-brand-primary'
+                                }`}
+                                placeholder="••••••••"
+                                autoComplete="current-password"
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 transition"
+                                aria-label={showPassword ? 'Sembunyikan' : 'Tampilkan'}
+                            >
+                                {showPassword ? (
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                                    </svg>
+                                ) : (
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
+                        {form.errors.password && (
+                            <p className="text-xs text-rose-500 pt-0.5">{form.errors.password}</p>
+                        )}
+                    </div>
+
+                    {/* Remember */}
+                    <div className="flex items-center pt-0.5">
+                        <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer select-none">
                             <input
                                 type="checkbox"
                                 checked={form.data.remember}
-                                onChange={(event) =>
-                                    form.setData(
-                                        'remember',
-                                        event.target.checked
-                                    )
-                                }
-                                className="h-4 w-4 rounded border-slate-300 text-brand-primary"
+                                onChange={(e) => form.setData('remember', e.target.checked)}
+                                className="h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-violet-400"
                             />
-                            Ingat saya
+                            <span>Ingat saya</span>
                         </label>
-                        <Link href="#" className="text-brand-primary">
-                            Lupa password?
-                        </Link>
                     </div>
 
+                    {/* Submit */}
                     <button
                         type="submit"
                         disabled={form.processing}
-                        className="w-full rounded-full bg-brand-primary px-5 py-3 text-sm font-semibold text-white shadow transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="w-full rounded-xl bg-slate-900 py-2.5 px-4 text-sm font-semibold text-white shadow-xs transition hover:bg-slate-800 active:scale-[0.99] disabled:opacity-50"
                     >
-                        {form.processing ? 'Memproses...' : 'Masuk Sekarang'}
+                        {form.processing ? 'Memproses...' : 'Masuk'}
                     </button>
                 </form>
 
-                <p className="text-center text-xs text-slate-500">
-                    Belum punya akun?{' '}
-                    <span className="font-semibold text-brand-primary">
-                        Hubungi admin ALC
-                    </span>
-                </p>
+                <div className="rounded-xl bg-violet-50/70 border border-violet-100 p-3 text-center">
+                    <p className="text-[11px] leading-relaxed text-violet-700">
+                        Orang tua dan pengajar dapat masuk menggunakan email terdaftar atau nomor WhatsApp dan kata sandi yang dikirimkan melalui email / WhatsApp.
+                    </p>
+                </div>
             </div>
         </>
     );
 }
 
-Login.layout = (page) => (
-    <AuthLayout context={page.props.context}>{page}</AuthLayout>
-);
+Login.layout = (page) => <AuthLayout>{page}</AuthLayout>;

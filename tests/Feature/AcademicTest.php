@@ -6,6 +6,7 @@ use App\Models\Attendance;
 use App\Models\ClassGroup;
 use App\Models\Grade;
 use App\Models\Invoice;
+use App\Models\Package;
 use App\Models\Program;
 use App\Models\Role;
 use App\Models\Student;
@@ -335,5 +336,241 @@ class AcademicTest extends TestCase
         $response->assertSuccessful();
         $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
         $this->assertStringContainsString('Anak Kelas', $response->streamedContent());
+    }
+
+    public function test_academic_page_passes_program_quota(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = Program::create([
+            'name' => 'Program Kuota',
+            'level' => 'SMA',
+            'quota' => 25,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->get(route('admin.academic'));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->has('programs.0.quota')
+        );
+    }
+
+    public function test_store_class_saves_quota_without_room(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.academic.classes.store'), [
+            'program_id' => $program->id,
+            'name' => 'Kelas Baru',
+            'quota' => 15,
+            'is_active' => true,
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('class_groups', [
+            'program_id' => $program->id,
+            'name' => 'Kelas Baru',
+            'quota' => 15,
+        ]);
+    }
+
+    public function test_store_schedule_works_without_room(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.academic.schedules.store', $class), [
+            'day_of_week' => 1,
+            'start_time' => '08:00',
+            'end_time' => '09:30',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('schedules', [
+            'class_group_id' => $class->id,
+            'day_of_week' => 1,
+            'start_time' => '08:00',
+            'end_time' => '09:30',
+        ]);
+    }
+
+    public function test_store_class_saves_level_and_package_sessions(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $package = Package::create([
+            'program_id' => $program->id,
+            'name' => 'Paket SD 8 Sesi',
+            'level' => 'SD',
+            'sessions' => 8,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.academic.classes.store'), [
+            'program_id' => $program->id,
+            'level' => 'SD',
+            'package_id' => $package->id,
+            'name' => 'Kelas SD 8 Sesi',
+            'quota' => 10,
+            'is_active' => true,
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('class_groups', [
+            'program_id' => $program->id,
+            'level' => 'SD',
+            'package_id' => $package->id,
+            'total_sessions' => 8,
+            'name' => 'Kelas SD 8 Sesi',
+        ]);
+    }
+
+    public function test_generate_sessions_creates_attendances_from_schedules(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+        $student = $this->makeStudent($program);
+        $this->makePaid($student);
+
+        // Add member
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.members.store', $class),
+            ['student_ids' => [$student->id]]
+        );
+
+        // Add weekly schedule (Monday)
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.schedules.store', $class),
+            ['day_of_week' => 1, 'start_time' => '16:00', 'end_time' => '17:30']
+        );
+
+        // Generate 4 sessions starting from Monday 2026-10-12
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.sessions.generate', $class),
+            ['start_date' => '2026-10-12', 'count' => 4]
+        );
+
+        $response->assertRedirect();
+        $this->assertEquals(4, Attendance::query()->where('class_group_id', $class->id)->count());
+        $this->assertEquals('belum_absen', Attendance::query()->where('class_group_id', $class->id)->first()->status);
+    }
+
+    public function test_generate_sessions_accepts_custom_dates_array(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+        $student = $this->makeStudent($program);
+        $this->makePaid($student);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.members.store', $class),
+            ['student_ids' => [$student->id]]
+        );
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.sessions.generate', $class),
+            ['dates' => ['2026-10-15', '2026-10-22', '2026-10-29']]
+        );
+
+        $response->assertRedirect();
+        $this->assertEquals(3, Attendance::query()->where('class_group_id', $class->id)->count());
+        $this->assertEquals(
+            ['2026-10-15', '2026-10-22', '2026-10-29'],
+            Attendance::query()->where('class_group_id', $class->id)->orderBy('date')->pluck('date')->map(fn ($d) => substr((string) $d, 0, 10))->all()
+        );
+        $this->assertEquals('belum_absen', Attendance::query()->where('class_group_id', $class->id)->first()->status);
+    }
+
+    public function test_generate_sessions_reschedules_and_cleans_up_removed_unattended_dates(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+        $student = $this->makeStudent($program);
+        $this->makePaid($student);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.members.store', $class),
+            ['student_ids' => [$student->id]]
+        );
+
+        // Initial generation: 3 dates
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.sessions.generate', $class),
+            ['dates' => ['2026-10-15', '2026-10-22', '2026-10-29']]
+        );
+
+        // Mark 2026-10-15 as hadir
+        Attendance::query()->where('class_group_id', $class->id)->whereDate('date', '2026-10-15')->update(['status' => 'hadir']);
+
+        // Now reschedule: replace 2026-10-29 with 2026-10-30, and remove 2026-10-22
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.sessions.generate', $class),
+            ['dates' => ['2026-10-15', '2026-10-30']]
+        );
+
+        $dates = Attendance::query()->where('class_group_id', $class->id)->orderBy('date')->pluck('date')->map(fn ($d) => substr((string) $d, 0, 10))->all();
+        $this->assertEquals(['2026-10-15', '2026-10-30'], $dates);
+        $this->assertEquals('hadir', Attendance::query()->where('class_group_id', $class->id)->whereDate('date', '2026-10-15')->first()->status);
+        $this->assertEquals('belum_absen', Attendance::query()->where('class_group_id', $class->id)->whereDate('date', '2026-10-30')->first()->status);
+    }
+
+    public function test_attendance_enforces_session_limit(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $package = Package::create([
+            'program_id' => $program->id,
+            'name' => 'Paket 1 Sesi',
+            'level' => 'SMP',
+            'sessions' => 1,
+            'is_active' => true,
+        ]);
+
+        $class = ClassGroup::create([
+            'program_id' => $program->id,
+            'package_id' => $package->id,
+            'total_sessions' => 1,
+            'name' => 'Kelas 1 Sesi',
+            'is_active' => true,
+        ]);
+
+        $student = Student::create([
+            'name' => 'Anak Limit',
+            'program_id' => $program->id,
+            'package_id' => $package->id,
+            'is_active' => true,
+        ]);
+        $this->makePaid($student);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.members.store', $class),
+            ['student_ids' => [$student->id]]
+        );
+
+        // 1st attendance succeeds
+        $res1 = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.attendance.store', $class),
+            [
+                'date' => '2026-10-10',
+                'rows' => [['student_id' => $student->id, 'status' => 'hadir']],
+            ]
+        );
+        $res1->assertSessionHas('success');
+
+        // 2nd attendance exceeds limit and fails
+        $res2 = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.attendance.store', $class),
+            [
+                'date' => '2026-10-11',
+                'rows' => [['student_id' => $student->id, 'status' => 'hadir']],
+            ]
+        );
+        $res2->assertSessionHas('error');
     }
 }

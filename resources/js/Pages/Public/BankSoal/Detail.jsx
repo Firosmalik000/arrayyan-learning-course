@@ -182,12 +182,12 @@ export default function BankSoalDetail({ slug }) {
                             )}
                         </div>
 
-                        <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                        <h1 className="font-display text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
                             {name}
                         </h1>
 
                         {description && (
-                            <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed max-w-3xl">
+                            <p className="mt-4 text-sm sm:text-base lg:text-lg text-slate-600 leading-relaxed max-w-3xl">
                                 {description}
                             </p>
                         )}
@@ -196,13 +196,13 @@ export default function BankSoalDetail({ slug }) {
             </section>
 
             {/* Detail Content */}
-            <section className="py-12 sm:py-16 bg-white">
+            <section className="py-10 sm:py-16 bg-white">
                 <Container>
-                    <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12 items-start">
+                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12 2xl:gap-16 items-start">
                         {/* Left Main (8 cols) */}
-                        <div className="lg:col-span-8 space-y-10">
+                        <div className="lg:col-span-8 space-y-8 sm:space-y-10">
                             {/* Materials / Links Box */}
-                            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-xs">
+                            <div className="rounded-3xl border border-slate-200/90 bg-white p-4.5 xs:p-6 sm:p-8 shadow-xs">
                                 <h3 className="font-display text-xl font-bold text-slate-900 mb-2 flex items-center gap-2">
                                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
                                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -334,7 +334,7 @@ export default function BankSoalDetail({ slug }) {
                                     <span>{t.features}</span>
                                 </h3>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                <div className="grid grid-cols-1 xs:grid-cols-2 gap-3.5">
                                     {t.featuresList.map((feature, idx) => (
                                         <div key={idx} className="flex items-start gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 shadow-2xs">
                                             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-100 text-brand-primary text-xs font-bold mt-0.5">
@@ -350,7 +350,7 @@ export default function BankSoalDetail({ slug }) {
                         {/* Right Sidebar (4 cols) */}
                         <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
                             {/* Summary Card */}
-                            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xl">
+                            <div className="rounded-3xl border border-slate-200/90 bg-white p-5 xs:p-6 shadow-xl">
                                 <h4 className="font-bold text-slate-900 text-base pb-3 border-b border-slate-100">
                                     {t.moduleInfo}
                                 </h4>

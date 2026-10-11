@@ -304,7 +304,7 @@ export default function Dashboard() {
                             </Link>
                         </div>
                         <div className="-mx-4 mt-4 overflow-x-auto px-4 sm:-mx-6 sm:mt-5 sm:px-6">
-                            <table className="min-w-full text-left text-xs text-slate-600 sm:text-sm">
+                            <table className="w-full min-w-[420px] text-left text-xs text-slate-600 sm:text-sm">
                                 <thead>
                                     <tr className="text-[10px] uppercase tracking-[0.15em] text-slate-400 sm:text-xs sm:tracking-[0.2em]">
                                         <th className="whitespace-nowrap pb-2 pr-3 sm:pb-3">Nama</th>

@@ -43,9 +43,11 @@ class InvoiceController extends Controller
             })
             ->when(in_array($status, self::STATUSES, true), fn ($query) => $query->where('status', $status));
 
+        $perPage = min(max($request->integer('per_page', 10), 5), 100);
+
         $invoices = (clone $base)
             ->latest()
-            ->paginate(15)
+            ->paginate($perPage)
             ->withQueryString();
         $invoices->through(fn (Invoice $invoice) => $this->formatInvoice($invoice));
 
@@ -68,6 +70,7 @@ class InvoiceController extends Controller
             'filters' => [
                 'search' => $search,
                 'status' => $status,
+                'per_page' => $perPage,
             ],
         ]);
     }
@@ -92,23 +95,35 @@ class InvoiceController extends Controller
         return back()->with('success', "Invoice {$invoice->invoice_no} siap ditagihkan.");
     }
 
-    public function verify(Payment $payment): RedirectResponse
+    public function confirm(Invoice $invoice): RedirectResponse
     {
-        if ($payment->status !== Payment::STATUS_PENDING) {
-            return back()->with('error', 'Bukti pembayaran ini sudah diproses sebelumnya.');
+        if ($invoice->status === Invoice::STATUS_PAID) {
+            return back()->with('error', 'Tagihan ini sudah berstatus lunas.');
         }
 
-        $invoice = $payment->invoice;
+        $pendingPayment = $invoice->payments()
+            ->where('status', Payment::STATUS_PENDING)
+            ->latest()
+            ->first();
+
+        if ($pendingPayment) {
+            $pendingPayment->update([
+                'status' => Payment::STATUS_VERIFIED,
+                'verified_by' => Auth::id(),
+                'verified_at' => now(),
+            ]);
+        } else {
+            $invoice->payments()->create([
+                'status' => Payment::STATUS_VERIFIED,
+                'verified_by' => Auth::id(),
+                'verified_at' => now(),
+                'note' => 'Dikonfirmasi langsung oleh admin',
+            ]);
+        }
 
         $invoice->update([
             'status' => Invoice::STATUS_PAID,
             'paid_at' => now(),
-        ]);
-
-        $payment->update([
-            'status' => Payment::STATUS_VERIFIED,
-            'verified_by' => Auth::id(),
-            'verified_at' => now(),
         ]);
 
         [$contact, $name] = InvoiceService::resolveRecipient($invoice->fresh());
@@ -125,29 +140,30 @@ class InvoiceController extends Controller
             );
         }
 
-        ActivityLog::record('keuangan.verifikasi', "Tagihan {$invoice->invoice_no} diverifikasi lunas.", $invoice);
+        ActivityLog::record('keuangan.konfirmasi', "Tagihan {$invoice->invoice_no} berhasil dikonfirmasi lunas.", $invoice);
 
-        return back()->with('success', "Tagihan {$invoice->invoice_no} diverifikasi lunas.");
+        return back()->with('success', "Tagihan {$invoice->invoice_no} berhasil dikonfirmasi lunas.");
     }
 
-    public function decline(Request $request, Payment $payment): RedirectResponse
+    public function declineInvoice(Request $request, Invoice $invoice): RedirectResponse
     {
-        if ($payment->status !== Payment::STATUS_PENDING) {
-            return back()->with('error', 'Bukti pembayaran ini sudah diproses sebelumnya.');
-        }
-
         $data = $request->validate([
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $invoice = $payment->invoice;
+        $pendingPayment = $invoice->payments()
+            ->where('status', Payment::STATUS_PENDING)
+            ->latest()
+            ->first();
 
-        $payment->update([
-            'status' => Payment::STATUS_REJECTED,
-            'note' => $data['note'] ?? $payment->note,
-            'verified_by' => Auth::id(),
-            'verified_at' => now(),
-        ]);
+        if ($pendingPayment) {
+            $pendingPayment->update([
+                'status' => Payment::STATUS_REJECTED,
+                'note' => $data['note'] ?? $pendingPayment->note,
+                'verified_by' => Auth::id(),
+                'verified_at' => now(),
+            ]);
+        }
 
         $invoice->update(['status' => Invoice::STATUS_UNPAID]);
 
@@ -168,6 +184,28 @@ class InvoiceController extends Controller
         ActivityLog::record('keuangan.tolak', "Bukti pembayaran {$invoice->invoice_no} ditolak.", $invoice);
 
         return back()->with('success', "Bukti pembayaran {$invoice->invoice_no} ditolak. Tagihan kembali ke Belum Bayar.");
+    }
+
+    public function verify(Payment $payment): RedirectResponse
+    {
+        if ($payment->status !== Payment::STATUS_PENDING) {
+            return back()->with('error', 'Bukti pembayaran ini sudah diproses sebelumnya.');
+        }
+
+        $invoice = $payment->invoice;
+
+        return $this->confirm($invoice);
+    }
+
+    public function decline(Request $request, Payment $payment): RedirectResponse
+    {
+        if ($payment->status !== Payment::STATUS_PENDING) {
+            return back()->with('error', 'Bukti pembayaran ini sudah diproses sebelumnya.');
+        }
+
+        $invoice = $payment->invoice;
+
+        return $this->declineInvoice($request, $invoice);
     }
 
     public function export(Request $request): StreamedResponse

@@ -18,6 +18,7 @@ class TeacherRegistration extends Model
         'subjects',
         'experience',
         'contact',
+        'email',
         'cv_path',
         'notes',
         'admin_note',

@@ -306,24 +306,24 @@ export default function Home({ landingContent }) {
                                 </div>
 
                                 {/* Floating Micro-Badge Top Right */}
-                                <div className="absolute -right-2 sm:-right-4 top-6 flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-white/95 px-3.5 py-2.5 shadow-lg backdrop-blur-md">
-                                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 text-sm">
+                                <div className="absolute right-2 xs:-right-2 sm:-right-4 top-4 xs:top-6 flex items-center gap-2 xs:gap-2.5 rounded-2xl border border-slate-100 bg-white/95 px-3 py-2 xs:px-3.5 xs:py-2.5 shadow-lg backdrop-blur-md">
+                                    <span className="flex h-7 w-7 xs:h-8 xs:w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 text-xs xs:text-sm shrink-0">
                                         ⭐
                                     </span>
                                     <div>
                                         <p className="text-xs font-bold text-slate-900 leading-tight">4.9 / 5.0</p>
-                                        <p className="text-[10px] text-slate-500 font-medium">Kepuasan Siswa & Wali</p>
+                                        <p className="text-[9px] xs:text-[10px] text-slate-500 font-medium">Kepuasan Siswa & Wali</p>
                                     </div>
                                 </div>
 
                                 {/* Floating Micro-Badge Bottom Left */}
-                                <div className="absolute -left-2 sm:-left-4 -bottom-3 flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-white/95 px-3.5 py-2.5 shadow-lg backdrop-blur-md">
-                                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-50 text-brand-primary text-sm">
+                                <div className="absolute left-2 xs:-left-2 sm:-left-4 -bottom-3 flex items-center gap-2 xs:gap-2.5 rounded-2xl border border-slate-100 bg-white/95 px-3 py-2 xs:px-3.5 xs:py-2.5 shadow-lg backdrop-blur-md">
+                                    <span className="flex h-7 w-7 xs:h-8 xs:w-8 items-center justify-center rounded-xl bg-violet-50 text-brand-primary text-xs xs:text-sm shrink-0">
                                         📖
                                     </span>
                                     <div>
                                         <p className="text-xs font-bold text-slate-900 leading-tight">Pra TK - SMA</p>
-                                        <p className="text-[10px] text-slate-500 font-medium">Privat & Kelompok</p>
+                                        <p className="text-[9px] xs:text-[10px] text-slate-500 font-medium">Privat & Kelompok</p>
                                     </div>
                                 </div>
                             </div>

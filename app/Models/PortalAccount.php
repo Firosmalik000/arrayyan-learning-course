@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class PortalAccount extends Authenticatable
 {
     use HasFactory;
+
+    public const TYPE_PARENT = 'parent';
 
     public const TYPE_STUDENT = 'student';
 
@@ -19,6 +22,7 @@ class PortalAccount extends Authenticatable
         'student_id',
         'teacher_id',
         'name',
+        'email',
         'contact',
         'password',
         'must_change_password',
@@ -45,14 +49,24 @@ class PortalAccount extends Authenticatable
         return $this->belongsTo(Student::class, 'student_id');
     }
 
+    public function students(): HasMany
+    {
+        return $this->hasMany(Student::class, 'parent_portal_account_id');
+    }
+
     public function teacher(): BelongsTo
     {
         return $this->belongsTo(Teacher::class, 'teacher_id');
     }
 
+    public function isParent(): bool
+    {
+        return in_array($this->type, [self::TYPE_PARENT, self::TYPE_STUDENT], true);
+    }
+
     public function isStudent(): bool
     {
-        return $this->type === self::TYPE_STUDENT;
+        return $this->isParent();
     }
 
     public function isTeacher(): bool

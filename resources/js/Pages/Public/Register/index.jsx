@@ -35,25 +35,11 @@ const DRAFT_KEY = 'alc-student-draft-v2';
 const STEP_KEY = 'alc-student-step-v2';
 const OLD_DRAFT_KEY = 'alc-student-draft-v1';
 
-const getInitialStudentData = (prefilledProgramId) => {
-    let draft = {};
-    if (typeof window !== 'undefined') {
-        try {
-            const raw = window.localStorage.getItem(DRAFT_KEY) || window.localStorage.getItem(OLD_DRAFT_KEY);
-            if (raw) {
-                draft = JSON.parse(raw);
-            }
-        } catch {
-            draft = {};
-        }
-    }
-    return {
-        ...initialStudentForm,
-        ...draft,
-        ...(prefilledProgramId ? { program_id: prefilledProgramId } : {}),
-        form_started_at: String(Math.floor(Date.now() / 1000)),
-    };
-};
+const getInitialStudentData = (prefilledProgramId) => ({
+    ...initialStudentForm,
+    ...(prefilledProgramId ? { program_id: prefilledProgramId } : {}),
+    form_started_at: String(Math.floor(Date.now() / 1000)),
+});
 
 const matchesPackageLevel = (pkgLevel, tab) => {
     if (!tab || tab === 'Semua') return true;
@@ -71,20 +57,6 @@ export default function Register() {
     const { props, url } = usePage();
     const programs = props.programs ?? [];
     const { language } = useI18n();
-    const flashSuccess = props.flash?.success;
-    const flashTicket = props.flash?.ticket;
-    const [copied, setCopied] = useState(false);
-
-    const copyTicket = async () => {
-        if (!flashTicket) return;
-        try {
-            await navigator.clipboard.writeText(flashTicket);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch {
-            setCopied(false);
-        }
-    };
 
     const urlParams = new URLSearchParams(url.split('?')[1] || '');
     const initialTab = urlParams.get('tab') === 'teacher' ? 'teacher' : 'student';
@@ -104,49 +76,29 @@ export default function Register() {
     const selectClass =
         'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100';
 
-    // ── Wizard langkah + draft tersimpan aman (terhidrasi tanpa menimpa kosong) ──
+    // ── Wizard langkah siswa (form bersih setiap muat ulang / refresh) ──
     const initialStudentData = getInitialStudentData(prefilledProgramId);
     const studentForm = useForm(initialStudentData);
     const teacherForm = useForm(initialTeacherForm);
 
-    const [isMounted, setIsMounted] = useState(false);
-    const [step, setStep] = useState(() => {
-        if (typeof window === 'undefined') return 1;
-        try {
-            const saved = window.localStorage.getItem(STEP_KEY);
-            const parsed = parseInt(saved, 10);
-            return parsed >= 1 && parsed <= 4 ? parsed : 1;
-        } catch {
-            return 1;
-        }
-    });
+    const [step, setStep] = useState(1);
     const [stepErrors, setStepErrors] = useState({});
     const [packageTab, setPackageTab] = useState(initialStudentData.level || 'Semua');
 
     useEffect(() => {
-        setIsMounted(true);
         const startedAt = String(Math.floor(Date.now() / 1000));
         teacherForm.setData('form_started_at', startedAt);
+        if (typeof window !== 'undefined') {
+            try {
+                window.localStorage.removeItem(DRAFT_KEY);
+                window.localStorage.removeItem(STEP_KEY);
+                window.localStorage.removeItem(OLD_DRAFT_KEY);
+            } catch {
+                // abaikan
+            }
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    useEffect(() => {
-        if (!isMounted) return;
-        try {
-            window.localStorage.setItem(DRAFT_KEY, JSON.stringify(studentForm.data));
-        } catch {
-            // abaikan
-        }
-    }, [studentForm.data, isMounted]);
-
-    useEffect(() => {
-        if (!isMounted) return;
-        try {
-            window.localStorage.setItem(STEP_KEY, String(step));
-        } catch {
-            // abaikan
-        }
-    }, [step, isMounted]);
 
     const waValid = (value) =>
         /^(?:\+62|62|0)8[0-9]{5,13}$/.test(String(value || '').replace(/[\s\-.()]/g, ''));
@@ -158,6 +110,8 @@ export default function Register() {
             if (!d.student_name?.trim()) errs.student_name = 'Nama siswa wajib diisi.';
             if (!d.parent_contact?.trim()) errs.parent_contact = 'Kontak WhatsApp wajib diisi.';
             else if (!waValid(d.parent_contact)) errs.parent_contact = 'Nomor WhatsApp tidak valid (contoh: 081234567890).';
+            if (!d.parent_email?.trim()) errs.parent_email = 'Email orang tua wajib diisi.';
+            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.parent_email)) errs.parent_email = 'Format email orang tua tidak valid.';
             if (!d.address?.trim()) errs.address = 'Alamat wajib diisi.';
         }
         if (current === 2) {
@@ -174,7 +128,9 @@ export default function Register() {
         return Object.keys(errs).length === 0;
     };
 
-    const nextStep = () => {
+    const nextStep = (event) => {
+        event?.preventDefault();
+
         if (validateStep(step)) setStep((s) => Math.min(4, s + 1));
     };
     const prevStep = () => {
@@ -186,7 +142,7 @@ export default function Register() {
 
     const stepLabels = ['Data Diri', 'Sekolah', 'Program', 'Review'];
     const serverErrorStep = {
-        student_name: 1, parent_contact: 1, address: 1,
+        student_name: 1, parent_contact: 1, parent_email: 1, address: 1,
         school_name: 2, level: 2, class_level: 2, subjects: 2,
         program_id: 3, package_id: 3, package: 3, preferred_mode: 3,
         notes: 4,
@@ -290,33 +246,17 @@ export default function Register() {
         setStepErrors((errors) => ({ ...errors, package_id: undefined }));
     };
 
-    const handleResetDraft = () => {
-        if (window.confirm('Bersihkan data formulir yang tersimpan dan mulai dari awal?')) {
-            studentForm.reset();
-            setStep(1);
-            setStepErrors({});
-            setPackageTab('Semua');
-            try {
-                window.localStorage.removeItem(DRAFT_KEY);
-                window.localStorage.removeItem(STEP_KEY);
-                window.localStorage.removeItem(OLD_DRAFT_KEY);
-            } catch {
-                // abaikan
-            }
-        }
-    };
-
-    const hasSavedDraft = Boolean(
-        studentForm.data.student_name ||
-        studentForm.data.parent_contact ||
-        studentForm.data.school_name ||
-        studentForm.data.level
-    );
 
     const handleStudentSubmit = (event) => {
         event.preventDefault();
+
+        if (step < 4) {
+            nextStep();
+
+            return;
+        }
+
         studentForm.post('/pendaftaran/murid', {
-            preserveScroll: true,
             onSuccess: () => {
                 studentForm.reset();
                 setStep(1);
@@ -380,52 +320,6 @@ export default function Register() {
             {/* Form & Value Proposition Section */}
             <section className="py-12 sm:py-16 bg-slate-50/40">
                 <Container>
-                    {/* Success Flash Banner */}
-                    {flashSuccess && (
-                        <div className="mb-8 rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900 shadow-md">
-                            <div className="flex items-start gap-4">
-                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-200 text-emerald-800 font-bold">
-                                    ✓
-                                </span>
-                                <div>
-                                    <h4 className="text-base font-bold">Pendaftaran Berhasil Dikirim!</h4>
-                                    <p className="mt-1 text-sm text-emerald-800 leading-relaxed">{flashSuccess}</p>
-                                    {flashTicket && (
-                                        <div className="mt-4 rounded-2xl border border-emerald-300 bg-white p-4">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
-                                                Nomor Tiket Pendaftaran
-                                            </p>
-                                            <div className="mt-2 flex flex-wrap items-center gap-3">
-                                                <span className="rounded-xl bg-emerald-100 px-4 py-2 font-mono text-lg font-bold tracking-wider text-emerald-900">
-                                                    {flashTicket}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={copyTicket}
-                                                    className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
-                                                >
-                                                    {copied ? 'Tersalin!' : 'Salin'}
-                                                </button>
-                                                <Link
-                                                    href={`/cek-status?ticket=${encodeURIComponent(flashTicket)}`}
-                                                    className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
-                                                >
-                                                    Cek Status
-                                                </Link>
-                                            </div>
-                                            <p className="mt-2 text-xs text-emerald-700">
-                                                Simpan nomor tiket ini. Anda membutuhkannya + nomor WhatsApp untuk melacak status pendaftaran.
-                                            </p>
-                                        </div>
-                                    )}
-                                    <p className="mt-2 text-xs text-emerald-700">
-                                        Tim administrasi ALC akan segera menghubungi Anda melalui nomor WhatsApp yang terdaftar untuk verifikasi dan langkah selanjutnya.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12 items-start">
                         {/* Left Column: Benefits & Steps (4 cols) */}
                         <div className="lg:col-span-5 space-y-8">
@@ -512,9 +406,9 @@ export default function Register() {
 
                         {/* Right Column: Registration Form (7 cols) */}
                         <div className="lg:col-span-7">
-                            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-10 shadow-xl">
+                            <div className="rounded-3xl border border-slate-200/90 bg-white p-4 xs:p-6 sm:p-10 shadow-xl">
                                 {/* Tab Switcher */}
-                                <div className="mb-8 flex rounded-2xl border border-slate-200 bg-slate-100 p-1">
+                                <div className="mb-6 sm:mb-8 flex flex-col xs:flex-row rounded-2xl border border-slate-200 bg-slate-100 p-1 gap-1 xs:gap-0">
                                     <button
                                         type="button"
                                         onClick={() => setActiveTab('student')}
@@ -551,15 +445,6 @@ export default function Register() {
                                                     Lengkapi data diri calon siswa dan pilihan paket belajar.
                                                 </p>
                                             </div>
-                                            {hasSavedDraft && (
-                                                <button
-                                                    type="button"
-                                                    onClick={handleResetDraft}
-                                                    className="shrink-0 text-xs font-semibold text-rose-500 hover:text-rose-700 hover:underline transition"
-                                                >
-                                                    Hapus Draft
-                                                </button>
-                                            )}
                                         </div>
 
                                         {/* Step indicator */}
@@ -628,6 +513,22 @@ export default function Register() {
                                                 />
                                                 {fieldError('parent_contact') && (
                                                     <p className="mt-1 text-xs text-rose-500">{fieldError('parent_contact')}</p>
+                                                )}
+                                            </div>
+
+                                            {/* Email Orang Tua */}
+                                            <div>
+                                                <label className={labelClass}>{studentFields.parentEmail} *</label>
+                                                <input
+                                                    type="email"
+                                                    className={inputClass}
+                                                    placeholder="Contoh: orangtua@email.com"
+                                                    value={studentForm.data.parent_email}
+                                                    onChange={(e) => studentForm.setData('parent_email', e.target.value)}
+                                                    autoComplete="email"
+                                                />
+                                                {fieldError('parent_email') && (
+                                                    <p className="mt-1 text-xs text-rose-500">{fieldError('parent_email')}</p>
                                                 )}
                                             </div>
 
@@ -912,6 +813,7 @@ export default function Register() {
                                                 <dl className="grid grid-cols-1 gap-2.5 text-xs sm:grid-cols-2">
                                                     <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Nama Siswa</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.student_name || '-'}</dd></div>
                                                     <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Kontak WA</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.parent_contact || '-'}</dd></div>
+                                                    <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Email Orang Tua</dt><dd className="mt-0.5 break-all font-bold text-slate-900">{studentForm.data.parent_email || '-'}</dd></div>
                                                     <div className="sm:col-span-2"><dt className="font-semibold uppercase tracking-wide text-slate-500">Alamat</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.address || '-'}</dd></div>
                                                     <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Sekolah</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.school_name || '-'}</dd></div>
                                                     <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Jenjang & Kelas</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.level ? `${studentForm.data.level}${studentForm.data.class_level ? ` • ${studentForm.data.class_level}` : ''}` : '-'}</dd></div>
@@ -958,6 +860,7 @@ export default function Register() {
                                             ) : <span />}
                                             {step < 4 ? (
                                                 <Button
+                                                    key="student-next-step"
                                                     type="button"
                                                     variant="primary"
                                                     size="lg"
@@ -969,10 +872,11 @@ export default function Register() {
                                                         </svg>
                                                     }
                                                 >
-                                                    Lanjut
+                                                    {step === 3 ? 'Review Pendaftaran' : 'Lanjut'}
                                                 </Button>
                                             ) : (
                                                 <Button
+                                                    key="student-submit"
                                                     type="submit"
                                                     variant="primary"
                                                     size="lg"
@@ -1033,6 +937,22 @@ export default function Register() {
                                                 />
                                                 {teacherForm.errors.contact && (
                                                     <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.contact}</p>
+                                                )}
+                                            </div>
+
+                                            {/* Email Pengajar */}
+                                            <div>
+                                                <label className={labelClass}>{teacherFields.email || 'Email'} *</label>
+                                                <input
+                                                    type="email"
+                                                    className={inputClass}
+                                                    placeholder="emailanda@contoh.com"
+                                                    value={teacherForm.data.email}
+                                                    onChange={(e) => teacherForm.setData('email', e.target.value)}
+                                                    required
+                                                />
+                                                {teacherForm.errors.email && (
+                                                    <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.email}</p>
                                                 )}
                                             </div>
 

@@ -32,14 +32,14 @@ class SendInvoiceNotification implements ShouldQueue
         string $amount,
         ?string $dueDate,
     ): string {
-        $payLink = route('payments.show', ['invoice' => $invoiceNo]);
+        $payLink = route('portal.invoices');
 
         return match ($event) {
-            'due' => "Halo {$name}, tagihan {$invoiceNo} sebesar {$amount} jatuh tempo {$dueDate}. Segera lakukan pembayaran dan unggah bukti di: {$payLink}",
-            'paid' => "Terima kasih {$name}! Pembayaran {$invoiceNo} sebesar {$amount} telah kami VERIFIKASI (LUNAS).",
-            'expired' => "Halo {$name}, tagihan {$invoiceNo} sebesar {$amount} telah KEDALUWARSA. Silakan hubungi admin untuk perpanjangan atau unggah ulang bukti di: {$payLink}",
-            'rejected' => "Halo {$name}, bukti pembayaran {$invoiceNo} BELUM dapat kami terima. Silakan periksa dan unggah ulang bukti yang valid di: {$payLink}",
-            default => "Halo {$name}, ada pembaruan untuk tagihan {$invoiceNo} di Ar Rayyan Learning Course.",
+            'due' => "Halo {$name}, tagihan {$invoiceNo} sebesar {$amount} jatuh tempo {$dueDate}. Segera lakukan pembayaran dan konfirmasi bukti bayar melalui Portal Orang Tua: {$payLink}",
+            'paid' => "Terima kasih {$name}! Pembayaran tagihan {$invoiceNo} sebesar {$amount} telah kami VERIFIKASI (LUNAS).",
+            'expired' => "Halo {$name}, tagihan {$invoiceNo} sebesar {$amount} telah KEDALUWARSA. Silakan hubungi admin atau periksa di Portal Orang Tua: {$payLink}",
+            'rejected' => "Halo {$name}, bukti pembayaran {$invoiceNo} BELUM dapat kami terima. Silakan periksa dan unggah ulang bukti yang valid di Portal Orang Tua: {$payLink}",
+            default => "Halo {$name}, ada pembaruan untuk tagihan {$invoiceNo} di Ar Rayyan Learning Course. Silakan cek di Portal Orang Tua: {$payLink}",
         };
     }
 

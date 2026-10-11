@@ -199,7 +199,7 @@ export default function Olympiad() {
                             </div>
 
                             {/* Filters Row */}
-                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                            <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3 pt-2 border-t border-slate-100">
                                 {/* Category Filters */}
                                 <div className="flex flex-wrap items-center gap-1.5">
                                     <span className="text-xs font-bold text-slate-400 mr-1">Kategori:</span>
@@ -220,12 +220,12 @@ export default function Olympiad() {
                                 </div>
 
                                 {/* Level Filters */}
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 w-full xs:w-auto justify-between xs:justify-start">
                                     <span className="text-xs font-bold text-slate-400 mr-1">Jenjang:</span>
                                     <select
                                         value={activeLevel}
                                         onChange={(e) => setActiveLevel(e.target.value)}
-                                        className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-amber-500"
+                                        className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-amber-500 w-full xs:w-auto"
                                     >
                                         <option value="semua">Semua Jenjang</option>
                                         <option value="SD">SD / MI</option>
@@ -240,7 +240,7 @@ export default function Olympiad() {
             </section>
 
             {/* Event Grid Listing */}
-            <section className="py-16 bg-slate-50/40">
+            <section className="py-12 sm:py-16 bg-slate-50/40">
                 <Container>
                     <div className="mb-8 flex items-center justify-between gap-4">
                         <p className="text-sm font-semibold text-slate-600">
@@ -259,7 +259,7 @@ export default function Olympiad() {
                     </div>
 
                     {filteredEvents.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-6 xs:gap-8 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                             {filteredEvents.map((olympiad) => (
                                 <OlympiadCard
                                     key={olympiad.id}
@@ -278,7 +278,7 @@ export default function Olympiad() {
                     )}
 
                     {/* Mentoring Program Banner */}
-                    <div className="mt-16 rounded-3xl border border-amber-200/80 bg-gradient-to-br from-amber-50/60 via-white to-violet-50/40 p-8 sm:p-10 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-6">
+                    <div className="mt-16 rounded-3xl border border-amber-200/80 bg-gradient-to-br from-amber-50/60 via-white to-violet-50/40 p-5 xs:p-8 sm:p-10 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-6">
                         <div className="max-w-xl text-center sm:text-left">
                             <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
                                 Program Pembinaan Khusus

@@ -2,7 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Mail\StudentRegistrationReceivedMail;
+use App\Mail\TeacherRegistrationApprovedExistingAccountMail;
+use App\Mail\TeacherRegistrationApprovedNewAccountMail;
+use App\Mail\TeacherRegistrationReceivedMail;
 use App\Models\NotificationLog;
+use App\Models\PortalAccount;
 use App\Models\Program;
 use App\Models\Role;
 use App\Models\Student;
@@ -13,6 +18,7 @@ use App\Models\User;
 use App\Support\PermissionCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -62,6 +68,8 @@ class RegistrationTest extends TestCase
 
     public function test_student_registration_stores_successfully(): void
     {
+        Mail::fake();
+
         $program = Program::create([
             'name' => 'Reguler',
             'level' => 'SMP',
@@ -77,13 +85,19 @@ class RegistrationTest extends TestCase
             'program_id' => $program->id,
             'package' => '8 Sesi/Bulan',
             'parent_contact' => '081234567890',
+            'parent_email' => 'orangtua@example.com',
             'preferred_mode' => 'Online',
             'notes' => 'Catatan test',
         ];
 
         $response = $this->post(route('registrations.student'), $payload);
 
-        $response->assertRedirect();
+        $registration = StudentRegistration::query()->where('student_name', 'Ahmad Fauzi')->firstOrFail();
+
+        $response->assertRedirect(route('registrations.success', [
+            'registrationType' => 'murid',
+            'ticket' => $registration->registration_no,
+        ]));
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('student_registrations', [
@@ -92,7 +106,16 @@ class RegistrationTest extends TestCase
             'program_id' => $program->id,
             'program' => 'Reguler',
             'package' => '8 Sesi/Bulan',
+            'parent_email' => 'orangtua@example.com',
         ]);
+
+        Mail::assertSent(StudentRegistrationReceivedMail::class, function (StudentRegistrationReceivedMail $mail) use ($registration): bool {
+            return $mail->hasTo('orangtua@example.com')
+                && $mail->hasSubject('Pendaftaran '.$registration->registration_no.' Berhasil Diterima - '.config('app.name'))
+                && $mail->studentName === 'Ahmad Fauzi'
+                && $mail->ticket === $registration->registration_no
+                && $mail->statusUrl === route('status.check', ['ticket' => $registration->registration_no]);
+        });
     }
 
     public function test_student_registration_stores_with_class_level(): void
@@ -113,6 +136,7 @@ class RegistrationTest extends TestCase
             'program_id' => $program->id,
             'package' => '8 Sesi/Bulan',
             'parent_contact' => '081234567890',
+            'parent_email' => 'aisyah.parent@example.com',
             'preferred_mode' => 'Offline',
         ];
 
@@ -129,6 +153,35 @@ class RegistrationTest extends TestCase
         ]);
     }
 
+    public function test_registration_success_page_displays_the_submitted_ticket(): void
+    {
+        $registration = StudentRegistration::factory()->create([
+            'registration_no' => 'ALC-2026-00002',
+        ]);
+
+        $response = $this->get(route('registrations.success', [
+            'registrationType' => 'murid',
+            'ticket' => $registration->registration_no,
+        ]));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Public/Register/Success', false)
+            ->where('registrationType', 'murid')
+            ->where('ticket', 'ALC-2026-00002')
+        );
+    }
+
+    public function test_registration_success_page_rejects_an_unknown_ticket(): void
+    {
+        $response = $this->get(route('registrations.success', [
+            'registrationType' => 'murid',
+            'ticket' => 'ALC-2026-99999',
+        ]));
+
+        $response->assertNotFound();
+    }
+
     public function test_student_registration_requires_mandatory_fields(): void
     {
         $response = $this->post(route('registrations.student'), []);
@@ -142,7 +195,50 @@ class RegistrationTest extends TestCase
             'program_id',
             'package',
             'parent_contact',
+            'parent_email',
         ]);
+    }
+
+    public function test_student_registration_rejects_invalid_parent_email(): void
+    {
+        $program = Program::create([
+            'name' => 'Reguler',
+            'level' => 'SMP',
+            'is_active' => true,
+        ]);
+
+        $response = $this->post(route('registrations.student'), [
+            'student_name' => 'Email Tidak Valid',
+            'address' => 'Jl. Test',
+            'school_name' => 'SMP Test',
+            'level' => 'SMP',
+            'subjects' => 'Matematika',
+            'program_id' => $program->id,
+            'package' => '8 Sesi/Bulan',
+            'parent_contact' => '081234567890',
+            'parent_email' => 'bukan-email',
+        ]);
+
+        $response->assertSessionHasErrors('parent_email');
+        $this->assertDatabaseMissing('student_registrations', [
+            'student_name' => 'Email Tidak Valid',
+        ]);
+    }
+
+    public function test_student_registration_email_contains_ticket_and_status_link(): void
+    {
+        $mail = new StudentRegistrationReceivedMail(
+            studentName: 'Ahmad Fauzi',
+            ticket: 'ALC-2026-00002',
+            statusUrl: 'https://example.com/cek-status?ticket=ALC-2026-00002',
+        );
+
+        $html = $mail->render();
+
+        $this->assertStringContainsString('Pendaftaran Berhasil Dikirim!', $html);
+        $this->assertStringContainsString('Ahmad Fauzi', $html);
+        $this->assertStringContainsString('ALC-2026-00002', $html);
+        $this->assertStringContainsString('https://example.com/cek-status?ticket=ALC-2026-00002', $html);
     }
 
     public function test_student_registration_allows_nullable_fields(): void
@@ -162,6 +258,7 @@ class RegistrationTest extends TestCase
             'program_id' => $program->id,
             'package' => '12 Sesi/Bulan',
             'parent_contact' => '0812345',
+            'parent_email' => 'budi.parent@example.com',
             'preferred_mode' => null,
             'notes' => null,
         ];
@@ -181,9 +278,11 @@ class RegistrationTest extends TestCase
     public function test_teacher_registration_stores_successfully(): void
     {
         Storage::fake('public');
+        Mail::fake();
 
         $payload = [
             'name' => 'Siti Aminah',
+            'email' => 'siti.aminah@example.com',
             'address' => 'Jl. Guru No. 5',
             'education' => 'S1 Pendidikan Matematika',
             'subjects' => 'Matematika',
@@ -195,17 +294,28 @@ class RegistrationTest extends TestCase
 
         $response = $this->post(route('registrations.teacher'), $payload);
 
-        $response->assertRedirect();
+        $registration = TeacherRegistration::query()->where('name', 'Siti Aminah')->firstOrFail();
+
+        $response->assertRedirect(route('registrations.success', [
+            'registrationType' => 'pengajar',
+            'ticket' => $registration->registration_no,
+        ]));
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('teacher_registrations', [
             'name' => 'Siti Aminah',
+            'email' => 'siti.aminah@example.com',
             'education' => 'S1 Pendidikan Matematika',
         ]);
 
         $teacher = TeacherRegistration::where('name', 'Siti Aminah')->first();
         $this->assertNotNull($teacher->cv_path);
         Storage::disk('public')->assertExists($teacher->cv_path);
+
+        Mail::assertSent(TeacherRegistrationReceivedMail::class, function ($mail) use ($registration) {
+            return $mail->hasTo('siti.aminah@example.com')
+                && $mail->ticket === $registration->registration_no;
+        });
     }
 
     public function test_teacher_registration_requires_mandatory_fields(): void
@@ -214,6 +324,7 @@ class RegistrationTest extends TestCase
 
         $response->assertSessionHasErrors([
             'name',
+            'email',
             'address',
             'education',
             'subjects',
@@ -222,14 +333,50 @@ class RegistrationTest extends TestCase
         ]);
     }
 
+    public function test_teacher_registration_rejects_invalid_email(): void
+    {
+        Storage::fake('public');
+
+        $payload = [
+            'name' => 'Siti Aminah',
+            'email' => 'bukan-email',
+            'address' => 'Jl. Guru No. 5',
+            'education' => 'S1 Pendidikan Matematika',
+            'subjects' => 'Matematika',
+            'contact' => '081298765432',
+            'cv' => UploadedFile::fake()->create('cv.pdf', 100, 'application/pdf'),
+        ];
+
+        $response = $this->post(route('registrations.teacher'), $payload);
+
+        $response->assertSessionHasErrors('email');
+    }
+
+    public function test_teacher_registration_email_contains_ticket_and_status_link(): void
+    {
+        $mail = new TeacherRegistrationReceivedMail(
+            teacherName: 'Siti Aminah',
+            ticket: 'ALC-T-2026-00001',
+            statusUrl: 'https://example.com/cek-status?ticket=ALC-T-2026-00001',
+        );
+
+        $html = $mail->render();
+
+        $this->assertStringContainsString('Lamaran Berhasil Diterima!', $html);
+        $this->assertStringContainsString('Siti Aminah', $html);
+        $this->assertStringContainsString('ALC-T-2026-00001', $html);
+        $this->assertStringContainsString('https://example.com/cek-status?ticket=ALC-T-2026-00001', $html);
+    }
+
     public function test_teacher_registration_rejects_invalid_cv_format(): void
     {
         $payload = [
             'name' => 'Test',
+            'email' => 'test@example.com',
             'address' => 'Test',
             'education' => 'S1',
             'subjects' => 'Math',
-            'contact' => '08123',
+            'contact' => '081234567890',
             'cv' => UploadedFile::fake()->create('cv.txt', 100, 'text/plain'),
         ];
 
@@ -559,6 +706,7 @@ class RegistrationTest extends TestCase
             'program_id' => $program->id,
             'package' => '8 Sesi/Bulan',
             'parent_contact' => 'bukan-nomor',
+            'parent_email' => 'ahmad.parent@example.com',
         ]);
 
         $response->assertSessionHasErrors('parent_contact');
@@ -577,6 +725,7 @@ class RegistrationTest extends TestCase
             'program_id' => $program->id,
             'package' => '8 Sesi/Bulan',
             'parent_contact' => '0812-3456-7890',
+            'parent_email' => 'ahmad.rapi.parent@example.com',
         ]);
 
         $response->assertSessionHasNoErrors();
@@ -592,6 +741,7 @@ class RegistrationTest extends TestCase
 
         $response = $this->post(route('registrations.teacher'), [
             'name' => 'Guru Test',
+            'email' => 'guru.test@example.com',
             'address' => 'Jl. Test',
             'education' => 'S1',
             'subjects' => 'Math',
@@ -600,6 +750,81 @@ class RegistrationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('contact');
+    }
+
+    public function test_admin_approving_teacher_creates_account_with_email_and_sends_new_account_email(): void
+    {
+        Mail::fake();
+        $user = $this->actingAsAdmin();
+
+        $registration = TeacherRegistration::factory()->create([
+            'name' => 'Dewi Lestari',
+            'email' => 'dewi.lestari@example.com',
+            'contact' => '081234567899',
+            'subjects' => 'Bahasa Inggris',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.teacher.approve', $registration));
+
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('teacher_registrations', [
+            'id' => $registration->id,
+            'status' => 'approved',
+        ]);
+
+        $teacher = Teacher::query()->where('name', 'Dewi Lestari')->first();
+        $this->assertNotNull($teacher);
+        $this->assertEquals('dewi.lestari@example.com', $teacher->email);
+
+        $portalAccount = PortalAccount::query()
+            ->where('type', PortalAccount::TYPE_TEACHER)
+            ->where('email', 'dewi.lestari@example.com')
+            ->first();
+        $this->assertNotNull($portalAccount);
+        $this->assertEquals($teacher->id, $portalAccount->teacher_id);
+        $this->assertTrue($portalAccount->must_change_password);
+
+        Mail::assertSent(TeacherRegistrationApprovedNewAccountMail::class, function ($mail) {
+            return $mail->hasTo('dewi.lestari@example.com')
+                && $mail->teacherName === 'Dewi Lestari'
+                && ! empty($mail->temporaryPassword);
+        });
+    }
+
+    public function test_admin_approving_teacher_with_existing_account_reuses_portal_and_sends_existing_email(): void
+    {
+        Mail::fake();
+        $user = $this->actingAsAdmin();
+
+        $existingPortal = PortalAccount::create([
+            'type' => PortalAccount::TYPE_TEACHER,
+            'name' => 'Dewi Lestari',
+            'email' => 'dewi.lestari@example.com',
+            'contact' => '081234567899',
+            'password' => bcrypt('ExistingPass123'),
+            'must_change_password' => false,
+            'is_active' => true,
+        ]);
+
+        $registration = TeacherRegistration::factory()->create([
+            'name' => 'Dewi Lestari Rekrut Ulang',
+            'email' => 'dewi.lestari@example.com',
+            'contact' => '081234567899',
+            'subjects' => 'English & Literature',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.teacher.approve', $registration));
+
+        $response->assertSessionHas('success');
+
+        Mail::assertSent(TeacherRegistrationApprovedExistingAccountMail::class, function ($mail) {
+            return $mail->hasTo('dewi.lestari@example.com')
+                && $mail->loginEmail === 'dewi.lestari@example.com';
+        });
+
+        Mail::assertNotSent(TeacherRegistrationApprovedNewAccountMail::class);
     }
 
     // ── M0: Filter & Pagination Server-Side ────────────────────────
@@ -664,6 +889,7 @@ class RegistrationTest extends TestCase
             'program_id' => $program->id,
             'package' => '8 Sesi/Bulan',
             'parent_contact' => '081234567890',
+            'parent_email' => 'ticket.parent@example.com',
         ]);
 
         $response->assertRedirect();
@@ -690,6 +916,7 @@ class RegistrationTest extends TestCase
 
         $response = $this->post(route('registrations.teacher'), [
             'name' => 'Guru Tiket',
+            'email' => 'guru.tiket@example.com',
             'address' => 'Jl. Test',
             'education' => 'S1',
             'subjects' => 'Math',
@@ -812,6 +1039,7 @@ class RegistrationTest extends TestCase
             'program_id' => $program->id,
             'package' => '8 Sesi/Bulan',
             'parent_contact' => '081234567890',
+            'parent_email' => 'notification.parent@example.com',
         ]);
 
         $response->assertRedirect();
@@ -822,5 +1050,83 @@ class RegistrationTest extends TestCase
             'recipient' => '081234567890',
             'status' => 'failed',
         ]);
+    }
+
+    public function test_student_registration_records_email_notification_log(): void
+    {
+        Mail::fake();
+
+        $program = Program::create(['name' => 'Reguler Log', 'level' => 'SMP', 'is_active' => true]);
+
+        $response = $this->post(route('registrations.student'), [
+            'student_name' => 'Anak Log Email',
+            'address' => 'Jl. Test',
+            'school_name' => 'SMP Test',
+            'level' => 'SMP',
+            'subjects' => 'Matematika',
+            'program_id' => $program->id,
+            'package' => '8 Sesi/Bulan',
+            'parent_contact' => '081234567890',
+            'parent_email' => 'log.parent@example.com',
+        ]);
+
+        $response->assertRedirect();
+
+        $this->assertDatabaseHas('notification_logs', [
+            'event' => 'received',
+            'channel' => 'email',
+            'recipient' => 'log.parent@example.com',
+            'status' => 'sent',
+            'registration_type' => 'student',
+        ]);
+    }
+
+    public function test_admin_can_resend_student_email(): void
+    {
+        Mail::fake();
+        $user = $this->actingAsAdmin();
+
+        $registration = StudentRegistration::factory()->create([
+            'parent_email' => 'resend.student@example.com',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)
+            ->post(route('admin.registrations.student.resend-email', $registration));
+
+        $response->assertSessionHas('success');
+
+        Mail::assertSent(StudentRegistrationReceivedMail::class, function ($mail) {
+            return $mail->hasTo('resend.student@example.com');
+        });
+    }
+
+    public function test_admin_can_resend_teacher_email(): void
+    {
+        Mail::fake();
+        $user = $this->actingAsAdmin();
+
+        $registration = TeacherRegistration::factory()->create([
+            'email' => 'resend.teacher@example.com',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)
+            ->post(route('admin.registrations.teacher.resend-email', $registration));
+
+        $response->assertSessionHas('success');
+
+        Mail::assertSent(TeacherRegistrationReceivedMail::class, function ($mail) {
+            return $mail->hasTo('resend.teacher@example.com');
+        });
+    }
+
+    public function test_artisan_mail_test_command_sends_email(): void
+    {
+        Mail::fake();
+
+        $this->artisan('mail:test', ['recipient' => 'test.artisan@example.com'])
+            ->expectsOutputToContain('BERHASIL')
+            ->assertSuccessful();
     }
 }

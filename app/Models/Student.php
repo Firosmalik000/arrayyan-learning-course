@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Student extends Model
 {
@@ -22,6 +24,8 @@ class Student extends Model
         'program',
         'package',
         'parent_contact',
+        'parent_email',
+        'parent_portal_account_id',
         'preferred_mode',
         'notes',
         'is_active',
@@ -54,5 +58,27 @@ class Student extends Model
     public function packageItem(): BelongsTo
     {
         return $this->belongsTo(Package::class, 'package_id');
+    }
+
+    public function parentAccount(): BelongsTo
+    {
+        return $this->belongsTo(PortalAccount::class, 'parent_portal_account_id');
+    }
+
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(StudentRegistration::class, 'student_id');
+    }
+
+    public function classMembers(): HasMany
+    {
+        return $this->hasMany(ClassMember::class, 'student_id');
+    }
+
+    public function classGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(ClassGroup::class, 'class_members', 'student_id', 'class_group_id')
+            ->withPivot(['status', 'joined_at', 'is_scholarship', 'notes'])
+            ->withTimestamps();
     }
 }

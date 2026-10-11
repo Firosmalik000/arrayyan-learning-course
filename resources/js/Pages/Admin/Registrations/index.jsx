@@ -1,6 +1,7 @@
 import { Head, usePage, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import {
+    ActionDropdown,
     ConfirmModal,
     FlashMessage,
     PageHeader,
@@ -201,6 +202,16 @@ export default function Registrations() {
         ? `Halo ${rejectModal.name}, mohon maaf pendaftaran Anda (${rejectModal.ticket}) di Ar Rayyan Learning Course BELUM dapat kami setujui.${adminNote ? `\nAlasan: ${adminNote}` : ''}\nSilakan hubungi admin untuk informasi lebih lanjut.`
         : '';
 
+    const [resendingEmail, setResendingEmail] = useState(false);
+
+    const handleResendEmail = (type, id) => {
+        setResendingEmail(true);
+        router.post(`/admin/pendaftaran/${typeSlug[type]}/${id}/resend-email`, {}, {
+            preserveScroll: true,
+            onFinish: () => setResendingEmail(false),
+        });
+    };
+
     const handleDelete = () => {
         if (!deleteModal) return;
         router.delete(`/admin/pendaftaran/${typeSlug[deleteModal.type]}/${deleteModal.id}`, {
@@ -317,85 +328,123 @@ export default function Registrations() {
                                         </div>
                                     </div>
                                 )}
-                                <table className="w-full text-left text-sm">
+                                <table className="w-full min-w-[850px] text-left text-sm">
                                     <thead>
                                         <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
                                             {canApprove && <th className="w-10 px-3 py-3"><span className="sr-only">Pilih</span></th>}
-                                            <th className="px-5 py-3 font-medium">Nama</th>
-                                            <th className="px-5 py-3 font-medium">Tiket</th>
+                                            <th className="w-12 px-4 py-3 text-center font-medium">No</th>
+                                            <th className="w-14 px-4 py-3 text-center font-medium">Aksi</th>
+                                            <th className="px-5 py-3 font-medium">Siswa & Tiket</th>
                                             <th className="px-5 py-3 font-medium">Jenjang</th>
                                             <th className="px-5 py-3 font-medium">Program</th>
-                                            <th className="px-5 py-3 font-medium">Kontak</th>
+                                            <th className="px-5 py-3 font-medium">Kontak Orang Tua</th>
                                             <th className="px-5 py-3 font-medium">Status</th>
-                                            <th className="px-5 py-3 font-medium">Tanggal</th>
-                                            <th className="px-5 py-3 font-medium">Ditolak Pada</th>
-                                            <th className="px-5 py-3 font-medium">Ditolak Oleh</th>
-                                            <th className="px-5 py-3 font-medium text-right">Aksi</th>
+                                            <th className="px-5 py-3 font-medium">Tanggal Daftar</th>
+                                            {filterStatus === 'rejected' && (
+                                                <>
+                                                    <th className="px-5 py-3 font-medium">Ditolak Pada</th>
+                                                    <th className="px-5 py-3 font-medium">Ditolak Oleh</th>
+                                                </>
+                                            )}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {studentRows.map((item) => (
-                                            <tr key={item.id} className="transition hover:bg-slate-50">
-                                                {canApprove && (
-                                                    <td className="px-3 py-4">
-                                                        {item.status === 'pending' ? (
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedStudents.includes(item.id)}
-                                                                onChange={() => toggleSelect('student', item.id)}
-                                                                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                                                            />
-                                                        ) : null}
+                                        {studentRows.map((item, idx) => {
+                                            const rowNum = (studentMeta?.from ?? 1) + idx;
+                                            const actions = [
+                                                canView && {
+                                                    label: 'Detail Lengkap',
+                                                    icon: icons.eye,
+                                                    onClick: () => setDetailModal({ type: 'student', data: item }),
+                                                },
+                                                item.status === 'pending' && canApprove && {
+                                                    label: 'Setujui Pendaftaran',
+                                                    icon: icons.check,
+                                                    onClick: () => handleApprove('student', item.id),
+                                                },
+                                                item.status === 'pending' && canReject && {
+                                                    label: 'Tolak Pendaftaran',
+                                                    icon: icons.x,
+                                                    danger: true,
+                                                    onClick: () => handleReject('student', item),
+                                                },
+                                                item.status === 'approved' && canCreateInvoice && {
+                                                    label: 'Buat Tagihan',
+                                                    onClick: () => handleCreateInvoice(item.id),
+                                                },
+                                                item.parent_email && {
+                                                    label: 'Kirim Ulang Email',
+                                                    onClick: () => handleResendEmail('student', item.id),
+                                                },
+                                                canDelete && {
+                                                    label: 'Hapus Data',
+                                                    icon: icons.trash,
+                                                    danger: true,
+                                                    onClick: () => setDeleteModal({ type: 'student', id: item.id, name: item.student_name }),
+                                                },
+                                            ].filter(Boolean);
+
+                                            return (
+                                                <tr key={item.id} className="transition hover:bg-slate-50">
+                                                    {canApprove && (
+                                                        <td className="px-3 py-4">
+                                                            {item.status === 'pending' ? (
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedStudents.includes(item.id)}
+                                                                    onChange={() => toggleSelect('student', item.id)}
+                                                                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                                                />
+                                                            ) : null}
+                                                        </td>
+                                                    )}
+                                                    <td className="px-4 py-4 text-center font-semibold text-slate-400">
+                                                        {rowNum}
                                                     </td>
-                                                )}
-                                                <td className="px-5 py-4 font-medium text-slate-800">{item.student_name}</td>
-                                                <td className="px-5 py-4 font-mono text-xs text-slate-600">{item.registration_no || '-'}</td>
-                                                <td className="px-5 py-4 text-slate-600">{item.level}</td>
-                                                <td className="px-5 py-4 text-slate-600">{item.program}</td>
-                                                <td className="px-5 py-4 text-slate-600">{item.parent_contact}</td>
-                                                <td className="px-5 py-4">{statusBadge(item.status)}</td>
-                                                <td className="px-5 py-4 text-slate-600">
-                                                    {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
-                                                </td>
-                                                <td className="px-5 py-4 text-slate-600">
-                                                    {item.rejected_at ? new Date(item.rejected_at).toLocaleDateString('id-ID') : '-'}
-                                                </td>
-                                                <td className="px-5 py-4 text-slate-600">
-                                                    {item.rejected_by_name || item.rejected_by || '-'}
-                                                </td>
-                                                <td className="px-5 py-4">
-                                                    <div className="flex justify-end gap-1">
-                                                        {canView && (
-                                                            <button type="button" onClick={() => setDetailModal({ type: 'student', data: item })} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" title="Detail">
-                                                                {icons.eye}
-                                                            </button>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <ActionDropdown items={actions} />
+                                                    </td>
+                                                    <td className="px-5 py-4">
+                                                        <div className="font-semibold text-slate-800">{item.student_name}</div>
+                                                        <div className="font-mono text-[11px] text-slate-400 mt-0.5">{item.registration_no || '-'}</div>
+                                                    </td>
+                                                    <td className="px-5 py-4 text-slate-600">{item.level}</td>
+                                                    <td className="px-5 py-4 text-slate-600 font-medium">{item.program}</td>
+                                                    <td className="px-5 py-4 text-slate-600">
+                                                        <div className="font-medium text-slate-800 text-xs">{item.parent_contact}</div>
+                                                        {item.parent_email && (
+                                                            <div className="text-[11px] text-slate-400 truncate max-w-[160px]">{item.parent_email}</div>
                                                         )}
-                                                        {item.status === 'pending' && canApprove && (
-                                                            <button type="button" onClick={() => handleApprove('student', item.id)} className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-100 hover:text-emerald-600" title="Setujui">
-                                                                {icons.check}
-                                                            </button>
-                                                        )}
-                                                        {item.status === 'pending' && canReject && (
-                                                            <button type="button" onClick={() => handleReject('student', item)} className="rounded-lg p-2 text-slate-400 transition hover:bg-amber-100 hover:text-amber-600" title="Tolak">
-                                                                {icons.x}
-                                                            </button>
-                                                        )}
-                                                        {canDelete && (
-                                                            <button type="button" onClick={() => setDeleteModal({ type: 'student', id: item.id, name: item.student_name })} className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600" title="Hapus">
-                                                                {icons.trash}
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                    <td className="px-5 py-4">{statusBadge(item.status)}</td>
+                                                    <td className="px-5 py-4 text-slate-600 whitespace-nowrap">
+                                                        {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
+                                                    </td>
+                                                    {filterStatus === 'rejected' && (
+                                                        <>
+                                                            <td className="px-5 py-4 text-slate-600 whitespace-nowrap">
+                                                                {item.rejected_at ? new Date(item.rejected_at).toLocaleDateString('id-ID') : '-'}
+                                                            </td>
+                                                            <td className="px-5 py-4 text-slate-600">
+                                                                {item.rejected_by_name || item.rejected_by || '-'}
+                                                            </td>
+                                                        </>
+                                                    )}
+                                                </tr>
+                                            );
+                                        })}
                                         {studentRows.length === 0 && (
-                                            <tr><td colSpan={11} className="px-5 py-12 text-center text-slate-500">Tidak ada data yang ditemukan</td></tr>
+                                            <tr><td colSpan={filterStatus === 'rejected' ? 11 : 9} className="px-5 py-12 text-center text-slate-500">Tidak ada data yang ditemukan</td></tr>
                                         )}
                                     </tbody>
                                 </table>
                             </div>
-                            <Pagination meta={studentMeta} onPage={(page) => fetchPage({ students_page: page })} />
+                            <Pagination
+                                meta={studentMeta}
+                                perPage={filters.students_per_page ?? 10}
+                                onPage={(page) => fetchPage({ students_page: page })}
+                                onPerPageChange={(per_page) => fetchPage({ students_per_page: per_page, students_page: 1 })}
+                            />
                         </div>
                     </div>
                 )}
@@ -445,91 +494,130 @@ export default function Registrations() {
                                         </div>
                                     </div>
                                 )}
-                                <table className="w-full text-left text-sm">
+                                <table className="w-full min-w-[850px] text-left text-sm">
                                     <thead>
                                         <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
                                             {canApprove && <th className="w-10 px-3 py-3"><span className="sr-only">Pilih</span></th>}
-                                            <th className="px-5 py-3 font-medium">Nama</th>
-                                            <th className="px-5 py-3 font-medium">Tiket</th>
+                                            <th className="w-12 px-4 py-3 text-center font-medium">No</th>
+                                            <th className="w-14 px-4 py-3 text-center font-medium">Aksi</th>
+                                            <th className="px-5 py-3 font-medium">Pengajar & Tiket</th>
                                             <th className="px-5 py-3 font-medium">Pendidikan</th>
                                             <th className="px-5 py-3 font-medium">Mata Pelajaran</th>
                                             <th className="px-5 py-3 font-medium">Kontak</th>
                                             <th className="px-5 py-3 font-medium">CV</th>
                                             <th className="px-5 py-3 font-medium">Status</th>
-                                            <th className="px-5 py-3 font-medium">Tanggal</th>
-                                            <th className="px-5 py-3 font-medium">Ditolak Pada</th>
-                                            <th className="px-5 py-3 font-medium">Ditolak Oleh</th>
-                                            <th className="px-5 py-3 font-medium text-right">Aksi</th>
+                                            <th className="px-5 py-3 font-medium">Tanggal Daftar</th>
+                                            {teacherFilterStatus === 'rejected' && (
+                                                <>
+                                                    <th className="px-5 py-3 font-medium">Ditolak Pada</th>
+                                                    <th className="px-5 py-3 font-medium">Ditolak Oleh</th>
+                                                </>
+                                            )}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {teacherRows.map((item) => (
-                                            <tr key={item.id} className="transition hover:bg-slate-50">
-                                                {canApprove && (
-                                                    <td className="px-3 py-4">
-                                                        {item.status === 'pending' ? (
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedTeachers.includes(item.id)}
-                                                                onChange={() => toggleSelect('teacher', item.id)}
-                                                                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                                                            />
-                                                        ) : null}
+                                        {teacherRows.map((item, idx) => {
+                                            const rowNum = (teacherMeta?.from ?? 1) + idx;
+                                            const actions = [
+                                                canView && {
+                                                    label: 'Detail Lengkap',
+                                                    icon: icons.eye,
+                                                    onClick: () => setDetailModal({ type: 'teacher', data: item }),
+                                                },
+                                                item.cv_url && {
+                                                    label: 'Lihat Dokumen CV',
+                                                    href: item.cv_url,
+                                                    external: true,
+                                                },
+                                                item.status === 'pending' && canApprove && {
+                                                    label: 'Setujui Pengajar',
+                                                    icon: icons.check,
+                                                    onClick: () => handleApprove('teacher', item.id),
+                                                },
+                                                item.status === 'pending' && canReject && {
+                                                    label: 'Tolak Pengajar',
+                                                    icon: icons.x,
+                                                    danger: true,
+                                                    onClick: () => handleReject('teacher', item),
+                                                },
+                                                item.email && {
+                                                    label: 'Kirim Ulang Email',
+                                                    onClick: () => handleResendEmail('teacher', item.id),
+                                                },
+                                                canDelete && {
+                                                    label: 'Hapus Data',
+                                                    icon: icons.trash,
+                                                    danger: true,
+                                                    onClick: () => setDeleteModal({ type: 'teacher', id: item.id, name: item.name }),
+                                                },
+                                            ].filter(Boolean);
+
+                                            return (
+                                                <tr key={item.id} className="transition hover:bg-slate-50">
+                                                    {canApprove && (
+                                                        <td className="px-3 py-4">
+                                                            {item.status === 'pending' ? (
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedTeachers.includes(item.id)}
+                                                                    onChange={() => toggleSelect('teacher', item.id)}
+                                                                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                                                />
+                                                            ) : null}
+                                                        </td>
+                                                    )}
+                                                    <td className="px-4 py-4 text-center font-semibold text-slate-400">
+                                                        {rowNum}
                                                     </td>
-                                                )}
-                                                <td className="px-5 py-4 font-medium text-slate-800">{item.name}</td>
-                                                <td className="px-5 py-4 font-mono text-xs text-slate-600">{item.registration_no || '-'}</td>
-                                                <td className="px-5 py-4 text-slate-600">{item.education}</td>
-                                                <td className="px-5 py-4 text-slate-600">{item.subjects}</td>
-                                                <td className="px-5 py-4 text-slate-600">{item.contact}</td>
-                                                <td className="px-5 py-4">
-                                                    {item.cv_url ? (
-                                                        <a href={item.cv_url} target="_blank" rel="noreferrer" className="text-violet-600 underline hover:text-violet-800">Lihat</a>
-                                                    ) : <span className="text-slate-400">-</span>}
-                                                </td>
-                                                <td className="px-5 py-4">{statusBadge(item.status)}</td>
-                                                <td className="px-5 py-4 text-slate-600">
-                                                    {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
-                                                </td>
-                                                <td className="px-5 py-4 text-slate-600">
-                                                    {item.rejected_at ? new Date(item.rejected_at).toLocaleDateString('id-ID') : '-'}
-                                                </td>
-                                                <td className="px-5 py-4 text-slate-600">
-                                                    {item.rejected_by_name || item.rejected_by || '-'}
-                                                </td>
-                                                <td className="px-5 py-4">
-                                                    <div className="flex justify-end gap-1">
-                                                        {canView && (
-                                                            <button type="button" onClick={() => setDetailModal({ type: 'teacher', data: item })} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" title="Detail">
-                                                                {icons.eye}
-                                                            </button>
-                                                        )}
-                                                        {item.status === 'pending' && canApprove && (
-                                                            <button type="button" onClick={() => handleApprove('teacher', item.id)} className="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-100 hover:text-emerald-600" title="Setujui">
-                                                                {icons.check}
-                                                            </button>
-                                                        )}
-                                                        {item.status === 'pending' && canReject && (
-                                                            <button type="button" onClick={() => handleReject('teacher', item)} className="rounded-lg p-2 text-slate-400 transition hover:bg-amber-100 hover:text-amber-600" title="Tolak">
-                                                                {icons.x}
-                                                            </button>
-                                                        )}
-                                                        {canDelete && (
-                                                            <button type="button" onClick={() => setDeleteModal({ type: 'teacher', id: item.id, name: item.name })} className="rounded-lg p-2 text-slate-400 transition hover:bg-red-100 hover:text-red-600" title="Hapus">
-                                                                {icons.trash}
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    <td className="px-4 py-4 text-center">
+                                                        <ActionDropdown items={actions} />
+                                                    </td>
+                                                    <td className="px-5 py-4">
+                                                        <div className="font-semibold text-slate-800">{item.name}</div>
+                                                        <div className="font-mono text-[11px] text-slate-400 mt-0.5">{item.registration_no || '-'}</div>
+                                                    </td>
+                                                    <td className="px-5 py-4 text-slate-600">{item.education}</td>
+                                                    <td className="px-5 py-4 text-slate-600 font-medium">{item.subjects}</td>
+                                                    <td className="px-5 py-4 text-slate-600 text-xs">
+                                                        <div>{item.contact}</div>
+                                                        {item.email && <div className="text-[11px] text-slate-400 truncate max-w-[160px]">{item.email}</div>}
+                                                    </td>
+                                                    <td className="px-5 py-4">
+                                                        {item.cv_url ? (
+                                                            <a href={item.cv_url} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-md bg-violet-50 px-2 py-0.5 text-xs font-semibold text-brand-primary hover:bg-violet-100 transition">
+                                                                Lihat CV
+                                                            </a>
+                                                        ) : <span className="text-slate-400">-</span>}
+                                                    </td>
+                                                    <td className="px-5 py-4">{statusBadge(item.status)}</td>
+                                                    <td className="px-5 py-4 text-slate-600 whitespace-nowrap">
+                                                        {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
+                                                    </td>
+                                                    {teacherFilterStatus === 'rejected' && (
+                                                        <>
+                                                            <td className="px-5 py-4 text-slate-600 whitespace-nowrap">
+                                                                {item.rejected_at ? new Date(item.rejected_at).toLocaleDateString('id-ID') : '-'}
+                                                            </td>
+                                                            <td className="px-5 py-4 text-slate-600">
+                                                                {item.rejected_by_name || item.rejected_by || '-'}
+                                                            </td>
+                                                        </>
+                                                    )}
+                                                </tr>
+                                            );
+                                        })}
                                         {teacherRows.length === 0 && (
-                                            <tr><td colSpan={12} className="px-5 py-12 text-center text-slate-500">Tidak ada data yang ditemukan</td></tr>
+                                            <tr><td colSpan={teacherFilterStatus === 'rejected' ? 12 : 10} className="px-5 py-12 text-center text-slate-500">Tidak ada data yang ditemukan</td></tr>
                                         )}
                                     </tbody>
                                 </table>
                             </div>
-                            <Pagination meta={teacherMeta} onPage={(page) => fetchPage({ teachers_page: page })} />
+                            <Pagination
+                                meta={teacherMeta}
+                                perPage={filters.teachers_per_page ?? 10}
+                                onPage={(page) => fetchPage({ teachers_page: page })}
+                                onPerPageChange={(per_page) => fetchPage({ teachers_per_page: per_page, teachers_page: 1 })}
+                            />
                         </div>
                     </div>
                 )}
@@ -542,6 +630,8 @@ export default function Registrations() {
                 onApprove={(type, id) => { handleApprove(type, id); setDetailModal(null); }}
                 onReject={(type, item) => { handleReject(type, item); setDetailModal(null); }}
                 onCreateInvoice={(id) => { handleCreateInvoice(id); setDetailModal(null); }}
+                onResendEmail={handleResendEmail}
+                resendingEmail={resendingEmail}
                 canApprove={canApprove}
                 canReject={canReject}
                 canCreateInvoice={canCreateInvoice}

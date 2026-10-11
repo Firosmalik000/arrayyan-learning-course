@@ -35,7 +35,8 @@ class ActivityLog extends Model
         ?object $subject = null,
         ?array $properties = null,
     ): self {
-        $user = Auth::user();
+        $user = Auth::guard('admin')->user() ?? (Auth::user() instanceof User ? Auth::user() : null);
+        $causerName = $user?->name ?? Auth::user()?->name;
 
         return self::create([
             'event' => $event,
@@ -44,7 +45,7 @@ class ActivityLog extends Model
             'description' => $description,
             'properties' => $properties,
             'caused_by' => $user?->getKey(),
-            'caused_by_name' => $user?->name,
+            'caused_by_name' => $causerName,
             'ip_address' => request()->ip(),
         ]);
     }

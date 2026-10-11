@@ -92,7 +92,7 @@ export default function OlympiadRegister() {
                         )}
 
                         {olympiad && flashSuccess && (
-                            <div className="mb-6 rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900 shadow-md">
+                            <div className="mb-6 rounded-3xl border border-emerald-200 bg-emerald-50 p-4.5 xs:p-6 text-emerald-900 shadow-md">
                                 <h4 className="text-base font-bold">Pendaftaran Berhasil Dikirim!</h4>
                                 <p className="mt-1 text-sm leading-relaxed">{flashSuccess}</p>
                                 {flashTicket && (
@@ -100,14 +100,14 @@ export default function OlympiadRegister() {
                                         <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
                                             Nomor Tiket Peserta
                                         </p>
-                                        <div className="mt-2 flex flex-wrap items-center gap-3">
-                                            <span className="rounded-xl bg-emerald-100 px-4 py-2 font-mono text-lg font-bold tracking-wider text-emerald-900">
+                                        <div className="mt-2 flex flex-col xs:flex-row items-stretch xs:items-center gap-2 xs:gap-3">
+                                            <span className="rounded-xl bg-emerald-100 px-3.5 py-2 font-mono text-base xs:text-lg font-bold tracking-wider text-emerald-900 text-center break-all">
                                                 {flashTicket}
                                             </span>
                                             <button
                                                 type="button"
                                                 onClick={copyTicket}
-                                                className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
+                                                className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 text-center"
                                             >
                                                 {copied ? 'Tersalin!' : 'Salin'}
                                             </button>
@@ -130,7 +130,7 @@ export default function OlympiadRegister() {
                         )}
 
                         {olympiad && !olympiad.closed_reason && (
-                            <form onSubmit={submit} className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xl sm:p-8">
+                            <form onSubmit={submit} className="rounded-3xl border border-slate-200/90 bg-white p-4.5 xs:p-6 sm:p-8 shadow-xl">
                                 <div className="mb-5 rounded-2xl bg-amber-50/70 p-4 text-xs text-slate-600">
                                     <p className="font-bold text-slate-900">{olympiad.name}</p>
                                     <p className="mt-1">

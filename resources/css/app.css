@@ -8,6 +8,8 @@
 @source '../**/*.jsx';
 
 @theme {
+    --breakpoint-xs: 30rem;
+
     --font-sans: 'Plus Jakarta Sans', 'Nunito', ui-sans-serif, system-ui,
         sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';

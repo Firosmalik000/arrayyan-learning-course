@@ -44,9 +44,9 @@ export default function Certificate() {
                 </Container>
             </section>
 
-            <section className="bg-slate-50/40 py-10">
+            <section className="bg-slate-50/40 py-8 xs:py-10">
                 <Container>
-                    <form onSubmit={search} className="no-print mx-auto flex max-w-md gap-2">
+                    <form onSubmit={search} className="no-print mx-auto flex flex-col xs:flex-row max-w-md gap-2">
                         <input
                             type="text"
                             value={name}
@@ -54,7 +54,7 @@ export default function Certificate() {
                             placeholder="Nama lengkap pemenang"
                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
                         />
-                        <Button type="submit" variant="secondary" className="shrink-0">
+                        <Button type="submit" variant="secondary" className="w-full xs:w-auto shrink-0 justify-center">
                             Cek
                         </Button>
                     </form>
@@ -67,18 +67,18 @@ export default function Certificate() {
 
                     {matched && olympiad && (
                         <div className="mx-auto mt-8 max-w-3xl">
-                            <div className="rounded-3xl border-8 border-double border-amber-300 bg-white p-8 text-center shadow-xl sm:p-12">
-                                <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-600">
+                            <div className="rounded-3xl border-4 xs:border-8 border-double border-amber-300 bg-white p-5 xs:p-8 text-center shadow-xl sm:p-12">
+                                <p className="text-[10px] xs:text-xs font-bold uppercase tracking-[0.2em] xs:tracking-[0.3em] text-amber-600">
                                     Ar Rayyan Learning Course
                                 </p>
-                                <h2 className="mt-2 font-display text-3xl font-extrabold text-slate-900 sm:text-4xl">
+                                <h2 className="mt-2 font-display text-2xl xs:text-3xl font-extrabold text-slate-900 sm:text-4xl">
                                     Sertifikat Penghargaan
                                 </h2>
-                                <p className="mt-4 text-sm text-slate-500">Diberikan dengan bangga kepada</p>
-                                <p className="mt-2 font-display text-2xl font-bold text-slate-900 sm:text-3xl">
+                                <p className="mt-4 text-xs xs:text-sm text-slate-500">Diberikan dengan bangga kepada</p>
+                                <p className="mt-2 font-display text-xl xs:text-2xl font-bold text-slate-900 sm:text-3xl break-words">
                                     {matched}
                                 </p>
-                                <p className="mx-auto mt-3 max-w-md text-sm text-slate-600">
+                                <p className="mx-auto mt-3 max-w-md text-xs xs:text-sm text-slate-600 leading-relaxed">
                                     atas prestasi sebagai pemenang pada <span className="font-bold">{olympiad.name}</span>
                                     {olympiad.level ? ` (${olympiad.level})` : ''}
                                     {olympiad.schedule ? ` • ${formatDate(olympiad.schedule, language)}` : ''}.

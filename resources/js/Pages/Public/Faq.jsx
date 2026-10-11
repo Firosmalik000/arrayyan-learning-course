@@ -46,7 +46,7 @@ export default function Faq() {
                         subtitle="Temukan jawaban cepat. Masih bingung? Hubungi admin via WhatsApp."
                         align="center"
                     />
-                    <div className="mx-auto mt-6 flex max-w-xl flex-col gap-2 sm:flex-row">
+                    <div className="mx-auto mt-6 flex max-w-xl flex-col xs:flex-row gap-2">
                         <input
                             type="text"
                             value={query}
@@ -58,7 +58,7 @@ export default function Faq() {
                             <select
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
-                                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none sm:w-48"
+                                className="w-full xs:w-44 sm:w-48 shrink-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none"
                             >
                                 <option value="">Semua Topik</option>
                                 {categories.map((c) => (
@@ -74,7 +74,7 @@ export default function Faq() {
                 <Container>
                     <div className="mx-auto max-w-3xl">
                         {filtered.length === 0 ? (
-                            <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center">
+                            <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-6 xs:p-10 text-center">
                                 <p className="font-bold text-slate-800">Tidak ada jawaban yang cocok</p>
                                 <p className="mt-1 text-sm text-slate-500">Coba kata kunci lain atau hubungi admin.</p>
                                 <div className="mt-4">

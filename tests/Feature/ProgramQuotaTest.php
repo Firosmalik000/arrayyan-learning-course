@@ -39,6 +39,7 @@ class ProgramQuotaTest extends TestCase
             'program_id' => $program->id,
             'package' => '8 Sesi/Bulan',
             'parent_contact' => $contact,
+            'parent_email' => 'quota.parent@example.com',
         ];
     }
 

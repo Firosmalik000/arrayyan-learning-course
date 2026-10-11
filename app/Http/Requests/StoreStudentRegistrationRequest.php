@@ -44,6 +44,7 @@ class StoreStudentRegistrationRequest extends FormRequest
             ],
             'package' => ['required_without:package_id', 'nullable', 'string', 'max:100'],
             'parent_contact' => ['required', 'string', 'max:20', 'regex:/^(?:\+62|62|0)8[0-9]{5,13}$/'],
+            'parent_email' => ['required', 'email', 'max:255'],
             'preferred_mode' => ['nullable', 'string', Rule::in(['online', 'offline', 'Online', 'Offline'])],
             'notes' => ['nullable', 'string', 'max:500'],
             'website' => ['nullable', 'prohibited'],
@@ -70,6 +71,8 @@ class StoreStudentRegistrationRequest extends FormRequest
             'package_id.exists' => 'Pilihan harga tidak ditemukan atau sudah tidak aktif.',
             'parent_contact.required' => 'Kontak orang tua wajib diisi.',
             'parent_contact.regex' => 'Kontak orang tua harus nomor WhatsApp Indonesia yang valid (contoh: 081234567890).',
+            'parent_email.required' => 'Email orang tua wajib diisi.',
+            'parent_email.email' => 'Format email orang tua tidak valid.',
             'preferred_mode.in' => 'Mode belajar harus Online atau Offline.',
             'website.prohibited' => 'Deteksi spam. Silakan coba lagi.',
         ];

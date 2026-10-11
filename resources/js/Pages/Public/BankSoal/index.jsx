@@ -250,7 +250,7 @@ export default function BankSoalIndex() {
                             </div>
 
                             {/* Filters Row */}
-                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                            <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3 pt-2 border-t border-slate-100">
                                 {/* Format Filters */}
                                 <div className="flex flex-wrap items-center gap-1.5">
                                     <span className="text-xs font-bold text-slate-400 mr-1">Format:</span>
@@ -272,12 +272,12 @@ export default function BankSoalIndex() {
 
                                 {/* Category Select */}
                                 {categories.length > 1 && (
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1.5 w-full xs:w-auto justify-between xs:justify-start">
                                         <span className="text-xs font-bold text-slate-400 mr-1">Kategori:</span>
                                         <select
                                             value={selectedCategory}
                                             onChange={(e) => setSelectedCategory(e.target.value)}
-                                            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-emerald-500"
+                                            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-emerald-500 w-full xs:w-auto"
                                         >
                                             {categories.map((c) => (
                                                 <option key={c} value={c}>
@@ -294,7 +294,7 @@ export default function BankSoalIndex() {
             </section>
 
             {/* Grid Listing */}
-            <section className="py-16 bg-slate-50/40">
+            <section className="py-12 sm:py-16 bg-slate-50/40">
                 <Container>
                     <div className="mb-8 flex items-center justify-between gap-4">
                         <p className="text-sm font-semibold text-slate-600">
@@ -313,7 +313,7 @@ export default function BankSoalIndex() {
                     </div>
 
                     {filteredItems.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                             {filteredItems.map((item) => (
                                 <BankSoalCard
                                     key={item.id}

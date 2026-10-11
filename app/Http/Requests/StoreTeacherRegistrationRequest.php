@@ -13,10 +13,15 @@ class StoreTeacherRegistrationRequest extends FormRequest
 
     public function prepareForValidation(): void
     {
+        $merge = [];
         if ($this->has('contact')) {
-            $this->merge([
-                'contact' => (string) preg_replace('/[\s\-.\(\)]/', '', (string) $this->input('contact')),
-            ]);
+            $merge['contact'] = (string) preg_replace('/[\s\-.\(\)]/', '', (string) $this->input('contact'));
+        }
+        if ($this->has('email')) {
+            $merge['email'] = strtolower(trim((string) $this->input('email')));
+        }
+        if (! empty($merge)) {
+            $this->merge($merge);
         }
     }
 
@@ -24,6 +29,7 @@ class StoreTeacherRegistrationRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
             'address' => ['required', 'string', 'max:500'],
             'education' => ['required', 'string', 'max:255'],
             'subjects' => ['required', 'string', 'max:255'],
@@ -44,6 +50,8 @@ class StoreTeacherRegistrationRequest extends FormRequest
     {
         return [
             'name.required' => 'Nama wajib diisi.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
             'address.required' => 'Alamat wajib diisi.',
             'education.required' => 'Pendidikan wajib diisi.',
             'subjects.required' => 'Mata pelajaran wajib diisi.',
