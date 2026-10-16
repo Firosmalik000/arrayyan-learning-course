@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import LanguageSelector from '../Components/LanguageSelector';
 import { useI18n } from '../lib/i18n';
 
@@ -18,6 +18,8 @@ export default function PublicLayout({ children }) {
     const { props, url } = usePage();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [aboutDropdownOpen, setAboutDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
 
     const logoSrc = props.appLogo || '/images/logo.jpeg';
 
@@ -42,13 +44,83 @@ export default function PublicLayout({ children }) {
         getSocial('whatsapp').link ||
         `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
 
-    const navItems = [
+    // Auth status
+    const authUser = props.auth?.user;
+    const authPortal = props.auth?.portal;
+    const isLoggedIn = !!(authUser || authPortal);
+    const dashboardLink = authUser ? '/admin' : '/portal';
+    const dashboardLabel = authUser
+        ? t('navAdmin', 'Dashboard')
+        : authPortal?.type === 'teacher'
+        ? 'Portal Guru'
+        : t('navPortal', 'Portal Siswa');
+
+    // Focused, essential primary navigation links
+    const primaryNavItems = [
         { href: '/', label: t('navHome', 'Beranda') },
         { href: '/program', label: t('navPrograms', 'Program Belajar') },
         { href: '/bank-soal', label: t('navBankSoal', 'Bank Soal') },
         { href: '/olimpiade', label: t('navOlympiad', 'Olimpiade') },
-        { href: '/#profil', label: t('navProfile', 'Tentang Kami') },
-        { href: '/#kontak', label: t('navContact', 'Kontak') },
+    ];
+
+    // Sub-items grouped into "Tentang ALC" dropdown
+    const aboutSubItems = [
+        {
+            href: '/#profil',
+            label: t('navProfile', 'Profil Lembaga'),
+            desc: 'Visi, misi, metode & keunggulan bimbingan ALC',
+            badge: null,
+            icon: (
+                <svg className="h-4.5 w-4.5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.333A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.583V21h15z" />
+                </svg>
+            ),
+        },
+        {
+            href: '/#kontak',
+            label: t('navContact', 'Kontak & Lokasi'),
+            desc: 'Alamat kantor cabang, kontak hotline & konsultasi',
+            badge: null,
+            icon: (
+                <svg className="h-4.5 w-4.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+            ),
+        },
+        {
+            href: '/faq',
+            label: t('navFaq', 'Tanya Jawab (FAQ)'),
+            desc: 'Informasi kurikulum, pendaftaran & sistem belajar',
+            badge: null,
+            icon: (
+                <svg className="h-4.5 w-4.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+                </svg>
+            ),
+        },
+        {
+            href: '/cek-status',
+            label: t('navStatus', 'Cek Status Pendaftaran'),
+            desc: 'Lacak berkas tiket formulir murid atau pengajar baru',
+            badge: 'Online',
+            icon: (
+                <svg className="h-4.5 w-4.5 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            ),
+        },
+        {
+            href: '/blog',
+            label: 'Blog & Edukasi',
+            desc: 'Tips belajar, strategi ujian & berita kegiatan ALC',
+            badge: null,
+            icon: (
+                <svg className="h-4.5 w-4.5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                </svg>
+            ),
+        },
     ];
 
     const isActiveRoute = (href) => {
@@ -56,6 +128,8 @@ export default function PublicLayout({ children }) {
         if (href.startsWith('/#')) return false;
         return url.startsWith(href);
     };
+
+    const isAboutActive = url.startsWith('/faq') || url.startsWith('/blog') || url.startsWith('/cek-status');
 
     useEffect(() => {
         const handleScroll = () => {
@@ -65,14 +139,35 @@ export default function PublicLayout({ children }) {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Close menu on route change
+    // Close menu and dropdown on route change
     useEffect(() => {
         setIsMenuOpen(false);
+        setAboutDropdownOpen(false);
     }, [url]);
+
+    // Close dropdown on click outside or escape key
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setAboutDropdownOpen(false);
+            }
+        };
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                setAboutDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#fafbfc] text-slate-900 flex flex-col antialiased selection:bg-violet-100 selection:text-brand-primary">
-            {/* Top Announcement Bar */}
+            {/* Top Announcement Bar - Clean & Informative */}
             <div className="bg-slate-900 text-white text-[11px] sm:text-xs py-1.5 sm:py-2 px-3 sm:px-4">
                 <div className="max-w-7xl 2xl:max-w-[92rem] mx-auto flex items-center justify-between gap-3 sm:gap-4">
                     <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap min-w-0">
@@ -84,22 +179,30 @@ export default function PublicLayout({ children }) {
                         </span>
                     </div>
 
-                    <div className="hidden sm:flex items-center gap-4 text-slate-300 shrink-0">
+                    <div className="flex items-center gap-3 sm:gap-4 text-slate-300 shrink-0 text-xs">
                         <a
                             href={waLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 hover:text-white transition"
+                            className="hidden sm:inline-flex items-center gap-1.5 hover:text-white transition"
                         >
                             <svg className="h-3.5 w-3.5 text-emerald-400" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                             </svg>
                             <span>Konsultasi Hotline</span>
                         </a>
-                        <span className="text-slate-600">•</span>
-                        <Link href="/pendaftaran" className="hover:text-white transition">
-                            Pendaftaran Online
+                        <span className="hidden sm:inline text-slate-700">•</span>
+                        <Link
+                            href="/cek-status"
+                            className="hidden sm:inline-flex items-center gap-1.5 hover:text-white transition"
+                        >
+                            <svg className="h-3.5 w-3.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Cek Status</span>
                         </Link>
+                        <span className="hidden sm:inline text-slate-700">•</span>
+                        <LanguageSelector variant="topbar" />
                     </div>
                 </div>
             </div>
@@ -141,39 +244,132 @@ export default function PublicLayout({ children }) {
                         </div>
                     </Link>
 
-                    {/* Desktop Navigation */}
-                    <nav className="hidden lg:flex items-center gap-1">
-                        {navItems.map((item) => {
+                    {/* Desktop Navigation - Clean, Minimalist & Focused */}
+                    <nav className="hidden lg:flex items-center gap-2 xl:gap-3">
+                        {primaryNavItems.map((item) => {
                             const active = isActiveRoute(item.href);
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`relative px-3.5 py-2 text-sm font-semibold rounded-full transition-colors ${
+                                    className={`relative px-3 py-2 text-sm font-semibold transition-colors duration-150 ${
                                         active
-                                            ? 'text-brand-primary bg-violet-50 font-bold'
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                                            ? 'text-brand-primary font-bold'
+                                            : 'text-slate-600 hover:text-brand-primary'
                                     }`}
                                 >
-                                    {item.label}
+                                    <span>{item.label}</span>
                                     {active && (
-                                        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-brand-primary" />
+                                        <span className="absolute -bottom-1 left-3 right-3 h-0.5 rounded-full bg-brand-primary" />
                                     )}
                                 </Link>
                             );
                         })}
+
+                        {/* Dropdown "Tentang ALC" for Institutional & Auxiliary Pages */}
+                        <div className="relative" ref={dropdownRef}>
+                            <button
+                                type="button"
+                                onClick={() => setAboutDropdownOpen(!aboutDropdownOpen)}
+                                className={`relative inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold transition-colors duration-150 cursor-pointer ${
+                                    aboutDropdownOpen || isAboutActive
+                                        ? 'text-brand-primary font-bold'
+                                        : 'text-slate-600 hover:text-brand-primary'
+                                }`}
+                                aria-expanded={aboutDropdownOpen}
+                            >
+                                <span>{t('navAbout', 'Tentang ALC')}</span>
+                                <svg
+                                    className={`h-4 w-4 transition-transform duration-200 ${
+                                        aboutDropdownOpen ? 'rotate-180 text-brand-primary' : 'text-slate-400'
+                                    }`}
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                                </svg>
+                                {isAboutActive && (
+                                    <span className="absolute -bottom-1 left-3 right-3 h-0.5 rounded-full bg-brand-primary" />
+                                )}
+                            </button>
+
+                            {/* Dropdown Menu Popover */}
+                            {aboutDropdownOpen && (
+                                <div className="absolute left-0 mt-2 w-84 rounded-2xl border border-slate-200/80 bg-white/98 p-2 shadow-xl backdrop-blur-xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                                    <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1">
+                                        Informasi Lembaga & Layanan
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                        {aboutSubItems.map((sub) => (
+                                            <Link
+                                                key={sub.href}
+                                                href={sub.href}
+                                                onClick={() => setAboutDropdownOpen(false)}
+                                                className="flex items-start gap-3 rounded-xl p-2.5 hover:bg-violet-50/80 transition-colors group"
+                                            >
+                                                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 border border-slate-100 group-hover:bg-white group-hover:border-violet-200 group-hover:shadow-xs transition-all">
+                                                    {sub.icon}
+                                                </div>
+                                                <div className="flex flex-col min-w-0 flex-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-xs font-bold text-slate-900 group-hover:text-brand-primary transition-colors">
+                                                            {sub.label}
+                                                        </span>
+                                                        {sub.badge && (
+                                                            <span className="rounded-full bg-sky-50 px-1.5 py-0.2 text-[9px] font-bold text-sky-600 border border-sky-200/60">
+                                                                {sub.badge}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-[11px] text-slate-500 line-clamp-1 leading-snug">
+                                                        {sub.desc}
+                                                    </span>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </nav>
 
-                    {/* Right Header Controls */}
-                    <div className="flex items-center gap-2.5 sm:gap-3">
-                        <LanguageSelector />
+                    {/* Right Header Controls - Clean & Minimalist */}
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        {/* Action: Login / Dashboard as clean text link */}
+                        {isLoggedIn ? (
+                            <Link
+                                href={dashboardLink}
+                                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold text-brand-primary hover:text-violet-800 transition-colors"
+                                title="Buka Dashboard Akun"
+                            >
+                                <svg className="h-4 w-4 text-brand-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                                </svg>
+                                <span>{dashboardLabel}</span>
+                                <span aria-hidden="true">&rarr;</span>
+                            </Link>
+                        ) : (
+                            <Link
+                                href="/login"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold text-slate-700 hover:text-brand-primary transition-colors"
+                                title="Masuk ke Akun Portal / Admin"
+                            >
+                                <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                                </svg>
+                                <span>{t('navLogin', 'Masuk')}</span>
+                            </Link>
+                        )}
 
+                        {/* Primary Action: Single Filled CTA Button */}
                         <Link
                             href="/pendaftaran"
-                            className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-brand-primary px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition-all hover:brightness-105 hover:shadow-md active:scale-95"
+                            className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-linear-to-r from-brand-primary to-indigo-600 hover:from-violet-700 hover:to-indigo-700 px-4.5 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:shadow-md hover:shadow-violet-500/25 active:scale-95 transition-all"
                         >
-                            <span>Daftar Sekarang</span>
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <span>{t('navRegisterCta', 'Daftar Sekarang')}</span>
+                            <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                             </svg>
                         </Link>
@@ -182,7 +378,7 @@ export default function PublicLayout({ children }) {
                         <button
                             type="button"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            className="lg:hidden flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 active:scale-95 transition"
+                            className="lg:hidden flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-2xs hover:bg-slate-50 active:scale-95 transition cursor-pointer"
                             aria-label="Menu"
                         >
                             {isMenuOpen ? (
@@ -201,15 +397,19 @@ export default function PublicLayout({ children }) {
                 {/* Mobile Drawer / Dropdown */}
                 {isMenuOpen && (
                     <div className="lg:hidden border-t border-slate-200/80 bg-white/98 backdrop-blur-xl px-4 pt-3 pb-6 shadow-xl transition-all">
-                        <nav className="flex flex-col gap-1">
-                            {navItems.map((item) => {
+                        {/* Mobile Primary Nav */}
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
+                            Menu Utama
+                        </div>
+                        <nav className="flex flex-col gap-1 mt-1">
+                            {primaryNavItems.map((item) => {
                                 const active = isActiveRoute(item.href);
                                 return (
                                     <Link
                                         key={item.href}
                                         href={item.href}
                                         onClick={() => setIsMenuOpen(false)}
-                                        className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                                        className={`flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
                                             active
                                                 ? 'bg-violet-50 text-brand-primary font-bold'
                                                 : 'text-slate-700 hover:bg-slate-50'
@@ -224,29 +424,82 @@ export default function PublicLayout({ children }) {
                             })}
                         </nav>
 
+                        {/* Mobile Secondary / Institutional Links */}
+                        <div className="mt-3 pt-3 border-t border-slate-100">
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
+                                Informasi & Layanan
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-1">
+                                {aboutSubItems.map((sub) => (
+                                    <Link
+                                        key={sub.href}
+                                        href={sub.href}
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-primary transition"
+                                    >
+                                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-50 border border-slate-200/70">
+                                            {sub.icon}
+                                        </div>
+                                        <span>{sub.label}</span>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Action Buttons for Mobile */}
                         <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2.5">
+                            {/* Primary Action Button */}
                             <Link
                                 href="/pendaftaran"
                                 onClick={() => setIsMenuOpen(false)}
-                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-primary py-3 text-sm font-bold text-white shadow-sm"
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-brand-primary to-indigo-600 py-3 text-sm font-bold text-white shadow-xs hover:brightness-105 transition"
                             >
-                                <span>Daftar Siswa / Pengajar</span>
+                                <span>{t('navRegisterCta', 'Daftar Sekarang')}</span>
                                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                                 </svg>
                             </Link>
 
+                            {/* Login Button on Mobile */}
+                            {isLoggedIn ? (
+                                <Link
+                                    href={dashboardLink}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 py-3 text-sm font-bold text-brand-primary hover:bg-violet-100 transition"
+                                >
+                                    <span>Buka {dashboardLabel}</span>
+                                </Link>
+                            ) : (
+                                <Link
+                                    href="/login"
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 py-3 text-sm font-bold text-slate-800 hover:bg-violet-50 hover:text-brand-primary hover:border-violet-200 transition"
+                                >
+                                    <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                                    </svg>
+                                    <span>Masuk ke Akun / Portal</span>
+                                </Link>
+                            )}
+
+                            {/* WhatsApp Direct Action */}
                             <a
                                 href={waLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 py-3 text-sm font-bold text-emerald-800 hover:bg-emerald-100 transition"
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/70 py-2.5 text-xs sm:text-sm font-bold text-emerald-800 hover:bg-emerald-100/80 transition"
                             >
                                 <svg className="h-4 w-4 fill-emerald-600" viewBox="0 0 24 24">
                                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                                 </svg>
-                                <span>Hubungi WhatsApp Admin</span>
+                                <span>Konsultasi WhatsApp Admin</span>
                             </a>
+
+                            {/* Mobile Language Selector */}
+                            <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3.5 py-2 text-xs text-slate-600">
+                                <span className="font-medium">Bahasa / Language:</span>
+                                <LanguageSelector />
+                            </div>
                         </div>
                     </div>
                 )}

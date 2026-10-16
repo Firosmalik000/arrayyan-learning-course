@@ -53,6 +53,29 @@
                         </td>
                     </tr>
 
+                    @if($teacherRole || $city || $district)
+                    <tr>
+                        <td style="padding:0 32px 16px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%; border:1px solid #e9d5ff; border-radius:12px; background-color:#ffffff; overflow:hidden;">
+                                @if($teacherRole)
+                                <tr>
+                                    <td style="padding:12px 16px; border-bottom:1px solid #f3e8ff; color:#6b21a8; font-size:12px; font-weight:700; width:40%;">Jenjang yang Diajar</td>
+                                    <td style="padding:12px 16px; border-bottom:1px solid #f3e8ff; color:#1e1b4b; font-size:13px; font-weight:600;">{{ $teacherRole }}</td>
+                                </tr>
+                                @endif
+                                @if($city || $district)
+                                <tr>
+                                    <td style="padding:12px 16px; color:#6b21a8; font-size:12px; font-weight:700; width:40%;">Domisili</td>
+                                    <td style="padding:12px 16px; color:#1e1b4b; font-size:13px; font-weight:600;">
+                                        {{ implode(', ', array_filter([$district ? 'Kec. '.$district : null, $city])) }}
+                                    </td>
+                                </tr>
+                                @endif
+                            </table>
+                        </td>
+                    </tr>
+                    @endif
+
                     <tr>
                         <td style="padding:12px 32px 8px; text-align:center;">
                             <a href="{{ $statusUrl }}" style="display:inline-block; padding:14px 24px; background-color:#6d28d9; border-radius:999px; color:#ffffff; font-size:14px; font-weight:800; line-height:1; text-decoration:none;">Cek Status Pendaftaran</a>

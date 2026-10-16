@@ -54,9 +54,9 @@ export default function Attendance() {
                 </div>
             )}
 
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
                 <div>
-                    <h1 className="font-display text-2xl font-extrabold tracking-tight text-slate-900">
+                    <h1 className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
                         Absensi Siswa
                     </h1>
                     <p className="mt-0.5 text-xs text-slate-500">
@@ -66,24 +66,24 @@ export default function Attendance() {
                     </p>
                 </div>
                 {rate != null && (
-                    <span className="rounded-full bg-emerald-50 border border-emerald-200/80 px-3.5 py-1 text-xs font-bold text-emerald-700 shadow-2xs">
+                    <span className="rounded-full bg-emerald-50 border border-emerald-200/80 px-3 py-1 text-xs font-bold text-emerald-700 shadow-2xs">
                         Tingkat Kehadiran {rate}%
                     </span>
                 )}
             </div>
 
             {records.length === 0 ? (
-                <div className="rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-xs">
+                <div className="rounded-xl border border-slate-200/80 bg-white p-6 text-center shadow-2xs">
                     <p className="text-xs text-slate-400">Belum ada data absensi untuk anak yang dipilih.</p>
                     <Link
                         href="/portal"
-                        className="mt-3 inline-block rounded-full bg-slate-100 px-4 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-200 transition"
+                        className="mt-2.5 inline-block rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700 hover:bg-slate-200 transition"
                     >
                         Dashboard
                     </Link>
                 </div>
             ) : (
-                <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs">
+                <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs">
                     {/* Mobile Card List (< md) */}
                     <div className="block md:hidden divide-y divide-slate-100">
                         {displayedRecords.map((r, i) => {
@@ -144,15 +144,15 @@ export default function Attendance() {
 
                     {/* Desktop Datatable (>= md) */}
                     <div className="hidden md:block overflow-x-auto">
-                        <table className="w-full min-w-[520px] text-left text-xs sm:text-sm">
+                        <table className="w-full min-w-[520px] text-left text-xs">
                             <thead>
-                                <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                    <th className="w-12 px-4 py-3.5 text-center">No</th>
-                                    <th className="w-14 px-3 py-3.5 text-center">Aksi</th>
-                                    <th className="px-5 py-3.5">Tanggal</th>
-                                    <th className="px-5 py-3.5">Kelas</th>
-                                    <th className="px-5 py-3.5">Catatan</th>
-                                    <th className="px-5 py-3.5 text-right">Status</th>
+                                <tr className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                                    <th className="w-10 px-3 py-2.5 text-center">No</th>
+                                    <th className="w-12 px-2.5 py-2.5 text-center">Aksi</th>
+                                    <th className="px-3.5 py-2.5">Tanggal</th>
+                                    <th className="px-3.5 py-2.5">Kelas</th>
+                                    <th className="px-3.5 py-2.5">Catatan</th>
+                                    <th className="px-3.5 py-2.5 text-right">Status</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">

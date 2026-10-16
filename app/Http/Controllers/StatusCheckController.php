@@ -74,7 +74,9 @@ class StatusCheckController extends Controller
             'type_label' => 'Pengajar',
             'ticket' => $registration->registration_no,
             'name' => $registration->name,
-            'program' => $registration->subjects,
+            'program' => $registration->teacher_role
+                ? ($registration->teacher_role.($registration->subjects ? ' • '.$registration->subjects : ''))
+                : ($registration->subjects ?? 'Pengajar'),
             'status' => $registration->status,
             'admin_note' => $registration->admin_note,
             'created_at' => $registration->created_at,

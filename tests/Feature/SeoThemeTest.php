@@ -41,4 +41,17 @@ class SeoThemeTest extends TestCase
         $response->assertSee("<link rel=\"apple-touch-icon\" href=\"{$faviconUrl}\">", false);
         $response->assertSee('<meta name="theme-color" content="#112233">', false);
     }
+
+    public function test_it_falls_back_to_default_favicon_when_no_custom_logo_configured(): void
+    {
+        $faviconUrl = asset('favicon.ico');
+
+        $response = $this->get('/');
+
+        $response->assertSuccessful();
+        $response->assertSee("<link rel=\"icon\" href=\"{$faviconUrl}\">", false);
+        $response->assertSee("<link rel=\"apple-touch-icon\" href=\"{$faviconUrl}\">", false);
+        $this->assertFileExists(public_path('favicon.ico'));
+        $this->assertGreaterThan(0, filesize(public_path('favicon.ico')));
+    }
 }

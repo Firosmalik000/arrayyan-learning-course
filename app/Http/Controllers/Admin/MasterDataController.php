@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\BankSoal;
+use App\Models\ClassGroup;
+use App\Models\Invoice;
 use App\Models\Olympiad;
+use App\Models\OlympiadRegistration;
 use App\Models\Package;
 use App\Models\PageContent;
 use App\Models\Program;
@@ -247,6 +250,65 @@ class MasterDataController extends Controller
             })
             ->all();
 
+        // 6-Month Monthly Trend for Registrations
+        $monthlyTrends = collect(range(5, 0))->map(function ($monthsAgo) {
+            $date = now()->subMonths($monthsAgo);
+            $start = $date->copy()->startOfMonth();
+            $end = $date->copy()->endOfMonth();
+
+            $studentCount = StudentRegistration::query()
+                ->whereBetween('created_at', [$start, $end])
+                ->count();
+            $teacherCount = TeacherRegistration::query()
+                ->whereBetween('created_at', [$start, $end])
+                ->count();
+
+            return [
+                'month' => $date->locale('id')->translatedFormat('M'),
+                'fullMonth' => $date->locale('id')->translatedFormat('F Y'),
+                'students' => $studentCount,
+                'teachers' => $teacherCount,
+                'total' => $studentCount + $teacherCount,
+            ];
+        })->values()->all();
+
+        // Financial Overview from Invoices
+        $paidRevenue = (float) Invoice::query()->where('status', Invoice::STATUS_PAID)->sum('amount');
+        $pendingRevenue = (float) Invoice::query()->whereIn('status', [Invoice::STATUS_UNPAID, Invoice::STATUS_PENDING])->sum('amount');
+        $paidInvoiceCount = Invoice::query()->where('status', Invoice::STATUS_PAID)->count();
+        $unpaidInvoiceCount = Invoice::query()->whereIn('status', [Invoice::STATUS_UNPAID, Invoice::STATUS_PENDING])->count();
+
+        $financials = [
+            'paidRevenue' => $paidRevenue,
+            'pendingRevenue' => $pendingRevenue,
+            'totalInvoiced' => $paidRevenue + $pendingRevenue,
+            'paidCount' => $paidInvoiceCount,
+            'unpaidCount' => $unpaidInvoiceCount,
+            'totalCount' => $paidInvoiceCount + $unpaidInvoiceCount,
+        ];
+
+        // Program Distribution by Level
+        $programDistribution = Program::query()
+            ->selectRaw("COALESCE(NULLIF(level, ''), 'Umum') as level_name, count(*) as count")
+            ->groupBy('level_name')
+            ->get()
+            ->map(fn ($item) => [
+                'name' => (string) $item->level_name,
+                'count' => (int) $item->count,
+            ])
+            ->values()
+            ->all();
+
+        // Quick Summary Counts
+        $summaryCounts = [
+            'totalStudents' => Student::query()->count(),
+            'totalTeachers' => Teacher::query()->count(),
+            'totalClasses' => ClassGroup::query()->count(),
+            'olympiadParticipants' => OlympiadRegistration::query()->count(),
+            'activePrograms' => $programActive,
+            'totalPrograms' => $programTotal,
+        ];
+
         return Inertia::render('Admin/Dashboard', [
             'stats' => $stats,
             'contentSections' => $contentSections,
@@ -258,6 +320,10 @@ class MasterDataController extends Controller
                 'students' => [$pendingStudents, $approvedStudents, $rejectedStudents],
                 'teachers' => [$pendingTeachers, $approvedTeachers, $rejectedTeachers],
             ],
+            'monthlyTrends' => $monthlyTrends,
+            'financials' => $financials,
+            'programDistribution' => $programDistribution,
+            'summaryCounts' => $summaryCounts,
         ]);
     }
 
@@ -416,6 +482,9 @@ class MasterDataController extends Controller
                     'id' => $teacher->id,
                     'name' => $teacher->name,
                     'address' => $teacher->address,
+                    'city' => $teacher->city,
+                    'district' => $teacher->district,
+                    'teacher_role' => $teacher->teacher_role,
                     'education' => $teacher->education,
                     'subjects' => $teacher->subjects,
                     'experience' => $teacher->experience,
@@ -562,6 +631,9 @@ class MasterDataController extends Controller
             $search = $filters['search'];
             $query->where(function ($inner) use ($search): void {
                 $inner->where('name', 'like', "%{$search}%")
+                    ->orWhere('teacher_role', 'like', "%{$search}%")
+                    ->orWhere('city', 'like', "%{$search}%")
+                    ->orWhere('district', 'like', "%{$search}%")
                     ->orWhere('subjects', 'like', "%{$search}%")
                     ->orWhere('contact', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
@@ -640,6 +712,9 @@ class MasterDataController extends Controller
             'registration_no' => $teacher->registration_no,
             'name' => $teacher->name,
             'address' => $teacher->address,
+            'city' => $teacher->city,
+            'district' => $teacher->district,
+            'teacher_role' => $teacher->teacher_role,
             'education' => $teacher->education,
             'subjects' => $teacher->subjects,
             'experience' => $teacher->experience,

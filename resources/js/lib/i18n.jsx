@@ -12,6 +12,13 @@ const translations = {
         navOlympiad: 'Olimpiade',
         navRegister: 'Pendaftaran',
         navContact: 'Kontak',
+        navAbout: 'Tentang ALC',
+        navLogin: 'Masuk',
+        navRegisterCta: 'Daftar Sekarang',
+        navStatus: 'Cek Status',
+        navFaq: 'Tanya Jawab (FAQ)',
+        navPortal: 'Portal Siswa',
+        navAdmin: 'Dashboard Admin',
     },
     en: {
         languageLabel: 'Language',
@@ -22,6 +29,13 @@ const translations = {
         navOlympiad: 'Olympiad',
         navRegister: 'Registration',
         navContact: 'Contact',
+        navAbout: 'About ALC',
+        navLogin: 'Login',
+        navRegisterCta: 'Register Now',
+        navStatus: 'Check Status',
+        navFaq: 'FAQ',
+        navPortal: 'Student Portal',
+        navAdmin: 'Admin Dashboard',
     },
 };
 

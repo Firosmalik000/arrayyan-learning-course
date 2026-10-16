@@ -320,6 +320,45 @@ class RegistrationTest extends TestCase
         });
     }
 
+    public function test_teacher_registration_stores_with_domicile_and_role(): void
+    {
+        Storage::fake('public');
+        Mail::fake();
+
+        $payload = [
+            'name' => 'Fathur Rahman, S.Pd.',
+            'email' => 'fathur.rahman@example.com',
+            'city' => 'Kota Padang',
+            'district' => 'Koto Tangah',
+            'address' => 'Jl. Adinegoro No. 88, RT 01 / RW 03',
+            'teacher_role' => 'Guru SD (Tematik & Mapel SD)',
+            'education' => 'S1 PGSD - Universitas Negeri Padang',
+            'subjects' => 'Matematika SD, Tematik, IPA',
+            'experience' => '3 tahun mengajar privat dan bimbel',
+            'contact' => '081234567890',
+            'cv' => UploadedFile::fake()->create('cv.pdf', 100, 'application/pdf'),
+            'notes' => 'Siap mengajar area Koto Tangah',
+        ];
+
+        $response = $this->post(route('registrations.teacher'), $payload);
+
+        $registration = TeacherRegistration::query()->where('name', 'Fathur Rahman, S.Pd.')->firstOrFail();
+
+        $response->assertRedirect(route('registrations.success', [
+            'registrationType' => 'pengajar',
+            'ticket' => $registration->registration_no,
+        ]));
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('teacher_registrations', [
+            'name' => 'Fathur Rahman, S.Pd.',
+            'city' => 'Kota Padang',
+            'district' => 'Koto Tangah',
+            'teacher_role' => 'Guru SD (Tematik & Mapel SD)',
+            'subjects' => 'Matematika SD, Tematik, IPA',
+        ]);
+    }
+
     public function test_teacher_registration_requires_mandatory_fields(): void
     {
         $response = $this->post(route('registrations.teacher'), []);
@@ -574,6 +613,29 @@ class RegistrationTest extends TestCase
         ]);
         $this->assertNotNull($reg->fresh()->approved_at);
         $this->assertDatabaseHas('teachers', ['name' => 'Guru Hebat', 'is_active' => true, 'created_by' => $user->id]);
+    }
+
+    public function test_approve_teacher_copies_domicile_and_role(): void
+    {
+        $user = $this->actingAsAdmin();
+        $reg = TeacherRegistration::factory()->create([
+            'name' => 'Guru Domisili',
+            'city' => 'Kota Padang',
+            'district' => 'Koto Tangah',
+            'teacher_role' => 'Guru SMP (Mata Pelajaran SMP)',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.registrations.teacher.approve', $reg));
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('teachers', [
+            'name' => 'Guru Domisili',
+            'city' => 'Kota Padang',
+            'district' => 'Koto Tangah',
+            'teacher_role' => 'Guru SMP (Mata Pelajaran SMP)',
+            'is_active' => true,
+        ]);
     }
 
     public function test_reject_teacher_updates_status(): void

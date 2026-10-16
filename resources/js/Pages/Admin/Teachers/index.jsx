@@ -59,6 +59,9 @@ export default function Teachers() {
         id: item.id,
         name: item.name ?? '',
         address: item.address ?? '',
+        city: item.city ?? '',
+        district: item.district ?? '',
+        teacher_role: item.teacher_role ?? '',
         education: item.education ?? '',
         subjects: item.subjects ?? '',
         experience: item.experience ?? '',
@@ -88,6 +91,9 @@ export default function Teachers() {
     const form = useForm({
         name: '',
         address: '',
+        city: '',
+        district: '',
+        teacher_role: '',
         education: '',
         subjects: '',
         experience: '',
@@ -99,9 +105,13 @@ export default function Teachers() {
     const [currentCvUrl, setCurrentCvUrl] = useState(null);
 
     const filteredData = teachers.filter((t) => {
+        const query = search.toLowerCase();
         const matchSearch =
-            t.name.toLowerCase().includes(search.toLowerCase()) ||
-            t.subjects.toLowerCase().includes(search.toLowerCase());
+            t.name.toLowerCase().includes(query) ||
+            t.subjects.toLowerCase().includes(query) ||
+            t.teacher_role.toLowerCase().includes(query) ||
+            t.city.toLowerCase().includes(query) ||
+            t.district.toLowerCase().includes(query);
         const matchEducation = !filterEducation || t.education === filterEducation;
         return matchSearch && matchEducation;
     });
@@ -141,6 +151,9 @@ export default function Teachers() {
             form.setData({
                 name: item.name,
                 address: item.address,
+                city: item.city,
+                district: item.district,
+                teacher_role: item.teacher_role,
                 education: item.education,
                 subjects: item.subjects,
                 experience: item.experience,
@@ -155,6 +168,9 @@ export default function Teachers() {
             form.setData({
                 name: '',
                 address: '',
+                city: '',
+                district: '',
+                teacher_role: '',
                 education: '',
                 subjects: '',
                 experience: '',
@@ -331,7 +347,25 @@ export default function Teachers() {
                                                 <ActionDropdown items={actionItems} label={`Aksi ${teacher.name}`} />
                                             </td>
                                             <td className="px-5 py-4 font-medium text-slate-800">
-                                                {teacher.name}
+                                                <div className="font-semibold text-slate-900">{teacher.name}</div>
+                                                {(teacher.teacher_role || teacher.city) && (
+                                                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                                                        {teacher.teacher_role && (
+                                                            <span className="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 ring-1 ring-amber-200/60">
+                                                                {teacher.teacher_role}
+                                                            </span>
+                                                        )}
+                                                        {(teacher.district || teacher.city) && (
+                                                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-normal">
+                                                                <svg className="h-3 w-3 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                </svg>
+                                                                {[teacher.district ? `Kec. ${teacher.district}` : null, teacher.city].filter(Boolean).join(', ')}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-5 py-4 text-slate-600">
                                                 {teacher.education || '-'}
@@ -380,9 +414,11 @@ export default function Teachers() {
                         <div className="rounded-xl bg-slate-50 p-4">
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <div><p className="text-xs text-slate-500">Nama</p><p className="font-medium text-slate-800">{detailModal.name}</p></div>
+                                <div><p className="text-xs text-slate-500">Jenjang yang Diajar</p><p className="font-medium text-slate-800">{detailModal.teacher_role || '-'}</p></div>
                                 <div><p className="text-xs text-slate-500">Pendidikan</p><p className="font-medium text-slate-800">{detailModal.education || '-'}</p></div>
-                                <div><p className="text-xs text-slate-500">Alamat</p><p className="font-medium text-slate-800">{detailModal.address || '-'}</p></div>
-                                <div><p className="text-xs text-slate-500">Mata Pelajaran</p><p className="font-medium text-slate-800">{detailModal.subjects || '-'}</p></div>
+                                <div><p className="text-xs text-slate-500">Domisili</p><p className="font-medium text-slate-800">{[detailModal.district ? `Kec. ${detailModal.district}` : null, detailModal.city].filter(Boolean).join(', ') || '-'}</p></div>
+                                <div><p className="text-xs text-slate-500">Alamat Lengkap</p><p className="font-medium text-slate-800">{detailModal.address || '-'}</p></div>
+                                <div><p className="text-xs text-slate-500">Keahlian / Mata Pelajaran</p><p className="font-medium text-slate-800">{detailModal.subjects || '-'}</p></div>
                                 <div><p className="text-xs text-slate-500">Pengalaman</p><p className="font-medium text-slate-800">{detailModal.experience || '-'}</p></div>
                                 <div><p className="text-xs text-slate-500">Kontak</p><p className="font-medium text-slate-800">{detailModal.contact || '-'}</p></div>
                                 <div><p className="text-xs text-slate-500">Status</p>{statusBadge(detailModal.is_active)}</div>
@@ -407,14 +443,22 @@ export default function Teachers() {
 
             <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Pengajar' : 'Tambah Pengajar Baru'} size="lg">
                 <form onSubmit={saveForm} className="space-y-4">
-                    <FormInput label="Nama Lengkap" value={form.data.name} onChange={(v) => form.setData('name', v)} placeholder="contoh: Ustadzah Hana" required />
-                    {form.errors.name && <p className="text-xs text-rose-500">{form.errors.name}</p>}
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <FormInput label="Alamat" value={form.data.address} onChange={(v) => form.setData('address', v)} placeholder="Alamat lengkap" />
+                        <FormInput label="Nama Lengkap" value={form.data.name} onChange={(v) => form.setData('name', v)} placeholder="contoh: Ustadzah Hana" required />
+                        <FormInput label="Jenjang yang Diajar" value={form.data.teacher_role} onChange={(v) => form.setData('teacher_role', v)} placeholder="contoh: SD, SMP / SMA" />
+                    </div>
+                    {form.errors.name && <p className="text-xs text-rose-500">{form.errors.name}</p>}
+                    {form.errors.teacher_role && <p className="text-xs text-rose-500">{form.errors.teacher_role}</p>}
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormInput label="Kota / Kabupaten" value={form.data.city} onChange={(v) => form.setData('city', v)} placeholder="contoh: Kota Padang" />
+                        <FormInput label="Kecamatan" value={form.data.district} onChange={(v) => form.setData('district', v)} placeholder="contoh: Koto Tangah" />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormInput label="Alamat Lengkap" value={form.data.address} onChange={(v) => form.setData('address', v)} placeholder="Alamat jalan / RT / RW" />
                         <FormSelect label="Pendidikan Terakhir" value={form.data.education} onChange={(v) => form.setData('education', v)} options={resolvedEducationOptions} />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <FormInput label="Mata Pelajaran" value={form.data.subjects} onChange={(v) => form.setData('subjects', v)} placeholder="contoh: Matematika, IPA" />
+                        <FormInput label="Keahlian / Mata Pelajaran" value={form.data.subjects} onChange={(v) => form.setData('subjects', v)} placeholder="contoh: Matematika, IPA" />
                         <FormInput label="Pengalaman" value={form.data.experience} onChange={(v) => form.setData('experience', v)} placeholder="contoh: 2 tahun" />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">

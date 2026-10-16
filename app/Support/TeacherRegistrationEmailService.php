@@ -37,6 +37,9 @@ class TeacherRegistrationEmailService
                 teacherName: $registration->name,
                 ticket: $ticket,
                 statusUrl: route('status.check', ['ticket' => $ticket]),
+                teacherRole: $registration->teacher_role,
+                city: $registration->city,
+                district: $registration->district,
             ));
 
             $log->update(['status' => 'sent']);

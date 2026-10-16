@@ -145,7 +145,9 @@ class RegistrationController extends Controller
             ]
             : [
                 'name' => $registration->name,
-                'program' => $registration->subjects ?? 'Pengajar',
+                'program' => $registration->teacher_role
+                    ? ($registration->teacher_role.($registration->subjects ? ' • '.$registration->subjects : ''))
+                    : ($registration->subjects ?? 'Pengajar'),
                 'package' => null,
                 'level' => $registration->education,
                 'mode' => null,

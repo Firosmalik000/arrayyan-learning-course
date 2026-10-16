@@ -16,6 +16,9 @@ class StoreTeacherRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:500'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'district' => ['nullable', 'string', 'max:100'],
+            'teacher_role' => ['nullable', 'string', 'max:100'],
             'education' => ['nullable', 'string', 'max:255'],
             'subjects' => ['nullable', 'string', 'max:255'],
             'experience' => ['nullable', 'string', 'max:500'],

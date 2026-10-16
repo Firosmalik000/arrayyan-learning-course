@@ -510,27 +510,27 @@ export default function AdminLayout({ children }) {
         <div className="min-h-screen bg-brand-shell text-slate-900">
             <div className="flex min-h-screen">
                 {/* Desktop Sidebar */}
-                <aside className="hidden w-72 flex-col border-r border-slate-200/50 bg-white/80 backdrop-blur-xl md:flex h-screen sticky top-0">
+                <aside className="hidden w-64 flex-col border-r border-slate-200/60 bg-white/90 backdrop-blur-xl md:flex h-screen sticky top-0">
                     {/* Sidebar Header */}
-                    <div className="shrink-0 border-b border-slate-100 px-5 py-5">
-                        <Link href="/admin" className="flex items-center gap-3 group">
+                    <div className="shrink-0 border-b border-slate-100 px-4 py-3.5">
+                        <Link href="/admin" className="flex items-center gap-2.5 group">
                             {appLogo ? (
-                                <img src={appLogo} alt="Logo" className="h-12 w-12 rounded-2xl object-contain shadow-brand transition-transform group-hover:scale-105" />
+                                <img src={appLogo} alt="Logo" className="h-9 w-9 rounded-xl object-contain shadow-brand transition-transform group-hover:scale-105" />
                             ) : (
-                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-gradient text-white shadow-brand transition-transform group-hover:scale-105">
-                                    <span className="text-sm font-bold tracking-wide">ALC</span>
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-gradient text-white shadow-brand transition-transform group-hover:scale-105">
+                                    <span className="text-xs font-bold tracking-wide">ALC</span>
                                 </div>
                             )}
                             <div>
-                                <p className="text-sm font-bold text-slate-800">Admin Console</p>
-                                <p className="text-xs font-medium text-brand-primary">Ar Rayyan Learning</p>
+                                <p className="text-xs font-bold text-slate-800">Admin Console</p>
+                                <p className="text-[11px] font-semibold text-brand-primary">Ar Rayyan LC</p>
                             </div>
                         </Link>
                     </div>
 
                     {/* Navigation */}
-                    <nav className="flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
-                        <div className="space-y-3">
+                    <nav className="flex-1 overflow-y-auto px-3 py-3 overscroll-contain">
+                        <div className="space-y-1.5">
                             {menu.map((item) => {
                                 if (!item.children) {
                                     const isActive = url === item.href;
@@ -676,24 +676,24 @@ export default function AdminLayout({ children }) {
                                 </div>
                             </div>
                         )}
-                        <div className="flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between px-3.5 py-2 sm:px-5 lg:px-6">
                             {/* Left: Mobile menu + Title */}
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-3">
                                 {/* Mobile Menu Button */}
                                 <button
                                     type="button"
                                     onClick={() => setIsMobileMenuOpen(true)}
-                                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 transition hover:bg-slate-200 md:hidden"
+                                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition hover:bg-slate-200 md:hidden"
                                 >
                                     {icons.menu}
                                 </button>
 
                                 {/* Breadcrumb / Title */}
                                 <div className="hidden sm:block">
-                                    <div className="flex items-center gap-2 text-sm">
+                                    <div className="flex items-center gap-1.5 text-xs">
                                         <span className="text-slate-400">Admin</span>
                                         <span className="text-slate-300">/</span>
-                                        <span className="font-medium text-slate-700">
+                                        <span className="font-semibold text-slate-700">
                                             {flatMenu.find((item) => item.href === url)?.label || 'Dashboard'}
                                         </span>
                                     </div>
@@ -701,20 +701,18 @@ export default function AdminLayout({ children }) {
                             </div>
 
                             {/* Right: Actions + Profile */}
-                            <div className="flex items-center gap-2 sm:gap-3">
-                                {/* Search & Notification buttons removed */}
-
+                            <div className="flex items-center gap-2">
                                 <Link
                                     href="/admin/notifikasi"
                                     title="Pusat Notifikasi"
-                                    className="relative rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 shadow-sm transition hover:border-brand-soft hover:text-slate-700"
+                                    className="relative rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-2xs transition hover:border-brand-soft hover:text-slate-700"
                                 >
                                     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
                                         <path d="M13.7 21a2 2 0 0 1-3.4 0" />
                                     </svg>
                                     {(pendingRegistrationCounts?.total ?? 0) > 0 && (
-                                        <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                                        <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
                                             {pendingRegistrationCounts.total > 99 ? '99+' : pendingRegistrationCounts.total}
                                         </span>
                                     )}
@@ -725,16 +723,16 @@ export default function AdminLayout({ children }) {
                                     <button
                                         type="button"
                                         onClick={() => setIsProfileOpen(!isProfileOpen)}
-                                        className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:border-brand-soft hover:shadow-md"
+                                        className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 shadow-2xs transition hover:border-brand-soft"
                                     >
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-gradient text-white">
+                                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-gradient text-white">
                                             <span className="text-xs font-bold">
                                                 {user.name?.charAt(0)?.toUpperCase() || 'A'}
                                             </span>
                                         </div>
                                         <div className="hidden text-left sm:block">
-                                            <p className="text-sm font-semibold text-slate-700">{user.name}</p>
-                                            <p className="text-xs text-slate-500">{user.email}</p>
+                                            <p className="text-xs font-bold text-slate-700 leading-tight">{user.name}</p>
+                                            <p className="text-[10px] text-slate-500 leading-tight">{user.email}</p>
                                         </div>
                                         <span className={`hidden text-slate-400 transition-transform sm:block ${isProfileOpen ? 'rotate-180' : ''}`}>
                                             {icons.chevronDown}
@@ -743,14 +741,14 @@ export default function AdminLayout({ children }) {
 
                                     {/* Dropdown Menu */}
                                     {isProfileOpen && (
-                                        <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-xl border border-slate-200 bg-white py-2 shadow-xl">
-                                            <div className="border-b border-slate-100 px-4 py-3 sm:hidden">
-                                                <p className="text-sm font-semibold text-slate-700">{user.name}</p>
-                                                <p className="text-xs text-slate-500">{user.email}</p>
+                                        <div className="absolute right-0 mt-1.5 w-52 origin-top-right rounded-xl border border-slate-200 bg-white py-1.5 shadow-lg z-30">
+                                            <div className="border-b border-slate-100 px-3 py-2 sm:hidden">
+                                                <p className="text-xs font-bold text-slate-700">{user.name}</p>
+                                                <p className="text-[10px] text-slate-500">{user.email}</p>
                                             </div>
                                             <Link
                                                 href="/admin/profile"
-                                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition hover:bg-slate-50"
+                                                className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-600 transition hover:bg-slate-50"
                                                 onClick={() => setIsProfileOpen(false)}
                                             >
                                                 {icons.profile}
@@ -758,17 +756,17 @@ export default function AdminLayout({ children }) {
                                             </Link>
                                             <Link
                                                 href="/admin/help"
-                                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 transition hover:bg-slate-50"
+                                                className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-600 transition hover:bg-slate-50"
                                                 onClick={() => setIsProfileOpen(false)}
                                             >
                                                 {icons.help}
                                                 Bantuan
                                             </Link>
-                                            <div className="my-2 border-t border-slate-100" />
+                                            <div className="my-1 border-t border-slate-100" />
                                             <button
                                                 type="button"
                                                 onClick={handleLogout}
-                                                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 transition hover:bg-red-50"
+                                                className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-red-600 transition hover:bg-red-50 cursor-pointer"
                                             >
                                                 {icons.logout}
                                                 Keluar
@@ -780,16 +778,16 @@ export default function AdminLayout({ children }) {
                         </div>
 
                         {/* Mobile Navigation Pills */}
-                        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:px-6 md:hidden">
+                        <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-2.5 sm:-mx-6 sm:px-6 md:hidden">
                             {flatMenu.map((item) => {
                                 const isActive = url === item.href;
                                 return (
                                     <Link
                                         key={`mobile-${item.href}`}
                                         href={item.href}
-                                        className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                                        className={`flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition ${
                                             isActive
-                                                ? 'bg-brand-primary text-white shadow-md'
+                                                ? 'bg-brand-primary text-white shadow-xs'
                                                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                         }`}
                                     >
@@ -802,7 +800,7 @@ export default function AdminLayout({ children }) {
                     </header>
 
                     {/* Main Content */}
-                    <main className="flex-1 w-full mx-auto max-w-[96rem] px-3 py-5 xs:px-4 xs:py-6 sm:px-6 sm:py-8 lg:px-8 2xl:px-10">{children}</main>
+                    <main className="flex-1 w-full mx-auto max-w-[96rem] p-3 xs:p-4 sm:p-5 lg:p-6">{children}</main>
                 </div>
             </div>
 

@@ -17,6 +17,9 @@ class TeacherRegistrationReceivedMail extends Mailable
         public string $teacherName,
         public string $ticket,
         public string $statusUrl,
+        public ?string $teacherRole = null,
+        public ?string $city = null,
+        public ?string $district = null,
     ) {}
 
     public function envelope(): Envelope
@@ -34,6 +37,9 @@ class TeacherRegistrationReceivedMail extends Mailable
                 'teacherName' => $this->teacherName,
                 'ticket' => $this->ticket,
                 'statusUrl' => $this->statusUrl,
+                'teacherRole' => $this->teacherRole,
+                'city' => $this->city,
+                'district' => $this->district,
                 'appName' => config('app.name'),
             ],
         );

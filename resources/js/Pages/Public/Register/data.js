@@ -63,6 +63,66 @@ export const CLASS_OPTIONS_BY_LEVEL = {
     ],
 };
 
+export const TEACHER_ROLE_OPTIONS = [
+    { value: 'Guru TK / Calistung', label: 'Guru TK / Calistung (Membaca, Menulis, Berhitung)' },
+    { value: 'Guru SD (Tematik & Mapel SD)', label: 'Guru SD (Tematik & Mata Pelajaran SD)' },
+    { value: 'Guru SMP (Mata Pelajaran SMP)', label: 'Guru SMP (Matematika, IPA, Bahasa Inggris, dll)' },
+    { value: 'Guru SMA / SMK (Saintek / Soshum)', label: 'Guru SMA / SMK (Saintek & Soshum)' },
+    { value: 'Guru Mengaji & Tahfidz', label: 'Guru Mengaji / Tahsin & Tahfidz Al-Qur\'an' },
+    { value: 'Guru Olimpiade Sains / OSN', label: 'Guru Olimpiade Sains & Matematika (OSN)' },
+    { value: 'Guru Persiapan UTBK / SNBT & Kedinasan', label: 'Guru Persiapan UTBK / SNBT & Kedinasan' },
+    { value: 'Guru Bahasa Asing', label: 'Guru Bahasa Asing (Bahasa Inggris, Arab, dll)' },
+    { value: 'Lainnya', label: 'Bidang / Posisi Mengajar Lainnya' },
+];
+
+export const TEACHER_LEVEL_OPTIONS = [
+    { value: 'TK / PAUD', label: 'TK / PAUD' },
+    { value: 'SD', label: 'SD' },
+    { value: 'SMP', label: 'SMP' },
+    { value: 'SMA / SMK', label: 'SMA / SMK' },
+    { value: 'Alumni / UTBK', label: 'Alumni / UTBK' },
+    { value: 'Mengaji / Tahfidz', label: 'Mengaji / Tahfidz' },
+    { value: 'Umum', label: 'Umum' },
+];
+
+export const DOMICILE_CITIES = [
+    'Kota Padang',
+    'Kota Bukittinggi',
+    'Kota Pariaman',
+    'Kota Padang Panjang',
+    'Kota Solok',
+    'Kota Payakumbuh',
+    'Kota Sawahlunto',
+    'Kab. Padang Pariaman',
+    'Kab. Agam',
+    'Kab. Pesisir Selatan',
+    'Kab. Solok',
+    'Kab. Tanah Datar',
+    'Kab. Lima Puluh Kota',
+    'Kab. Pasaman',
+    'Kab. Pasaman Barat',
+    'Kab. Sijunjung',
+    'Kab. Dharmasraya',
+    'Kab. Solok Selatan',
+    'Kab. Kepulauan Mentawai',
+    'Kota Pekanbaru',
+    'DKI Jakarta',
+];
+
+export const PADANG_DISTRICTS = [
+    'Koto Tangah',
+    'Padang Timur',
+    'Padang Barat',
+    'Padang Utara',
+    'Padang Selatan',
+    'Kuranji',
+    'Nanggalo',
+    'Lubuk Begalung',
+    'Lubuk Kilangan',
+    'Pauh',
+    'Bungus Teluk Kabung',
+];
+
 export const formFields = {
     student: {
         id: {
@@ -96,26 +156,32 @@ export const formFields = {
     },
     teacher: {
         id: {
-            name: 'Nama',
-            email: 'Email Pengajar',
-            address: 'Alamat',
-            education: 'Pendidikan',
-            subjects: 'Mata pelajaran dikuasai',
-            experience: 'Pengalaman',
-            contact: 'Kontak',
-            cv: 'Sertakan CV (PDF/DOC, maks 5MB)',
-            notes: 'Catatan tambahan',
+            name: 'Nama Lengkap',
+            email: 'Email',
+            city: 'Kota / Kabupaten',
+            district: 'Kecamatan',
+            address: 'Alamat Lengkap',
+            teacherRole: 'Jenjang yang Diajar',
+            education: 'Pendidikan Terakhir',
+            subjects: 'Keahlian / Mata Pelajaran',
+            experience: 'Pengalaman Mengajar',
+            contact: 'Nomor WhatsApp',
+            cv: 'Curriculum Vitae (CV)',
+            notes: 'Catatan Tambahan',
         },
         en: {
-            name: 'Name',
-            email: 'Teacher email',
-            address: 'Address',
-            education: 'Education',
-            subjects: 'Subjects expertise',
-            experience: 'Experience',
-            contact: 'Contact',
-            cv: 'Attach CV (PDF/DOC, max 5MB)',
-            notes: 'Additional notes',
+            name: 'Full Name',
+            email: 'Email',
+            city: 'City / Regency',
+            district: 'District',
+            address: 'Full Address',
+            teacherRole: 'Target Teaching Level',
+            education: 'Latest Education',
+            subjects: 'Expertise / Subjects',
+            experience: 'Teaching Experience',
+            contact: 'WhatsApp Number',
+            cv: 'Curriculum Vitae (CV)',
+            notes: 'Additional Notes',
         },
     },
 };
@@ -141,7 +207,10 @@ export const initialStudentForm = {
 export const initialTeacherForm = {
     name: '',
     email: '',
+    city: '',
+    district: '',
     address: '',
+    teacher_role: '',
     education: '',
     subjects: '',
     experience: '',

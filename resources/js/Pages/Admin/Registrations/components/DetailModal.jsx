@@ -56,9 +56,13 @@ export default function DetailModal({
                                 <>
                                     <Field label="Nama">{detailModal.data.name}</Field>
                                     <Field label="No. Tiket" mono>{detailModal.data.registration_no || '-'}</Field>
-                                    <Field label="Pendidikan">{detailModal.data.education || '-'}</Field>
+                                    <Field label="Jenjang yang Diajar">{detailModal.data.teacher_role || '-'}</Field>
+                                    <Field label="Domisili">
+                                        {[detailModal.data.district, detailModal.data.city].filter(Boolean).join(', ') || '-'}
+                                    </Field>
                                     <Field label="Alamat">{detailModal.data.address || '-'}</Field>
-                                    <Field label="Mata Pelajaran">{detailModal.data.subjects || '-'}</Field>
+                                    <Field label="Pendidikan">{detailModal.data.education || '-'}</Field>
+                                    <Field label="Keahlian / Mata Pelajaran">{detailModal.data.subjects || '-'}</Field>
                                     <Field label="Pengalaman">{detailModal.data.experience || '-'}</Field>
                                     <Field label="Kontak">{detailModal.data.contact || '-'}</Field>
                                     <Field label="Email">{detailModal.data.email || '-'}</Field>

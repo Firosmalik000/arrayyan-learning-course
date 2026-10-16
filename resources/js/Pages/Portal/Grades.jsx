@@ -51,9 +51,9 @@ export default function Grades() {
                 </div>
             )}
 
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
                 <div>
-                    <h1 className="font-display text-2xl font-extrabold tracking-tight text-slate-900">
+                    <h1 className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
                         Nilai Belajar
                     </h1>
                     <p className="mt-0.5 text-xs text-slate-500">
@@ -62,9 +62,9 @@ export default function Grades() {
                             : 'Evaluasi capaian pembelajaran siswa'}
                     </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2.5 w-full xs:w-auto">
+                <div className="flex flex-wrap items-center gap-2 w-full xs:w-auto">
                     {avg != null && (
-                        <span className="rounded-full bg-violet-50 border border-violet-200/80 px-3.5 py-1 text-xs font-bold text-brand-primary shadow-2xs">
+                        <span className="rounded-full bg-violet-50 border border-violet-200/80 px-3 py-1 text-xs font-bold text-brand-primary shadow-2xs">
                             Rata-rata {avg}
                         </span>
                     )}
@@ -74,7 +74,7 @@ export default function Grades() {
                             setTerm(e.target.value);
                             setCurrentPage(1);
                         }}
-                        className="w-full xs:w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-400 shadow-2xs cursor-pointer"
+                        className="w-full xs:w-auto rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-violet-400 shadow-2xs cursor-pointer"
                     >
                         <option value="">Semua Term</option>
                         {terms.map((t) => (
@@ -87,17 +87,17 @@ export default function Grades() {
             </div>
 
             {filtered.length === 0 ? (
-                <div className="rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-xs">
+                <div className="rounded-xl border border-slate-200/80 bg-white p-6 text-center shadow-2xs">
                     <p className="text-xs text-slate-400">Belum ada data nilai untuk anak yang dipilih.</p>
                     <Link
                         href="/portal"
-                        className="mt-3 inline-block rounded-full bg-slate-100 px-4 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-200 transition"
+                        className="mt-2.5 inline-block rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700 hover:bg-slate-200 transition"
                     >
                         Dashboard
                     </Link>
                 </div>
             ) : (
-                <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs">
+                <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs">
                     {/* Mobile Card List (< md) */}
                     <div className="block md:hidden divide-y divide-slate-100">
                         {displayedGrades.map((g, i) => {
@@ -112,17 +112,17 @@ export default function Grades() {
                                     : 'text-rose-700 bg-rose-50 border-rose-200';
 
                             return (
-                                <div key={i} className="p-4 space-y-3 hover:bg-slate-50/50 transition">
-                                    <div className="flex items-start justify-between gap-3">
+                                <div key={i} className="p-3 space-y-2 hover:bg-slate-50/50 transition">
+                                    <div className="flex items-start justify-between gap-2.5">
                                         <div className="min-w-0 flex-1">
-                                            <h4 className="font-display text-sm font-bold text-slate-900 truncate">
+                                            <h4 className="font-display text-xs sm:text-sm font-bold text-slate-900 truncate">
                                                 {g.subject}
                                             </h4>
-                                            <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                            <p className="text-[11px] text-slate-500 font-medium">
                                                 {g.class} • <span className="text-violet-700 font-semibold">{g.term}</span>
                                             </p>
                                         </div>
-                                        <span className={`inline-flex rounded-xl border px-3 py-1 font-display font-extrabold text-sm shrink-0 ${scoreColor}`}>
+                                        <span className={`inline-flex rounded-lg border px-2 py-0.5 font-display font-extrabold text-xs shrink-0 ${scoreColor}`}>
                                             {g.score}
                                         </span>
                                     </div>
@@ -131,14 +131,14 @@ export default function Grades() {
                                         <button
                                             type="button"
                                             onClick={() => setDetailRow(g)}
-                                            className="flex-1 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 transition active:scale-95"
+                                            className="flex-1 inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition active:scale-95"
                                         >
                                             Detail Nilai
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => handleCopy(g)}
-                                            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-600 hover:bg-slate-50 transition active:scale-95"
+                                            className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition active:scale-95"
                                             title="Salin Info"
                                         >
                                             Salin
@@ -151,15 +151,15 @@ export default function Grades() {
 
                     {/* Desktop Datatable (>= md) */}
                     <div className="hidden md:block overflow-x-auto">
-                        <table className="w-full min-w-[500px] text-left text-xs sm:text-sm">
+                        <table className="w-full min-w-[500px] text-left text-xs">
                             <thead>
-                                <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                    <th className="w-12 px-4 py-3.5 text-center">No</th>
-                                    <th className="w-14 px-3 py-3.5 text-center">Aksi</th>
-                                    <th className="px-5 py-3.5">Mata Pelajaran</th>
-                                    <th className="px-5 py-3.5">Term</th>
-                                    <th className="px-5 py-3.5">Kelas</th>
-                                    <th className="px-5 py-3.5 text-right">Nilai</th>
+                                <tr className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                                    <th className="w-10 px-3 py-2.5 text-center">No</th>
+                                    <th className="w-12 px-2.5 py-2.5 text-center">Aksi</th>
+                                    <th className="px-3.5 py-2.5">Mata Pelajaran</th>
+                                    <th className="px-3.5 py-2.5">Term</th>
+                                    <th className="px-3.5 py-2.5">Kelas</th>
+                                    <th className="px-3.5 py-2.5 text-right">Nilai</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">

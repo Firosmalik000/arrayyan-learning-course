@@ -49,4 +49,16 @@ class LandingContentTest extends TestCase
         $this->assertNotNull($olympiad);
         $this->assertSame('2026-03-15', $olympiad?->schedule?->toDateString());
     }
+
+    public function test_public_pages_share_auth_props_for_navbar_controls(): void
+    {
+        $response = $this->get(route('home'));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->has('auth')
+            ->where('auth.user', null)
+            ->where('auth.portal', null)
+        );
+    }
 }

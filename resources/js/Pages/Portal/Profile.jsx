@@ -21,26 +21,26 @@ export default function Profile() {
     return (
         <PortalLayout>
             <Head title="Profil Akun" />
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between">
                 <div>
-                    <h1 className="font-display text-2xl font-extrabold tracking-tight text-slate-900">
+                    <h1 className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
                         Profil Akun
                     </h1>
                 </div>
             </div>
 
-            <div className="mx-auto max-w-2xl space-y-6">
+            <div className="mx-auto max-w-2xl space-y-4">
                 {/* Account Card */}
-                <div className="rounded-3xl border border-slate-200/80 bg-white p-4 xs:p-6 sm:p-8 shadow-xs">
+                <div className="rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-2xs">
                     {/* User Header */}
-                    <div className="flex flex-col xs:flex-row items-start xs:items-center gap-3.5 sm:gap-4 border-b border-slate-100 pb-5">
-                        <span className="flex h-14 w-14 xs:h-16 xs:w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-purple-800 font-display text-xl xs:text-2xl font-extrabold text-white shadow-xs">
+                    <div className="flex flex-col xs:flex-row items-start xs:items-center gap-3 border-b border-slate-100 pb-3.5">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-purple-800 font-display text-base font-extrabold text-white shadow-2xs">
                             {(account.name || 'A')[0].toUpperCase()}
                         </span>
                         <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <p className="font-display text-lg xs:text-xl font-bold text-slate-900 truncate">{account.name}</p>
-                                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                <p className="font-display text-base font-bold text-slate-900 truncate">{account.name}</p>
+                                <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider shrink-0 ${
                                     isTeacher ? 'bg-amber-100 text-amber-800' : 'bg-violet-100 text-brand-primary'
                                 }`}>
                                     {isTeacher ? 'Pengajar' : 'Orang Tua'}

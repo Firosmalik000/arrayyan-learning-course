@@ -4,7 +4,7 @@
     $primaryColor = $colors['primary'] ?? '#7c3aed';
     $secondaryColor = $colors['secondary'] ?? '#f59e0b';
     $accentColor = $colors['accent'] ?? '#10b981';
-    $logoUrl = $seoSettings['contact']['logo']['url'] ?? null;
+    $logoUrl = !empty($seoSettings['contact']['logo']['url']) ? $seoSettings['contact']['logo']['url'] : null;
     $faviconUrl = $logoUrl ?: asset('favicon.ico');
 @endphp
 <!DOCTYPE html>
@@ -18,6 +18,7 @@
 
         @if ($faviconUrl)
             <link rel="icon" href="{{ $faviconUrl }}">
+            <link rel="shortcut icon" href="{{ $faviconUrl }}">
             <link rel="apple-touch-icon" href="{{ $faviconUrl }}">
         @endif
 

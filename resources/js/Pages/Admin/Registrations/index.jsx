@@ -586,6 +586,22 @@ export default function Registrations() {
                                                     <td className="px-5 py-4">
                                                         <div className="font-semibold text-slate-800">{item.name}</div>
                                                         <div className="font-mono text-[11px] text-slate-400 mt-0.5">{item.registration_no || '-'}</div>
+                                                        {item.teacher_role && (
+                                                            <div className="mt-1">
+                                                                <span className="inline-block text-[11px] font-semibold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-md">
+                                                                    {item.teacher_role}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {[item.district, item.city].filter(Boolean).length > 0 && (
+                                                            <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                                                                <svg className="w-3 h-3 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                </svg>
+                                                                <span>{[item.district, item.city].filter(Boolean).join(', ')}</span>
+                                                            </div>
+                                                        )}
                                                     </td>
                                                     <td className="px-5 py-4 text-slate-600">{item.education}</td>
                                                     <td className="px-5 py-4 text-slate-600 font-medium">{item.subjects}</td>

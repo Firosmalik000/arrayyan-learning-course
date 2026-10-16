@@ -353,48 +353,48 @@ export default function Schedule() {
                             </div>
 
                             {/* Stat Cards */}
-                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-2xs">
-                                    <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                                <div className="rounded-xl border border-slate-100 bg-white p-3 shadow-2xs">
+                                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                         Total Kelas
                                     </span>
-                                    <span className="mt-1 text-2xl font-extrabold text-slate-900">
+                                    <span className="mt-0.5 text-xl font-extrabold text-slate-900">
                                         {classes.length}
                                     </span>
                                 </div>
-                                <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-4 shadow-2xs">
-                                    <span className="block text-[11px] font-bold uppercase tracking-wider text-violet-600">
+                                <div className="rounded-xl border border-violet-100 bg-violet-50/40 p-3 shadow-2xs">
+                                    <span className="block text-[10px] font-bold uppercase tracking-wider text-violet-600">
                                         Total Siswa Terdaftar
                                     </span>
-                                    <span className="mt-1 text-2xl font-extrabold text-violet-700">
+                                    <span className="mt-0.5 text-xl font-extrabold text-violet-700">
                                         {classes.reduce((sum, c) => sum + (c.members_count || 0), 0)}
                                     </span>
                                 </div>
-                                <div className="col-span-2 sm:col-span-1 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 shadow-2xs">
-                                    <span className="block text-[11px] font-bold uppercase tracking-wider text-emerald-600">
+                                <div className="col-span-2 sm:col-span-1 rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 shadow-2xs">
+                                    <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-600">
                                         Pertemuan Tercatat
                                     </span>
-                                    <span className="mt-1 text-2xl font-extrabold text-emerald-700">
+                                    <span className="mt-0.5 text-xl font-extrabold text-emerald-700">
                                         {classes.reduce((sum, c) => sum + (c.attendances?.length || 0), 0)} Sesi
                                     </span>
                                 </div>
                             </div>
 
                             {/* Datatable & Mobile Cards List of Classes */}
-                            <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
+                            <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs">
                                 {/* Mobile Class Cards (< md) */}
                                 <div className="block md:hidden divide-y divide-slate-100">
                                     {classes.map((cls, idx) => (
-                                        <div key={cls.id} className="p-4 space-y-3 hover:bg-slate-50/50 transition">
+                                        <div key={cls.id} className="p-3 space-y-2 hover:bg-slate-50/50 transition">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0 flex-1">
-                                                    <span className="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-0.5 text-[10px] font-bold text-violet-700 mb-1">
+                                                    <span className="inline-flex items-center rounded-full bg-violet-50 px-2 py-0.5 text-[9px] font-bold text-violet-700 mb-1">
                                                         {cls.program_name}
                                                     </span>
-                                                    <h3 className="font-display font-bold text-sm text-slate-900 truncate">
+                                                    <h3 className="font-display font-bold text-xs sm:text-sm text-slate-900 truncate">
                                                         {cls.name}
                                                     </h3>
-                                                    <p className="text-[11px] text-slate-400 mt-0.5">
+                                                    <p className="text-[10px] text-slate-400 mt-0.5">
                                                         {cls.level ? `Jenjang ${cls.level}` : ''} {cls.total_sessions ? `• ${cls.total_sessions} Pertemuan` : ''}
                                                     </p>
                                                 </div>
@@ -406,27 +406,27 @@ export default function Schedule() {
                                                     cls.schedules.map((s) => (
                                                         <span
                                                             key={s.id}
-                                                            className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700"
+                                                            className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-700"
                                                         >
                                                             {s.day} {s.start_time}
                                                         </span>
                                                     ))
                                                 ) : (
-                                                    <span className="text-xs text-slate-400 italic">Belum ada jadwal</span>
+                                                    <span className="text-[11px] text-slate-400 italic">Belum ada jadwal</span>
                                                 )}
                                             </div>
 
-                                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                                                <span className="font-semibold text-slate-600">
+                                            <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-xs">
+                                                <span className="font-semibold text-slate-600 text-[11px]">
                                                     {cls.members_count} {cls.quota != null ? `/ ${cls.quota}` : ''} Siswa
                                                 </span>
                                                 <button
                                                     type="button"
                                                     onClick={() => setSelectedClassId(cls.id)}
-                                                    className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-violet-700 transition active:scale-95"
+                                                    className="inline-flex items-center gap-1 rounded-lg bg-violet-600 px-2.5 py-1 text-xs font-bold text-white shadow-2xs hover:bg-violet-700 transition active:scale-95"
                                                 >
                                                     <span>Kelola Kelas</span>
-                                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                                                     </svg>
                                                 </button>
@@ -435,7 +435,7 @@ export default function Schedule() {
                                     ))}
 
                                     {classes.length === 0 && (
-                                        <div className="p-8 text-center text-xs text-slate-400">
+                                        <div className="p-6 text-center text-xs text-slate-400">
                                             Belum ada kelas yang Anda ampu saat ini.
                                         </div>
                                     )}
@@ -443,16 +443,16 @@ export default function Schedule() {
 
                                 {/* Desktop Datatable (>= md) */}
                                 <div className="hidden md:block overflow-x-auto">
-                                    <table className="w-full min-w-[700px] text-left text-xs sm:text-sm">
+                                    <table className="w-full min-w-[700px] text-left text-xs">
                                         <thead>
-                                            <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                                <th className="w-12 px-4 py-3.5 text-center font-bold">No</th>
-                                                <th className="w-24 px-3 py-3.5 text-center font-bold">Aksi</th>
-                                                <th className="px-5 py-3.5 font-bold">Nama Kelas</th>
-                                                <th className="px-5 py-3.5 font-bold">Program</th>
-                                                <th className="px-5 py-3.5 font-bold">Jadwal Mingguan</th>
-                                                <th className="px-5 py-3.5 font-bold text-center">Peserta / Kuota</th>
-                                                <th className="px-5 py-3.5 font-bold text-center">Status</th>
+                                            <tr className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                                                <th className="w-10 px-3 py-2.5 text-center font-bold">No</th>
+                                                <th className="w-20 px-2.5 py-2.5 text-center font-bold">Aksi</th>
+                                                <th className="px-3.5 py-2.5 font-bold">Nama Kelas</th>
+                                                <th className="px-3.5 py-2.5 font-bold">Program</th>
+                                                <th className="px-3.5 py-2.5 font-bold">Jadwal Mingguan</th>
+                                                <th className="px-3.5 py-2.5 font-bold text-center">Peserta / Kuota</th>
+                                                <th className="px-3.5 py-2.5 font-bold text-center">Status</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">

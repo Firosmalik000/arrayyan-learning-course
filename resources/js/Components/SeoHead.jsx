@@ -34,7 +34,7 @@ export default function SeoHead({
     keywords,
 }) {
     const { language } = useI18n();
-    const { seoSettings, url: currentUrl } = usePage().props;
+    const { seoSettings, url: currentUrl, appLogo } = usePage().props;
 
     // Get settings with fallbacks
     const settings = seoSettings || {};
@@ -42,6 +42,9 @@ export default function SeoHead({
     const contact = settings.contact || {};
     const social = settings.social || {};
     const advanced = settings.advanced || {};
+
+    // Favicon URL
+    const faviconUrl = contact.logo?.url || appLogo || '/favicon.ico';
 
     // Resolve values with language support
     const siteName = general.siteName?.[language] || general.siteName?.id || 'Ar Rayyan Learning Course';
@@ -59,7 +62,7 @@ export default function SeoHead({
     const canonicalUrl = url || currentUrl || '';
 
     // OG Image - use provided or default
-    const ogImage = image || social.ogImage?.url || '';
+    const ogImage = image || social.ogImage?.url || contact.logo?.url || appLogo || '/images/logo.jpeg';
 
     // Twitter handle
     const twitterHandle = social.twitterHandle || '';
@@ -134,6 +137,11 @@ export default function SeoHead({
 
             {/* Canonical URL */}
             {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+
+            {/* Favicon & Touch Icons */}
+            <link rel="icon" href={faviconUrl} />
+            <link rel="shortcut icon" href={faviconUrl} />
+            <link rel="apple-touch-icon" href={faviconUrl} />
 
             {/* Open Graph Tags */}
             <meta property="og:type" content={type} />

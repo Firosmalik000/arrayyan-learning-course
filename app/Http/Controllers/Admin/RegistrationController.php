@@ -191,7 +191,7 @@ class RegistrationController extends Controller
 
         $header = $isStudent
             ? ['Tiket', 'Nama', 'Sekolah', 'Jenjang', 'Program', 'Kontak', 'Email', 'Status', 'Tanggal']
-            : ['Tiket', 'Nama', 'Pendidikan', 'Mapel', 'Kontak', 'Email', 'Status', 'Tanggal'];
+            : ['Tiket', 'Nama', 'Posisi Guru', 'Kota/Kabupaten', 'Kecamatan', 'Pendidikan', 'Mapel', 'Kontak', 'Email', 'Status', 'Tanggal'];
 
         return response()->streamDownload(function () use ($rows, $isStudent, $header): void {
             $handle = fopen('php://output', 'w');
@@ -211,6 +211,9 @@ class RegistrationController extends Controller
                 ] : [
                     $row->registration_no,
                     $row->name,
+                    $row->teacher_role,
+                    $row->city,
+                    $row->district,
                     $row->education,
                     $row->subjects,
                     $row->contact,
@@ -251,6 +254,9 @@ class RegistrationController extends Controller
             $teacher = Teacher::create([
                 'name' => $teacherRegistration->name,
                 'address' => $teacherRegistration->address,
+                'city' => $teacherRegistration->city,
+                'district' => $teacherRegistration->district,
+                'teacher_role' => $teacherRegistration->teacher_role,
                 'education' => $teacherRegistration->education,
                 'subjects' => $teacherRegistration->subjects,
                 'experience' => $teacherRegistration->experience,

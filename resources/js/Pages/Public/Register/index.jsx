@@ -17,6 +17,10 @@ import {
     honeypotStyle,
     LEVEL_OPTIONS,
     CLASS_OPTIONS_BY_LEVEL,
+    TEACHER_ROLE_OPTIONS,
+    TEACHER_LEVEL_OPTIONS,
+    DOMICILE_CITIES,
+    PADANG_DISTRICTS,
 } from './data';
 
 const localizeField = (value, lang) => {
@@ -273,16 +277,49 @@ export default function Register() {
         });
     };
 
+    const [selectedFileName, setSelectedFileName] = useState('');
+    const [selectedFileSize, setSelectedFileSize] = useState('');
+    const [selectedLevels, setSelectedLevels] = useState([]);
+
+    const toggleLevel = (level) => {
+        const next = selectedLevels.includes(level)
+            ? selectedLevels.filter((l) => l !== level)
+            : [...selectedLevels, level];
+        setSelectedLevels(next);
+        teacherForm.setData('teacher_role', next.join(', '));
+    };
+
+    const handleCvChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            teacherForm.setData('cv', file);
+            setSelectedFileName(file.name);
+            const sizeKb = file.size / 1024;
+            setSelectedFileSize(sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(2)} MB` : `${Math.round(sizeKb)} KB`);
+        } else {
+            teacherForm.setData('cv', null);
+            setSelectedFileName('');
+            setSelectedFileSize('');
+        }
+    };
+
+    const handleRemoveCv = () => {
+        teacherForm.setData('cv', null);
+        setSelectedFileName('');
+        setSelectedFileSize('');
+    };
+
     const handleTeacherSubmit = (event) => {
         event.preventDefault();
-        router.post('/pendaftaran/pengajar', {
-            ...teacherForm.data,
-            cv: teacherForm.data.cv,
-        }, {
+        teacherForm.post('/pendaftaran/pengajar', {
             forceFormData: true,
             preserveScroll: true,
-            onSuccess: () => teacherForm.reset(),
-            onError: (errors) => teacherForm.setError(errors),
+            onSuccess: () => {
+                teacherForm.reset();
+                setSelectedFileName('');
+                setSelectedFileSize('');
+                setSelectedLevels([]);
+            },
         });
     };
 
@@ -323,85 +360,174 @@ export default function Register() {
                     <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12 items-start">
                         {/* Left Column: Benefits & Steps (4 cols) */}
                         <div className="lg:col-span-5 space-y-8">
-                            {/* Steps Card */}
-                            <div className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-xs">
-                                <h3 className="font-display text-lg font-bold text-slate-900 mb-4">
-                                    Alur Mudah Pendaftaran
-                                </h3>
+                            {activeTab === 'student' ? (
+                                <>
+                                    {/* Steps Card Student */}
+                                    <div className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-xs">
+                                        <h3 className="font-display text-lg font-bold text-slate-900 mb-4">
+                                            Alur Mudah Pendaftaran
+                                        </h3>
 
-                                <div className="space-y-4 text-xs">
-                                    <div className="flex items-start gap-3">
-                                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-brand-primary font-bold">
-                                            1
-                                        </span>
-                                        <div>
-                                            <p className="font-bold text-slate-900">Isi Formulir Online</p>
-                                            <p className="text-slate-500 mt-0.5">Lengkapi biodata diri dan pilihan program belajar dengan teliti.</p>
+                                        <div className="space-y-4 text-xs">
+                                            <div className="flex items-start gap-3">
+                                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-brand-primary font-bold">
+                                                    1
+                                                </span>
+                                                <div>
+                                                    <p className="font-bold text-slate-900">Isi Formulir Online</p>
+                                                    <p className="text-slate-500 mt-0.5">Lengkapi biodata diri dan pilihan program belajar dengan teliti.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-start gap-3">
+                                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 font-bold">
+                                                    2
+                                                </span>
+                                                <div>
+                                                    <p className="font-bold text-slate-900">Konsultasi & Asesmen Awal</p>
+                                                    <p className="text-slate-500 mt-0.5">Tim kami akan menghubungi via WhatsApp untuk jadwal placement test gratis.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-start gap-3">
+                                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 font-bold">
+                                                    3
+                                                </span>
+                                                <div>
+                                                    <p className="font-bold text-slate-900">Penentuan Jadwal & Mulai Belajar</p>
+                                                    <p className="text-slate-500 mt-0.5">Pilih sesi waktu belajar yang nyaman dan mulai proses bimbingan.</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-start gap-3">
-                                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 font-bold">
-                                            2
-                                        </span>
-                                        <div>
-                                            <p className="font-bold text-slate-900">Konsultasi & Asesmen Awal</p>
-                                            <p className="text-slate-500 mt-0.5">Tim kami akan menghubungi via WhatsApp untuk jadwal placement test gratis.</p>
+                                    {/* Trust Perks Student */}
+                                    <div className="rounded-3xl border border-slate-200/80 bg-gradient-to-br from-violet-50/40 to-white p-6 sm:p-8 shadow-xs">
+                                        <h4 className="font-display text-base font-bold text-slate-900 mb-3">
+                                            Benefit Belajar di ALC
+                                        </h4>
+                                        <ul className="space-y-2.5 text-xs text-slate-600">
+                                            <li className="flex items-center gap-2">
+                                                <span className="text-brand-primary font-bold">✓</span>
+                                                <span>Pendampingan tutor sabar, komunikatif, dan terverifikasi</span>
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <span className="text-brand-primary font-bold">✓</span>
+                                                <span>Modul belajar terstruktur dan latihan soal berkala</span>
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <span className="text-brand-primary font-bold">✓</span>
+                                                <span>Laporan evaluasi belajar rutin untuk orang tua</span>
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <span className="text-brand-primary font-bold">✓</span>
+                                                <span>Akses bank soal dan konsultasi tugas sekolah</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    {/* WhatsApp Assistance Student */}
+                                    <div className="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-6 text-center">
+                                        <p className="text-xs font-bold uppercase text-emerald-800 tracking-wider">Butuh Bantuan Pendaftaran?</p>
+                                        <p className="mt-1 text-xs text-emerald-700 leading-relaxed">
+                                            Hubungi tim admin kami via WhatsApp jika mengalami kesulitan mengisi formulir.
+                                        </p>
+                                        <a
+                                            href="https://wa.me/6281234567890?text=Halo%20Admin%20ALC,%20saya%20butuh%20panduan%20mengisi%20formulir%20pendaftaran"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition"
+                                        >
+                                            <span>Chat WhatsApp Admin</span>
+                                        </a>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Steps Card Teacher */}
+                                    <div className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-xs">
+                                        <div className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-0.5 text-[11px] font-bold text-violet-700 mb-3">
+                                            <span>Rekrutmen Pendidik ALC</span>
+                                        </div>
+                                        <h3 className="font-display text-lg font-bold text-slate-900 mb-4">
+                                            Tahapan Seleksi Pengajar
+                                        </h3>
+
+                                        <div className="space-y-4 text-xs">
+                                            <div className="flex items-start gap-3">
+                                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-brand-primary font-bold">
+                                                    1
+                                                </span>
+                                                <div>
+                                                    <p className="font-bold text-slate-900">Kirim Formulir & CV</p>
+                                                    <p className="text-slate-500 mt-0.5">Lengkapi profil diri, wilayah domisili, posisi mengajar, dan unggah berkas CV.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-start gap-3">
+                                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 font-bold">
+                                                    2
+                                                </span>
+                                                <div>
+                                                    <p className="font-bold text-slate-900">Verifikasi & Wawancara</p>
+                                                    <p className="text-slate-500 mt-0.5">Tim akademik ALC akan menghubungi via WhatsApp untuk jadwal interview & microteaching.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-start gap-3">
+                                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 font-bold">
+                                                    3
+                                                </span>
+                                                <div>
+                                                    <p className="font-bold text-slate-900">Penugasan & Portal Pengajar</p>
+                                                    <p className="text-slate-500 mt-0.5">Aktivasi akun portal pengajar dan penugasan kelas les privat maupun reguler.</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-start gap-3">
-                                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 font-bold">
-                                            3
-                                        </span>
-                                        <div>
-                                            <p className="font-bold text-slate-900">Penentuan Jadwal & Mulai Belajar</p>
-                                            <p className="text-slate-500 mt-0.5">Pilih sesi waktu belajar yang nyaman dan mulai proses bimbingan.</p>
-                                        </div>
+                                    {/* Trust Perks Teacher */}
+                                    <div className="rounded-3xl border border-slate-200/80 bg-gradient-to-br from-violet-50/40 to-white p-6 sm:p-8 shadow-xs">
+                                        <h4 className="font-display text-base font-bold text-slate-900 mb-3">
+                                            Keuntungan Mengajar di ALC
+                                        </h4>
+                                        <ul className="space-y-2.5 text-xs text-slate-600">
+                                            <li className="flex items-center gap-2">
+                                                <span className="text-brand-primary font-bold">✓</span>
+                                                <span>Honor & insentif mengajar yang kompetitif dan transparan</span>
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <span className="text-brand-primary font-bold">✓</span>
+                                                <span>Jadwal mengajar fleksibel sesuai ketersediaan waktu luang Anda</span>
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <span className="text-brand-primary font-bold">✓</span>
+                                                <span>Dukungan kurikulum terarah, modul belajar, dan ribuan bank soal</span>
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <span className="text-brand-primary font-bold">✓</span>
+                                                <span>Akses Portal Pengajar digital untuk absensi dan rekap honor</span>
+                                            </li>
+                                        </ul>
                                     </div>
-                                </div>
-                            </div>
 
-                            {/* Trust Perks */}
-                            <div className="rounded-3xl border border-slate-200/80 bg-gradient-to-br from-violet-50/40 to-white p-6 sm:p-8 shadow-xs">
-                                <h4 className="font-display text-base font-bold text-slate-900 mb-3">
-                                    Benefit Belajar di ALC
-                                </h4>
-                                <ul className="space-y-2.5 text-xs text-slate-600">
-                                    <li className="flex items-center gap-2">
-                                        <span className="text-brand-primary font-bold">✓</span>
-                                        <span>Pendampingan tutor sabar, komunikatif, dan terverifikasi</span>
-                                    </li>
-                                    <li className="flex items-center gap-2">
-                                        <span className="text-brand-primary font-bold">✓</span>
-                                        <span>Modul belajar terstruktur dan latihan soal berkala</span>
-                                    </li>
-                                    <li className="flex items-center gap-2">
-                                        <span className="text-brand-primary font-bold">✓</span>
-                                        <span>Laporan evaluasi belajar rutin untuk orang tua</span>
-                                    </li>
-                                    <li className="flex items-center gap-2">
-                                        <span className="text-brand-primary font-bold">✓</span>
-                                        <span>Akses bank soal dan konsultasi tugas sekolah</span>
-                                    </li>
-                                </ul>
-                            </div>
-
-                            {/* WhatsApp Assistance */}
-                            <div className="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-6 text-center">
-                                <p className="text-xs font-bold uppercase text-emerald-800 tracking-wider">Butuh Bantuan Pendaftaran?</p>
-                                <p className="mt-1 text-xs text-emerald-700 leading-relaxed">
-                                    Hubungi tim admin kami via WhatsApp jika mengalami kesulitan mengisi formulir.
-                                </p>
-                                <a
-                                    href="https://wa.me/6281234567890?text=Halo%20Admin%20ALC,%20saya%20butuh%20panduan%20mengisi%20formulir%20pendaftaran"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition"
-                                >
-                                    <span>Chat WhatsApp Admin</span>
-                                </a>
-                            </div>
+                                    {/* WhatsApp Assistance Teacher */}
+                                    <div className="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-6 text-center">
+                                        <p className="text-xs font-bold uppercase text-emerald-800 tracking-wider">Pertanyaan Seputar Rekrutmen?</p>
+                                        <p className="mt-1 text-xs text-emerald-700 leading-relaxed">
+                                            Hubungi tim akademik ALC melalui WhatsApp untuk informasi seputar kualifikasi pengajar.
+                                        </p>
+                                        <a
+                                            href="https://wa.me/6281234567890?text=Halo%20Admin%20ALC,%20saya%20ingin%20bertanya%20mengenai%20lowongan%20pengajar"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition"
+                                        >
+                                            <span>Chat WhatsApp Admin</span>
+                                        </a>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         {/* Right Column: Registration Form (7 cols) */}
@@ -898,153 +1024,390 @@ export default function Register() {
 
                                 {/* TEACHER RECRUITMENT FORM */}
                                 {activeTab === 'teacher' && (
-                                    <form onSubmit={handleTeacherSubmit} className="space-y-5">
-                                        <div>
-                                            <h3 className="font-display text-lg font-bold text-slate-900">
+                                    <form onSubmit={handleTeacherSubmit} className="space-y-6">
+                                        <div className="border-b border-slate-100 pb-3">
+                                            <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200/60 mb-2">
+                                                <span>🌟 Pendaftaran Tenaga Pendidik ALC</span>
+                                            </div>
+                                            <h3 className="font-display text-xl sm:text-2xl font-bold text-slate-900">
                                                 {text.teacherTitle || 'Formulir Pendaftaran Pengajar ALC'}
                                             </h3>
-                                            <p className="text-xs text-slate-500 mt-0.5">
-                                                Mari bergabung menjadi bagian dari pendidik berkarakter dan profesional di ALC.
-                                            </p>
                                         </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {/* Nama Lengkap Pengajar */}
-                                            <div className="sm:col-span-2">
-                                                <label className={labelClass}>{teacherFields.name} *</label>
-                                                <input
-                                                    type="text"
-                                                    className={inputClass}
-                                                    placeholder="Nama Lengkap beserta Gelar (jika ada)"
-                                                    value={teacherForm.data.name}
-                                                    onChange={(e) => teacherForm.setData('name', e.target.value)}
-                                                    required
-                                                />
-                                                {teacherForm.errors.name && (
-                                                    <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.name}</p>
-                                                )}
+                                        {/* Global Error Notice if any */}
+                                        {Object.keys(teacherForm.errors).length > 0 && (
+                                            <div className="rounded-2xl border border-rose-200 bg-rose-50/90 p-4 text-xs text-rose-800 flex items-start gap-3">
+                                                <svg className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                </svg>
+                                                <div>
+                                                    <p className="font-bold">Mohon periksa kembali isian formulir Anda:</p>
+                                                    <ul className="mt-1 list-disc list-inside space-y-0.5 text-rose-700">
+                                                        {Object.values(teacherForm.errors).map((err, i) => (
+                                                             <li key={i}>{err}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* BAGIAN 1: IDENTITAS & KONTAK */}
+                                        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/40 p-4 sm:p-5 space-y-4">
+                                            <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-200/60">
+                                                <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-violet-100 text-brand-primary font-bold text-xs">
+                                                    1
+                                                </span>
+                                                <h4 className="text-sm font-bold text-slate-900">Data Pribadi & Kontak</h4>
                                             </div>
 
-                                            {/* Kontak / WhatsApp */}
-                                            <div>
-                                                <label className={labelClass}>{teacherFields.contact} *</label>
-                                                <input
-                                                    type="tel"
-                                                    className={inputClass}
-                                                    placeholder="No. WhatsApp Aktif"
-                                                    value={teacherForm.data.contact}
-                                                    onChange={(e) => teacherForm.setData('contact', e.target.value)}
-                                                    required
-                                                />
-                                                {teacherForm.errors.contact && (
-                                                    <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.contact}</p>
-                                                )}
-                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {/* Nama Lengkap */}
+                                                <div className="sm:col-span-2">
+                                                    <label className={labelClass}>
+                                                        {teacherFields.name} <span className="text-rose-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`${inputClass} ${teacherForm.errors.name ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : ''}`}
+                                                        placeholder="Nama lengkap beserta gelar (contoh: Muhammad Farhan, S.Pd.)"
+                                                        value={teacherForm.data.name}
+                                                        onChange={(e) => teacherForm.setData('name', e.target.value)}
+                                                        required
+                                                    />
+                                                    {teacherForm.errors.name && (
+                                                        <p className="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                                                            <span className="font-semibold">{teacherForm.errors.name}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
 
-                                            {/* Email Pengajar */}
-                                            <div>
-                                                <label className={labelClass}>{teacherFields.email || 'Email'} *</label>
-                                                <input
-                                                    type="email"
-                                                    className={inputClass}
-                                                    placeholder="emailanda@contoh.com"
-                                                    value={teacherForm.data.email}
-                                                    onChange={(e) => teacherForm.setData('email', e.target.value)}
-                                                    required
-                                                />
-                                                {teacherForm.errors.email && (
-                                                    <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.email}</p>
-                                                )}
-                                            </div>
+                                                {/* Nomor WhatsApp */}
+                                                <div>
+                                                    <label className={labelClass}>
+                                                        {teacherFields.contact} <span className="text-rose-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="tel"
+                                                        className={`${inputClass} ${teacherForm.errors.contact ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : ''}`}
+                                                        placeholder="08xxxxxxxxxx (WhatsApp aktif)"
+                                                        value={teacherForm.data.contact}
+                                                        onChange={(e) => teacherForm.setData('contact', e.target.value)}
+                                                        required
+                                                    />
+                                                    {teacherForm.errors.contact && (
+                                                        <p className="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                                                            <span className="font-semibold">{teacherForm.errors.contact}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
 
-                                            {/* Pendidikan Terakhir */}
-                                            <div>
-                                                <label className={labelClass}>{teacherFields.education} *</label>
-                                                <input
-                                                    type="text"
-                                                    className={inputClass}
-                                                    placeholder="Contoh: S1 Pendidikan Matematika, UPI"
-                                                    value={teacherForm.data.education}
-                                                    onChange={(e) => teacherForm.setData('education', e.target.value)}
-                                                    required
-                                                />
-                                                {teacherForm.errors.education && (
-                                                    <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.education}</p>
-                                                )}
-                                            </div>
-
-                                            {/* Bidang Mata Pelajaran yang Dikuasai */}
-                                            <div>
-                                                <label className={labelClass}>{teacherFields.subjects} *</label>
-                                                <input
-                                                    type="text"
-                                                    className={inputClass}
-                                                    placeholder="Contoh: Matematika SD/SMP, Fisika SMA"
-                                                    value={teacherForm.data.subjects}
-                                                    onChange={(e) => teacherForm.setData('subjects', e.target.value)}
-                                                    required
-                                                />
-                                                {teacherForm.errors.subjects && (
-                                                    <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.subjects}</p>
-                                                )}
-                                            </div>
-
-                                            {/* Pengalaman Mengajar */}
-                                            <div>
-                                                <label className={labelClass}>{teacherFields.experience}</label>
-                                                <input
-                                                    type="text"
-                                                    className={inputClass}
-                                                    placeholder="Contoh: 2 Tahun Guru Bimbel"
-                                                    value={teacherForm.data.experience}
-                                                    onChange={(e) => teacherForm.setData('experience', e.target.value)}
-                                                />
-                                            </div>
-
-                                            {/* Upload CV File */}
-                                            <div className="sm:col-span-2">
-                                                <label className={labelClass}>{teacherFields.cv} (.pdf/.docx)</label>
-                                                <input
-                                                    type="file"
-                                                    accept=".pdf,.doc,.docx"
-                                                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 p-2 text-xs file:mr-3 file:rounded-xl file:border-0 file:bg-violet-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-brand-primary hover:file:bg-violet-200"
-                                                    onChange={(e) => teacherForm.setData('cv', e.target.files[0])}
-                                                />
-                                                {teacherForm.errors.cv && (
-                                                    <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.cv}</p>
-                                                )}
-                                            </div>
-
-                                            {/* Alamat Domisili */}
-                                            <div className="sm:col-span-2">
-                                                <label className={labelClass}>{teacherFields.address} *</label>
-                                                <textarea
-                                                    rows="2"
-                                                    className={`${inputClass} resize-none`}
-                                                    placeholder="Alamat domisili saat ini..."
-                                                    value={teacherForm.data.address}
-                                                    onChange={(e) => teacherForm.setData('address', e.target.value)}
-                                                    required
-                                                />
-                                                {teacherForm.errors.address && (
-                                                    <p className="mt-1 text-xs text-rose-500">{teacherForm.errors.address}</p>
-                                                )}
-                                            </div>
-
-                                            {/* Catatan Tambahan */}
-                                            <div className="sm:col-span-2">
-                                                <label className={labelClass}>{teacherFields.notes}</label>
-                                                <textarea
-                                                    rows="2"
-                                                    className={`${inputClass} resize-none`}
-                                                    placeholder="Waktu ketersediaan mengajar atau catatan lainnya (opsional)..."
-                                                    value={teacherForm.data.notes}
-                                                    onChange={(e) => teacherForm.setData('notes', e.target.value)}
-                                                />
+                                                {/* Email Pengajar */}
+                                                <div>
+                                                    <label className={labelClass}>
+                                                        {teacherFields.email} <span className="text-rose-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="email"
+                                                        className={`${inputClass} ${teacherForm.errors.email ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : ''}`}
+                                                        placeholder="contoh: farhan@gmail.com"
+                                                        value={teacherForm.data.email}
+                                                        onChange={(e) => teacherForm.setData('email', e.target.value)}
+                                                        required
+                                                    />
+                                                    {teacherForm.errors.email && (
+                                                        <p className="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                                                            <span className="font-semibold">{teacherForm.errors.email}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="pt-4">
+                                        {/* BAGIAN 2: DOMISILI & LOKASI */}
+                                        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/40 p-4 sm:p-5 space-y-4">
+                                            <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-200/60">
+                                                <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-100 text-amber-700 font-bold text-xs">
+                                                    2
+                                                </span>
+                                                <h4 className="text-sm font-bold text-slate-900">Domisili Tempat Tinggal</h4>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {/* Kota / Kabupaten */}
+                                                <div>
+                                                    <label className={labelClass}>
+                                                        {teacherFields.city} <span className="text-rose-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        list="alc-city-list"
+                                                        className={`${inputClass} ${teacherForm.errors.city ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : ''}`}
+                                                        placeholder="Contoh: Kota Padang / Kab. Padang Pariaman"
+                                                        value={teacherForm.data.city}
+                                                        onChange={(e) => teacherForm.setData('city', e.target.value)}
+                                                        required
+                                                    />
+                                                    <datalist id="alc-city-list">
+                                                        {DOMICILE_CITIES.map((c) => (
+                                                            <option key={c} value={c} />
+                                                        ))}
+                                                    </datalist>
+                                                    {teacherForm.errors.city && (
+                                                        <p className="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                                                            <span className="font-semibold">{teacherForm.errors.city}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* Kecamatan */}
+                                                <div>
+                                                    <label className={labelClass}>
+                                                        {teacherFields.district} <span className="text-rose-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        list="alc-district-list"
+                                                        className={`${inputClass} ${teacherForm.errors.district ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : ''}`}
+                                                        placeholder="Contoh: Koto Tangah / Padang Timur / Pauh"
+                                                        value={teacherForm.data.district}
+                                                        onChange={(e) => teacherForm.setData('district', e.target.value)}
+                                                        required
+                                                    />
+                                                    <datalist id="alc-district-list">
+                                                        {PADANG_DISTRICTS.map((d) => (
+                                                            <option key={d} value={d} />
+                                                        ))}
+                                                    </datalist>
+                                                    {teacherForm.errors.district && (
+                                                        <p className="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                                                            <span className="font-semibold">{teacherForm.errors.district}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* Alamat Domisili Lengkap */}
+                                                <div className="sm:col-span-2">
+                                                    <label className={labelClass}>
+                                                        {teacherFields.address} <span className="text-rose-500">*</span>
+                                                    </label>
+                                                    <textarea
+                                                        rows="2"
+                                                        className={`${inputClass} resize-none ${teacherForm.errors.address ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : ''}`}
+                                                        placeholder="Alamat jalan, nomor rumah, RT/RW, atau patokan tempat tinggal"
+                                                        value={teacherForm.data.address}
+                                                        onChange={(e) => teacherForm.setData('address', e.target.value)}
+                                                        required
+                                                    />
+                                                    {teacherForm.errors.address && (
+                                                        <p className="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                                                            <span className="font-semibold">{teacherForm.errors.address}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* BAGIAN 3: JENJANG & KEAHLIAN PENGAJAR */}
+                                        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/40 p-4 sm:p-5 space-y-4">
+                                            <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-200/60">
+                                                <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 font-bold text-xs">
+                                                    3
+                                                </span>
+                                                <h4 className="text-sm font-bold text-slate-900">Jenjang & Keahlian Pengajar</h4>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {/* Jenjang yang Diajar */}
+                                                <div className="sm:col-span-2">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <label className={labelClass}>
+                                                            {teacherFields.teacherRole} <span className="text-rose-500">*</span>
+                                                        </label>
+                                                        <span className="text-[11px] text-slate-400">Pilih satu atau lebih jenjang</span>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {TEACHER_LEVEL_OPTIONS.map((lvl) => {
+                                                            const isSelected = selectedLevels.includes(lvl.value);
+                                                            return (
+                                                                <button
+                                                                    key={lvl.value}
+                                                                    type="button"
+                                                                    onClick={() => toggleLevel(lvl.value)}
+                                                                    className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition cursor-pointer select-none ${
+                                                                        isSelected
+                                                                            ? 'bg-brand-primary text-white shadow-xs'
+                                                                            : 'border border-slate-200 bg-white text-slate-700 hover:border-violet-300 hover:bg-violet-50/50'
+                                                                    }`}
+                                                                >
+                                                                    {isSelected && (
+                                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                                                        </svg>
+                                                                    )}
+                                                                    {lvl.label}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    {teacherForm.errors.teacher_role && (
+                                                        <p className="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                                                            <span className="font-semibold">{teacherForm.errors.teacher_role}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* Keahlian / Mata Pelajaran yang Dikuasai */}
+                                                <div className="sm:col-span-2">
+                                                    <label className={labelClass}>
+                                                        {teacherFields.subjects} <span className="text-rose-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`${inputClass} ${teacherForm.errors.subjects ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : ''}`}
+                                                        placeholder="Contoh: Matematika, Fisika, Biologi, Bahasa Inggris, Tahsin Al-Qur'an"
+                                                        value={teacherForm.data.subjects}
+                                                        onChange={(e) => teacherForm.setData('subjects', e.target.value)}
+                                                        required
+                                                    />
+                                                    {teacherForm.errors.subjects && (
+                                                        <p className="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                                                            <span className="font-semibold">{teacherForm.errors.subjects}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* Pendidikan Terakhir */}
+                                                <div>
+                                                    <label className={labelClass}>
+                                                        {teacherFields.education} <span className="text-rose-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={`${inputClass} ${teacherForm.errors.education ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : ''}`}
+                                                        placeholder="Contoh: S1 Pendidikan Matematika - UNP"
+                                                        value={teacherForm.data.education}
+                                                        onChange={(e) => teacherForm.setData('education', e.target.value)}
+                                                        required
+                                                    />
+                                                    {teacherForm.errors.education && (
+                                                        <p className="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                                                            <span className="font-semibold">{teacherForm.errors.education}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* Pengalaman Mengajar */}
+                                                <div>
+                                                    <label className={labelClass}>
+                                                        {teacherFields.experience}
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className={inputClass}
+                                                        placeholder="Contoh: 2 Tahun Tentor Bimbel / Privat (Opsional)"
+                                                        value={teacherForm.data.experience}
+                                                        onChange={(e) => teacherForm.setData('experience', e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* BAGIAN 4: BERKAS CV & CATATAN */}
+                                        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/40 p-4 sm:p-5 space-y-4">
+                                            <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-200/60">
+                                                <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-100 text-blue-700 font-bold text-xs">
+                                                    4
+                                                </span>
+                                                <h4 className="text-sm font-bold text-slate-900">Berkas CV & Catatan Tambahan</h4>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                {/* Upload CV */}
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-1.5">
+                                                        <label className={labelClass}>
+                                                            {teacherFields.cv} <span className="text-rose-500">*</span>
+                                                        </label>
+                                                        <span className="text-[11px] text-slate-400">PDF, DOC, DOCX (Maks. 5MB)</span>
+                                                    </div>
+
+                                                    {!selectedFileName ? (
+                                                        <label className="group relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-white p-5 transition hover:border-brand-primary hover:bg-violet-50/30 cursor-pointer">
+                                                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-brand-primary group-hover:scale-110 transition duration-200">
+                                                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                                </svg>
+                                                            </div>
+                                                            <p className="mt-2.5 text-xs font-bold text-slate-800">
+                                                                Pilih file CV <span className="text-slate-400 font-normal">atau seret file ke sini</span>
+                                                            </p>
+                                                            <input
+                                                                type="file"
+                                                                accept=".pdf,.doc,.docx"
+                                                                className="sr-only"
+                                                                onChange={handleCvChange}
+                                                                required
+                                                            />
+                                                        </label>
+                                                    ) : (
+                                                        <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3.5">
+                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+                                                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                                    </svg>
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <p className="text-xs font-bold text-slate-900 truncate">{selectedFileName}</p>
+                                                                    <p className="text-[11px] text-emerald-700 font-medium">{selectedFileSize}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <label className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer">
+                                                                    Ganti
+                                                                    <input
+                                                                        type="file"
+                                                                        accept=".pdf,.doc,.docx"
+                                                                        className="sr-only"
+                                                                        onChange={handleCvChange}
+                                                                    />
+                                                                </label>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={handleRemoveCv}
+                                                                    className="rounded-xl p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                                                                    title="Hapus file"
+                                                                >
+                                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {teacherForm.errors.cv && (
+                                                        <p className="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                                                            <span className="font-semibold">{teacherForm.errors.cv}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* Catatan Tambahan */}
+                                                <div>
+                                                    <label className={labelClass}>{teacherFields.notes}</label>
+                                                    <textarea
+                                                        rows="2"
+                                                        className={`${inputClass} resize-none`}
+                                                        placeholder="Hari/jam luang mengajar, preferensi mengajar offline/online, atau info penunjang lainnya..."
+                                                        value={teacherForm.data.notes}
+                                                        onChange={(e) => teacherForm.setData('notes', e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Honeypot & Submit */}
+                                        <div className="pt-2 space-y-3">
                                             <div aria-hidden="true" style={honeypotStyle}>
                                                 <input
                                                     type="text"
@@ -1054,20 +1417,25 @@ export default function Register() {
                                                     onChange={(e) => teacherForm.setData('website', e.target.value)}
                                                 />
                                             </div>
+
                                             <Button
                                                 type="submit"
                                                 variant="secondary"
                                                 size="lg"
                                                 loading={teacherForm.processing}
-                                                className="w-full"
+                                                className="w-full shadow-lg shadow-amber-700/10 cursor-pointer"
                                                 iconRight={
                                                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                                                     </svg>
                                                 }
                                             >
-                                                {text.submitTeacher || 'Kirim Lamaran Pengajar'}
+                                                {teacherForm.processing ? 'Mengirim Pendaftaran...' : (text.submitTeacher || 'Kirim Pendaftaran Pengajar ALC')}
                                             </Button>
+
+                                            <p className="text-center text-[11px] text-slate-400">
+                                                🔒 Data pribadi Anda dijaga kerahasiaannya dan hanya digunakan untuk keperluan seleksi di ALC.
+                                            </p>
                                         </div>
                                     </form>
                                 )}
