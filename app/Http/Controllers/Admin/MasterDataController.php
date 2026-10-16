@@ -327,7 +327,14 @@ class MasterDataController extends Controller
 
     public function bankSoal(): Response
     {
+        $bankSoalContent = PageContent::query()
+            ->where('slug', 'bank-soal')
+            ->first()?->content;
+
         return Inertia::render('Admin/BankSoal', [
+            'globalPasskey' => is_array($bankSoalContent)
+                ? (string) ($bankSoalContent['bankSoalPasskey'] ?? '')
+                : '',
             'bankSoalItems' => BankSoal::query()
                 ->latest()
                 ->get()

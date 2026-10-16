@@ -4,15 +4,40 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBankSoalRequest;
+use App\Http\Requests\UpdateBankSoalPasskeyRequest;
 use App\Http\Requests\UpdateBankSoalRequest;
+use App\Models\ActivityLog;
 use App\Models\BankSoal;
+use App\Models\PageContent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class BankSoalController extends Controller
 {
+    public function updateGlobalPasskey(UpdateBankSoalPasskeyRequest $request): RedirectResponse
+    {
+        $pageContent = PageContent::query()->firstOrNew(['slug' => 'bank-soal']);
+        $content = is_array($pageContent->content) ? $pageContent->content : [];
+        $content['bankSoalPasskey'] = trim((string) ($request->validated('passkey') ?? ''));
+
+        $pageContent->content = $content;
+        $pageContent->save();
+
+        Cache::forget('landing-content');
+
+        ActivityLog::record(
+            'bank-soal.passkey.ubah',
+            filled($content['bankSoalPasskey'])
+                ? 'Passkey global Bank Soal diperbarui.'
+                : 'Passkey global Bank Soal dinonaktifkan.',
+        );
+
+        return back()->with('success', 'Passkey global Bank Soal berhasil disimpan.');
+    }
+
     public function store(StoreBankSoalRequest $request): RedirectResponse
     {
         $data = $request->validated();

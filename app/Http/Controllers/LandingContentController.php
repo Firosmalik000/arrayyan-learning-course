@@ -194,6 +194,13 @@ class LandingContentController extends Controller
             $content['olympiadHighlights'],
         );
 
+        $storedBankSoalContent = PageContent::query()
+            ->where('slug', 'bank-soal')
+            ->first()?->content;
+        $content['bankSoalPasskey'] = is_array($storedBankSoalContent)
+            ? (string) ($storedBankSoalContent['bankSoalPasskey'] ?? '')
+            : '';
+
         $sections = $this->buildSectionPayloads($content);
 
         foreach (PageContent::whereIn('slug', self::SECTION_SLUGS)->get() as $existing) {

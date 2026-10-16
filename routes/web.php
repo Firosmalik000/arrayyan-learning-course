@@ -291,6 +291,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::post('/bank-soal', [BankSoalController::class, 'store'])
         ->middleware('role_or_permission:administrator|bank-soal.create,admin')
         ->name('banksoal.store');
+    Route::put('/bank-soal/passkey', [BankSoalController::class, 'updateGlobalPasskey'])
+        ->middleware('role_or_permission:administrator|bank-soal.edit,admin')
+        ->name('banksoal.passkey.update');
     Route::put('/bank-soal/{bankSoal}', [BankSoalController::class, 'update'])
         ->middleware('role_or_permission:administrator|bank-soal.edit,admin')
         ->name('banksoal.update');

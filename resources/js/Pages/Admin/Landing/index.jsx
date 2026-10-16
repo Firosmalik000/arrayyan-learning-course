@@ -11,7 +11,6 @@ import {
     subjects,
     programContent,
     bankSoalContent,
-    bankSoalPasskey,
     bankSoalPageContent,
     olympiadContent,
     sectionTitles,
@@ -76,7 +75,6 @@ const defaultContent = {
     subjects,
     programContent,
     bankSoalContent,
-    bankSoalPasskey,
     bankSoalPageContent,
     olympiadContent,
     sectionTitles,
@@ -1307,15 +1305,6 @@ export default function Landing({ landingContent, programs = [], bankSoalItems =
                                         label="Label Jumlah Soal"
                                         value={content.bankSoalContent?.[lang]?.questionCount}
                                         onChange={(value) => updateContent(`bankSoalContent.${lang}.questionCount`, value)}
-                                    />
-                                </div>
-                                <div>
-                                    <FieldLabel>Passkey Bank Soal</FieldLabel>
-                                    <input
-                                        type="text"
-                                        value={content.bankSoalPasskey || ''}
-                                        onChange={(e) => updateContent('bankSoalPasskey', e.target.value)}
-                                        className={inputClass}
                                     />
                                 </div>
                             </div>
