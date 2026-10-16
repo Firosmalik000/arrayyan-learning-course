@@ -12,22 +12,22 @@ export default function GradeSection({
         <div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="text-sm font-bold text-slate-800">Nilai</h3>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex w-full flex-wrap gap-2 sm:w-auto">
                     <input
                         type="text"
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
                         placeholder="Mata Pelajaran"
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 outline-none"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 outline-none xs:w-auto"
                     />
                     <input
                         type="text"
                         value={term}
                         onChange={(e) => setTerm(e.target.value)}
                         placeholder="Semester / Term"
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 outline-none"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 outline-none xs:w-auto"
                     />
-                    <button type="button" onClick={onSubmit} className="rounded-xl bg-brand-primary px-4 py-1.5 text-xs font-semibold text-white transition hover:opacity-90">
+                    <button type="button" onClick={onSubmit} className="w-full rounded-xl bg-brand-primary px-4 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 xs:w-auto">
                         Simpan Nilai
                     </button>
                 </div>

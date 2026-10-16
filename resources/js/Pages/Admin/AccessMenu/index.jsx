@@ -116,11 +116,6 @@ export default function AccessMenu() {
                         <h2 className="text-xl font-semibold text-slate-800 sm:text-2xl">
                             Akses Menu
                         </h2>
-                        <p className="mt-1 text-sm text-slate-600 sm:mt-2">
-                            Atur role dan hak akses menu. Full access mencakup
-                            create, view, edit, delete, approve, reject, export,
-                            import.
-                        </p>
                     </div>
                     {canEdit && (
                         <button
@@ -196,9 +191,6 @@ export default function AccessMenu() {
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm font-semibold text-slate-800">
                                     Akses untuk {activeRole?.name ?? 'Role'}
-                                </p>
-                                <p className="mt-1 text-xs text-slate-500">
-                                    Pilih menu dan action yang tersedia.
                                 </p>
                             </div>
                             {canEdit && (

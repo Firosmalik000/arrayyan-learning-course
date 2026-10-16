@@ -34,6 +34,7 @@ class UpdateStudentRequest extends FormRequest
             ],
             'package' => ['nullable', 'string', 'max:100'],
             'parent_contact' => ['nullable', 'string', 'max:255'],
+            'parent_email' => ['nullable', 'email', 'max:255'],
             'preferred_mode' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:500'],
             'is_active' => ['boolean'],
@@ -46,6 +47,7 @@ class UpdateStudentRequest extends FormRequest
             'name.required' => 'Nama pelajar wajib diisi.',
             'program_id.required' => 'Program wajib dipilih.',
             'program_id.exists' => 'Program tidak ditemukan atau tidak aktif.',
+            'parent_email.email' => 'Format email orang tua / wali tidak valid.',
         ];
     }
 }

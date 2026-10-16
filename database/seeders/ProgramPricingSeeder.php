@@ -20,12 +20,14 @@ class ProgramPricingSeeder extends Seeder
                 'level' => 'TK - SMA',
                 'description' => 'Bimbingan belajar kelompok dengan maksimal 5 siswa per kelas.',
                 'mode' => 'offline',
+                'duration' => '60 menit / sesi',
             ],
             'Privat' => [
                 'slug' => 'privat',
                 'level' => 'TK - SMA',
                 'description' => 'Bimbingan belajar intensif satu guru untuk satu siswa.',
                 'mode' => 'offline',
+                'duration' => '90 menit / sesi',
             ],
         ])->mapWithKeys(function (array $defaults, string $name): array {
             $program = Program::query()->firstOrCreate(

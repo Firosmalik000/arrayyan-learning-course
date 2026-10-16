@@ -233,7 +233,6 @@ export default function Registrations() {
                 {/* Header */}
                 <PageHeader
                     title="Pendaftaran"
-                    subtitle="Kelola pendaftaran murid dan pengajar yang masuk"
                     actions={canExport && (
                         <>
                             <a
@@ -291,12 +290,20 @@ export default function Registrations() {
                                     onChange={setStudentSearch}
                                     placeholder="Cari nama..."
                                 />
-                                <div className="flex flex-wrap gap-2">
-                                    <select value={filterLevel} onChange={(e) => setFilterLevel(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
+                                <div className="flex flex-col xs:flex-row gap-2 w-full sm:w-auto">
+                                    <select
+                                        value={filterLevel}
+                                        onChange={(e) => setFilterLevel(e.target.value)}
+                                        className="w-full xs:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none"
+                                    >
                                         <option value="">Semua Jenjang</option>
                                         {levelOptions.map((opt) => (<option key={opt} value={opt}>{opt}</option>))}
                                     </select>
-                                    <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
+                                    <select
+                                        value={filterStatus}
+                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                        className="w-full xs:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none"
+                                    >
                                         <option value="">Semua Status</option>
                                         <option value="pending">Pending</option>
                                         <option value="approved">Disetujui</option>
@@ -463,7 +470,11 @@ export default function Registrations() {
                                     onChange={setTeacherSearch}
                                     placeholder="Cari nama..."
                                 />
-                                <select value={teacherFilterStatus} onChange={(e) => setTeacherFilterStatus(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
+                                <select
+                                    value={teacherFilterStatus}
+                                    onChange={(e) => setTeacherFilterStatus(e.target.value)}
+                                    className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none"
+                                >
                                     <option value="">Semua Status</option>
                                     <option value="pending">Pending</option>
                                     <option value="approved">Disetujui</option>

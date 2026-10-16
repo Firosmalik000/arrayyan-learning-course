@@ -97,9 +97,9 @@ export default function ClassTable({
 
             {/* Filter Bar */}
             <div className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-1 flex-wrap items-center gap-2.5">
+                <div className="flex flex-1 flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5">
                     {/* Search */}
-                    <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+                    <div className="relative w-full sm:min-w-[200px] sm:max-w-xs">
                         <svg
                             className="absolute left-3 top-2.5 h-4 w-4 text-slate-400"
                             fill="none"
@@ -121,40 +121,42 @@ export default function ClassTable({
                         />
                     </div>
 
-                    {/* Program Filter */}
-                    <select
-                        value={filterProgram}
-                        onChange={(e) => {
-                            setFilterProgram(e.target.value);
-                            setCurrentPage(1);
-                        }}
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
-                    >
-                        <option value="">Semua Program</option>
-                        {programs.map((p) => (
-                            <option key={p.id} value={p.id}>
-                                {p.name}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="flex flex-col xs:flex-row items-center gap-2 w-full sm:w-auto">
+                        {/* Program Filter */}
+                        <select
+                            value={filterProgram}
+                            onChange={(e) => {
+                                setFilterProgram(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="w-full xs:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
+                        >
+                            <option value="">Semua Program</option>
+                            {programs.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                    {p.name}
+                                </option>
+                            ))}
+                        </select>
 
-                    {/* Status Filter */}
-                    <select
-                        value={filterStatus}
-                        onChange={(e) => {
-                            setFilterStatus(e.target.value);
-                            setCurrentPage(1);
-                        }}
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
-                    >
-                        <option value="">Semua Status</option>
-                        <option value="aktif">Aktif</option>
-                        <option value="nonaktif">Nonaktif</option>
-                    </select>
+                        {/* Status Filter */}
+                        <select
+                            value={filterStatus}
+                            onChange={(e) => {
+                                setFilterStatus(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="w-full xs:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
+                        >
+                            <option value="">Semua Status</option>
+                            <option value="aktif">Aktif</option>
+                            <option value="nonaktif">Nonaktif</option>
+                        </select>
+                    </div>
                 </div>
 
                 {/* Per Page */}
-                <div className="flex items-center gap-2 self-end sm:self-auto text-xs text-slate-500">
+                <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto text-xs text-slate-500 border-t sm:border-t-0 border-slate-100 pt-2 sm:pt-0">
                     <span>Tampilkan:</span>
                     <select
                         value={perPage}

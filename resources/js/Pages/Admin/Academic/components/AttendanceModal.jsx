@@ -110,39 +110,41 @@ export default function AttendanceModal({
         >
             <form onSubmit={handleSave} className="space-y-4">
                 {/* Date selection & quick controls */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
-                    <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl bg-slate-50 p-3 sm:p-3.5 border border-slate-100">
+                    <div className="flex flex-col xs:flex-row xs:items-center gap-2">
                         <label className="text-xs font-bold text-slate-700 shrink-0">
                             Tanggal Pertemuan:
                         </label>
-                        <input
-                            type="date"
-                            value={date}
-                            onChange={(e) => handleDateChange(e.target.value)}
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
-                            required
-                        />
-
-                        {/* Optional quick select from existing session dates */}
-                        {attendances && attendances.length > 0 && (
-                            <select
+                        <div className="flex flex-wrap items-center gap-2">
+                            <input
+                                type="date"
                                 value={date}
                                 onChange={(e) => handleDateChange(e.target.value)}
-                                className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
-                            >
-                                <option value={date}>Tanggal Dipilih ({date})</option>
-                                {Array.from(new Set(attendances.map((a) => a.date?.slice(0, 10)).filter(Boolean)))
-                                    .sort()
-                                    .map((d, i) => (
-                                        <option key={d} value={d}>
-                                            Sesi #{i + 1} ({d})
-                                        </option>
-                                    ))}
-                            </select>
-                        )}
+                                className="w-full xs:w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
+                                required
+                            />
+
+                            {/* Optional quick select from existing session dates */}
+                            {attendances && attendances.length > 0 && (
+                                <select
+                                    value={date}
+                                    onChange={(e) => handleDateChange(e.target.value)}
+                                    className="w-full xs:w-auto rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
+                                >
+                                    <option value={date}>Tanggal Dipilih ({date})</option>
+                                    {Array.from(new Set(attendances.map((a) => a.date?.slice(0, 10)).filter(Boolean)))
+                                        .sort()
+                                        .map((d, i) => (
+                                            <option key={d} value={d}>
+                                                Sesi #{i + 1} ({d})
+                                            </option>
+                                        ))}
+                                </select>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                    <div className="flex items-center gap-1.5 justify-end sm:justify-start border-t xs:border-t-0 border-slate-200/60 pt-2 xs:pt-0">
                         <span className="text-[11px] font-semibold text-slate-500 mr-1">Cepat:</span>
                         <button
                             type="button"
@@ -166,7 +168,7 @@ export default function AttendanceModal({
                     <div className="flex items-center gap-2 text-slate-500">
                         <span>Total Siswa: <strong className="text-slate-800">{members.length}</strong></span>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
                             Hadir: {counts.hadir}
                         </span>
@@ -226,7 +228,7 @@ export default function AttendanceModal({
                                 </div>
 
                                 {/* Status segmented pills */}
-                                <div className="flex items-center gap-1 self-end sm:self-auto pl-5 sm:pl-0">
+                                <div className="grid grid-cols-4 gap-1 w-full sm:flex sm:w-auto pl-5 sm:pl-0">
                                     {attendanceOptions.map((opt) => {
                                         const isSelected = currentStatus === opt.value;
                                         return (
@@ -239,7 +241,7 @@ export default function AttendanceModal({
                                                         [m.student_id]: opt.value,
                                                     }))
                                                 }
-                                                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                                                className={`rounded-lg py-1.5 sm:py-1 px-1 sm:px-2.5 text-center text-[11px] sm:text-xs font-bold transition ${
                                                     isSelected
                                                         ? opt.badgeClass
                                                         : 'bg-slate-100 text-slate-500 hover:bg-slate-200'

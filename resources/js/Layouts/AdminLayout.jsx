@@ -802,7 +802,7 @@ export default function AdminLayout({ children }) {
                     </header>
 
                     {/* Main Content */}
-                    <main className="flex-1 px-3 py-5 xs:px-4 xs:py-6 sm:px-6 sm:py-8 lg:px-8">{children}</main>
+                    <main className="flex-1 w-full mx-auto max-w-[96rem] px-3 py-5 xs:px-4 xs:py-6 sm:px-6 sm:py-8 lg:px-8 2xl:px-10">{children}</main>
                 </div>
             </div>
 

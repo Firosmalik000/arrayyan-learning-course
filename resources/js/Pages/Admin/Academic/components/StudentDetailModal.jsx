@@ -110,10 +110,10 @@ export default function StudentDetailModal({
                             Kontak & Domisili
                         </h5>
                         <div className="space-y-2 text-xs">
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                                <span className="text-slate-500">Kontak Orang Tua / HP</span>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="font-medium text-slate-800">{contact || '-'}</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border-b border-slate-100 pb-1.5 min-w-0">
+                                <span className="text-slate-500 shrink-0">Kontak Orang Tua / HP</span>
+                                <div className="flex items-center gap-1.5 flex-wrap sm:justify-end">
+                                    <span className="font-medium text-slate-800 break-all">{contact || '-'}</span>
                                     {waNumber && (
                                         <a
                                             href={`https://wa.me/${waNumber}`}
@@ -127,13 +127,22 @@ export default function StudentDetailModal({
                                     )}
                                 </div>
                             </div>
-                            <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                                <span className="text-slate-500">Email Wali</span>
-                                <span className="font-medium text-slate-800 text-right">{student.parent_email || '-'}</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border-b border-slate-100 pb-1.5 min-w-0">
+                                <span className="text-slate-500 shrink-0">Email Wali</span>
+                                {student.parent_email ? (
+                                    <a
+                                        href={`mailto:${student.parent_email}`}
+                                        className="font-medium text-brand-primary hover:underline break-all sm:text-right"
+                                    >
+                                        {student.parent_email}
+                                    </a>
+                                ) : (
+                                    <span className="font-medium text-slate-400 sm:text-right">-</span>
+                                )}
                             </div>
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-1 min-w-0">
                                 <span className="text-slate-500">Alamat Tempat Tinggal</span>
-                                <span className="font-medium text-slate-800 text-xs leading-relaxed">
+                                <span className="font-medium text-slate-800 text-xs leading-relaxed break-words">
                                     {student.address || '-'}
                                 </span>
                             </div>

@@ -79,10 +79,6 @@ export default function Dashboard() {
                         <h2 className="text-xl font-semibold text-slate-800 sm:text-2xl">
                             Dashboard Konten
                         </h2>
-                        <p className="mt-1 text-sm text-slate-600 sm:mt-2">
-                            Ringkasan aktivitas konten, pendaftaran, dan agenda
-                            tim ALC.
-                        </p>
                     </div>
                     <div className="flex flex-wrap gap-2 sm:gap-3">
                         <Link
@@ -134,9 +130,6 @@ export default function Dashboard() {
                         <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-slate-800">
                                 Grafik Pendaftaran
-                            </p>
-                            <p className="mt-1 hidden text-xs text-slate-500 sm:block">
-                                Perbandingan status pendaftar murid dan pengajar.
                             </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold sm:text-xs">
@@ -205,9 +198,6 @@ export default function Dashboard() {
                                 <p className="text-sm font-semibold text-slate-800">
                                     Konten Beranda
                                 </p>
-                                <p className="mt-1 hidden text-xs text-slate-500 sm:block">
-                                    Pantau status konten utama website ALC.
-                                </p>
                             </div>
                             <Link
                                 href="/admin/landing"
@@ -254,9 +244,6 @@ export default function Dashboard() {
                             <p className="text-sm font-semibold text-slate-800">
                                 Agenda Minggu Ini
                             </p>
-                            <p className="mt-1 hidden text-xs text-slate-500 sm:block">
-                                Jadwal kerja yang perlu diselesaikan.
-                            </p>
                         </div>
                         <div className="mt-4 space-y-3 sm:mt-5 sm:space-y-4">
                             {agenda.length > 0 ? (
@@ -291,9 +278,6 @@ export default function Dashboard() {
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm font-semibold text-slate-800">
                                     Antrian Pendaftaran
-                                </p>
-                                <p className="mt-1 hidden text-xs text-slate-500 sm:block">
-                                    Data terbaru pendaftar murid dan pengajar.
                                 </p>
                             </div>
                             <Link
@@ -361,9 +345,6 @@ export default function Dashboard() {
                         <div>
                             <p className="text-sm font-semibold text-slate-800">
                                 Aktivitas Terbaru
-                            </p>
-                            <p className="mt-1 hidden text-xs text-slate-500 sm:block">
-                                Pembaruan konten dari tim admin.
                             </p>
                         </div>
                         <div className="mt-4 space-y-3 sm:mt-5 sm:space-y-4">

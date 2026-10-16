@@ -144,9 +144,6 @@ export default function Users() {
                         <h2 className="text-xl font-semibold text-slate-800 sm:text-2xl">
                             User Administrator
                         </h2>
-                        <p className="mt-1 text-sm text-slate-600 sm:mt-2">
-                            Kelola akun admin, role, dan status akses.
-                        </p>
                     </div>
                     <div className="flex shrink-0 flex-wrap gap-2 sm:gap-3">
                         {canExport && (
@@ -198,9 +195,6 @@ export default function Users() {
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm font-semibold text-slate-800">
                                     Daftar User
-                                </p>
-                                <p className="mt-1 hidden text-xs text-slate-500 sm:block">
-                                    Status akses admin terbaru.
                                 </p>
                             </div>
                             <div className="flex shrink-0 flex-wrap gap-2">
@@ -352,9 +346,6 @@ export default function Users() {
                     <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
                         <p className="text-sm font-semibold text-slate-800">
                             Pending Invite
-                        </p>
-                        <p className="mt-1 hidden text-xs text-slate-500 sm:block">
-                            Daftar undangan yang belum diterima.
                         </p>
                         <div className="mt-4 space-y-2 text-sm text-slate-600 sm:mt-5 sm:space-y-3">
                             {invites.length > 0 ? (

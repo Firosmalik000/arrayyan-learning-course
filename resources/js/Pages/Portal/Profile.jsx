@@ -26,9 +26,6 @@ export default function Profile() {
                     <h1 className="font-display text-2xl font-extrabold tracking-tight text-slate-900">
                         Profil Akun
                     </h1>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                        Informasi akun {isTeacher ? 'pengajar' : 'orang tua'} dan data keterhubungan
-                    </p>
                 </div>
             </div>
 

@@ -56,6 +56,7 @@ class StudentTeacherManagementTest extends TestCase
             'program_id' => $program->id,
             'package' => '8 Pertemuan',
             'parent_contact' => '081234',
+            'parent_email' => 'wali@example.com',
             'preferred_mode' => 'Online',
             'notes' => 'Catatan',
             'is_active' => true,
@@ -68,6 +69,7 @@ class StudentTeacherManagementTest extends TestCase
         $this->assertDatabaseHas('students', [
             'id' => $student->id,
             'name' => 'Murid Baru',
+            'parent_email' => 'wali@example.com',
             'program_id' => $program->id,
             'program' => 'Reguler',
             'updated_by' => $user->id,
@@ -175,5 +177,26 @@ class StudentTeacherManagementTest extends TestCase
             'is_active' => false,
             'updated_by' => $user->id,
         ]);
+    }
+
+    public function test_admin_can_view_students_list_with_email(): void
+    {
+        $user = $this->actingAsAdmin();
+        Student::create([
+            'name' => 'Murid Email',
+            'level' => 'SD',
+            'program' => 'Reguler',
+            'parent_email' => 'ortu.murid@example.com',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)
+            ->get(route('admin.students'));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Admin/Students', false)
+            ->where('students.0.parent_email', 'ortu.murid@example.com')
+        );
     }
 }

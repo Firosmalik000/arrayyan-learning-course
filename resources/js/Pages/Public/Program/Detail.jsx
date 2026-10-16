@@ -134,9 +134,6 @@ export default function ProgramDetail() {
                                     {program.isFull ? 'Kuota Penuh' : `Sisa ${program.quotaRemaining} Kursi`}
                                 </Badge>
                             )}
-                            <Badge variant="neutral" size="md">
-                                Pendaftaran {program?.isFull ? 'Ditutup' : 'Aktif'}
-                            </Badge>
                         </div>
 
                         <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
@@ -189,9 +186,6 @@ export default function ProgramDetail() {
                                                 <h2 id="price-options-title" className="font-display text-2xl font-bold text-slate-900">
                                                     Pilihan Pertemuan & Harga
                                                 </h2>
-                                                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
-                                                    Bandingkan pilihan berdasarkan jenjang dan frekuensi belajar. Harga berlaku per bulan.
-                                                </p>
                                             </div>
                                             <span className="text-xs font-semibold text-slate-500">
                                                 Mulai {formatRupiah(program.price)}
@@ -216,9 +210,11 @@ export default function ProgramDetail() {
                                                                     <p className="text-sm font-semibold text-slate-800">
                                                                         {option.sessions} pertemuan / bulan
                                                                     </p>
-                                                                    <p className="mt-0.5 text-xs text-slate-500">
-                                                                        {option.intensity || option.schedule || 'Jadwal disepakati bersama'}
-                                                                    </p>
+                                                                    {(option.intensity || option.schedule) && (
+                                                                        <p className="mt-0.5 text-xs text-slate-500">
+                                                                            {option.intensity || option.schedule}
+                                                                        </p>
+                                                                    )}
                                                                 </div>
                                                                 <p className="self-center text-sm font-extrabold tabular-nums text-violet-700">
                                                                     {formatRupiah(option.price)}
@@ -228,10 +224,6 @@ export default function ProgramDetail() {
                                                     </div>
                                                 </div>
                                             ))}
-                                        </div>
-
-                                        <div className="mt-4 rounded-2xl bg-amber-50 px-5 py-4 text-sm leading-relaxed text-amber-900">
-                                            Harga, kapasitas kelas, dan jadwal mengikuti pilihan di atas. Tim ALC akan mengonfirmasi ketersediaan jadwal setelah pendaftaran.
                                         </div>
                                     </section>
                                 )}
@@ -245,7 +237,7 @@ export default function ProgramDetail() {
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                                                 </svg>
                                             </span>
-                                            <span>Mata Pelajaran yang Dipelajari</span>
+                                            <span>Fokus & Keunggulan Program</span>
                                         </h3>
 
                                         <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2.5 xs:gap-3">
@@ -387,7 +379,7 @@ export default function ProgramDetail() {
                                         )}
                                         {program.duration && (
                                             <div className="flex items-center justify-between">
-                                                <span className="text-slate-500 font-medium">Durasi</span>
+                                                <span className="text-slate-500 font-medium">Durasi per Sesi</span>
                                                 <span className="font-bold text-slate-900">{program.duration}</span>
                                             </div>
                                         )}
@@ -403,10 +395,6 @@ export default function ProgramDetail() {
                                                 <span className="font-bold text-slate-900">{program.teacher.name}</span>
                                             </div>
                                         )}
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-slate-500 font-medium">Jumlah Mapel</span>
-                                            <span className="font-bold text-slate-900">{program.subjects.length} Bidang Studi</span>
-                                        </div>
                                         {program.quota != null && (
                                             <div>
                                                 <div className="flex items-center justify-between">
@@ -421,10 +409,6 @@ export default function ProgramDetail() {
                                                 </div>
                                             </div>
                                         )}
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-slate-500 font-medium">Konsultasi Awal</span>
-                                            <span className="font-bold text-emerald-600">Gratis (Placement Test)</span>
-                                        </div>
                                     </div>
 
                                     {/* CTAs */}

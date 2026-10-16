@@ -158,7 +158,6 @@ export default function Invoices() {
             <div className="space-y-6">
                 <PageHeader
                     title="Keuangan"
-                    subtitle={`Kelola tagihan dan verifikasi pembayaran — total lunas ${formatRupiah(stats.paid_total)}`}
                     actions={canExport && (
                         <a
                             href={`/admin/keuangan/export${status ? `?status=${status}` : ''}`}
@@ -168,7 +167,6 @@ export default function Invoices() {
                         </a>
                     )}
                 />
-                <p className="-mt-3 text-xs text-slate-500">Export mengikuti filter status yang aktif.</p>
 
                 <FlashMessage flash={flash} />
 
@@ -181,7 +179,11 @@ export default function Invoices() {
                             onChange={setSearch}
                             placeholder="Cari no. tagihan / nama..."
                         />
-                        <select value={status} onChange={(e) => setStatus(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
+                        <select
+                            value={status}
+                            onChange={(e) => setStatus(e.target.value)}
+                            className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none"
+                        >
                             <option value="">Semua Status</option>
                             <option value="unpaid">Belum Bayar</option>
                             <option value="pending">Menunggu Konfirmasi</option>

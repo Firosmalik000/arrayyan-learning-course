@@ -23,6 +23,7 @@ export default function ProgramCard({
     const mode = localize(program.mode);
     const subjects = Array.isArray(program.subjects) ? program.subjects : [];
     const imageUrl = program.image_url || program.imageUrl;
+    const duration = program.duration;
 
     const price = useMemo(() => {
         const prices = [];
@@ -102,11 +103,18 @@ export default function ProgramCard({
 
                 {/* Floating Badges */}
                 <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
-                    {level && (
-                        <span className="rounded-full bg-slate-900/80 px-3 py-1 text-[11px] font-bold text-white shadow-xs backdrop-blur-md">
-                            {level}
-                        </span>
-                    )}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                        {level && (
+                            <span className="rounded-full bg-slate-900/80 px-3 py-1 text-[11px] font-bold text-white shadow-xs backdrop-blur-md">
+                                {level}
+                            </span>
+                        )}
+                        {duration && (
+                            <span className="rounded-full bg-violet-950/80 px-2.5 py-1 text-[10px] font-bold text-violet-100 shadow-xs backdrop-blur-md">
+                                {duration}
+                            </span>
+                        )}
+                    </div>
                     {mode && (
                         <Badge variant={modeVariant} size="xs" className="shadow-xs backdrop-blur-md bg-white/95">
                             {mode}

@@ -235,19 +235,23 @@ export default function PortalLayout({ children }) {
 
             {/* Mobile Drawer (Layar HP / Tablet) */}
             {isMobileMenuOpen && (
-                <div className="fixed inset-0 z-50 flex md:hidden">
+                <div className="fixed inset-0 z-50 flex md:hidden animate-in fade-in duration-200">
                     <div
                         className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
                         onClick={() => setIsMobileMenuOpen(false)}
+                        aria-hidden="true"
                     />
-                    <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white pt-5 pb-4 shadow-xl">
-                        <div className="flex items-center justify-between px-5 pb-4 border-b border-slate-100">
+                    <div className="relative flex w-full max-w-[280px] xs:max-w-xs flex-1 flex-col bg-white pt-4 pb-4 shadow-2xl animate-in slide-in-from-left duration-250 ease-out">
+                        <div className="flex items-center justify-between px-4 pb-3.5 border-b border-slate-100">
                             <div className="flex items-center gap-2.5">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-600 font-display text-sm font-black text-white">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-purple-800 font-display text-sm font-black text-white shadow-brand">
                                     ALC
                                 </div>
-                                <div>
-                                    <span className="font-display font-bold text-slate-900 text-sm">
+                                <div className="leading-tight">
+                                    <span className="block font-display font-bold text-slate-900 text-sm">
+                                        Ar Rayyan LC
+                                    </span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-violet-700">
                                         Portal {typeLabel}
                                     </span>
                                 </div>
@@ -255,14 +259,18 @@ export default function PortalLayout({ children }) {
                             <button
                                 type="button"
                                 onClick={() => setIsMobileMenuOpen(false)}
-                                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+                                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+                                aria-label="Tutup menu"
                             >
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
-                        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+                        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+                            <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Menu Navigasi
+                            </div>
                             {menuItems.map((item) => {
                                 const isActive = path === item.href;
                                 return (
@@ -270,19 +278,34 @@ export default function PortalLayout({ children }) {
                                         key={item.href}
                                         href={item.href}
                                         onClick={() => setIsMobileMenuOpen(false)}
-                                        className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold ${
+                                        className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition ${
                                             isActive
-                                                ? 'bg-brand-primary text-white font-bold'
+                                                ? 'bg-brand-primary text-white font-bold shadow-xs'
                                                 : 'text-slate-600 hover:bg-slate-100'
                                         }`}
                                     >
-                                        {item.icon}
+                                        <span className={isActive ? 'text-white' : 'text-slate-400'}>
+                                            {item.icon}
+                                        </span>
                                         <span>{item.label}</span>
                                     </Link>
                                 );
                             })}
+
+                            <div className="pt-2">
+                                <Link
+                                    href="/"
+                                    target="_blank"
+                                    className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                                >
+                                    <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                    <span>Website Utama ALC</span>
+                                </Link>
+                            </div>
                         </div>
-                        <div className="p-4 border-t border-slate-100 space-y-3 bg-slate-50/50">
+                        <div className="p-3 border-t border-slate-100 space-y-3 bg-slate-50/50">
                             <div className="flex items-center gap-2.5 min-w-0">
                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-xs font-black text-brand-primary">
                                     {userInitials}
@@ -299,7 +322,7 @@ export default function PortalLayout({ children }) {
                             <button
                                 type="button"
                                 onClick={logout}
-                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-100 transition cursor-pointer"
+                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-rose-50 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-100 transition active:scale-95 cursor-pointer"
                             >
                                 Keluar dari Akun
                             </button>
@@ -317,7 +340,7 @@ export default function PortalLayout({ children }) {
                         <button
                             type="button"
                             onClick={() => setIsMobileMenuOpen(true)}
-                            className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-100 md:hidden shrink-0 cursor-pointer"
+                            className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-100 md:hidden shrink-0 cursor-pointer active:scale-95"
                             aria-label="Buka menu navigasi"
                         >
                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -334,7 +357,7 @@ export default function PortalLayout({ children }) {
                     {/* Right / Center: Child Switcher for Parents */}
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         {!isTeacher && students.length > 0 && (
-                            <div className="flex items-center gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl border border-violet-200/80 bg-violet-50/70 px-2 sm:px-3 py-1 sm:py-1.5 shadow-2xs max-w-[210px] xs:max-w-[280px] sm:max-w-none">
+                            <div className="flex items-center gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl border border-violet-200/80 bg-violet-50/70 px-2 sm:px-3 py-1 sm:py-1.5 shadow-2xs max-w-[190px] xs:max-w-[260px] sm:max-w-none">
                                 <span className="text-xs sm:text-sm shrink-0">🎓</span>
                                 <span className="text-[11px] sm:text-xs font-bold text-violet-900 hidden sm:inline shrink-0">
                                     Anak:
@@ -349,7 +372,7 @@ export default function PortalLayout({ children }) {
                                             value={activeStudent?.id ?? ''}
                                             onChange={(e) => handleSwitchStudent(e.target.value)}
                                             disabled={isSwitching}
-                                            className="max-w-[120px] xs:max-w-[170px] sm:max-w-xs truncate rounded-lg border border-violet-200 bg-white py-0.5 sm:py-1 pl-2 pr-7 text-[11px] sm:text-xs font-extrabold text-brand-primary shadow-2xs outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 disabled:opacity-50 cursor-pointer"
+                                            className="max-w-[110px] xs:max-w-[160px] sm:max-w-xs truncate rounded-lg border border-violet-200 bg-white py-0.5 sm:py-1 pl-2 pr-7 text-[11px] sm:text-xs font-extrabold text-brand-primary shadow-2xs outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 disabled:opacity-50 cursor-pointer"
                                         >
                                             {students.map((child) => (
                                                 <option key={child.id} value={child.id}>
@@ -358,8 +381,8 @@ export default function PortalLayout({ children }) {
                                             ))}
                                         </select>
                                         {isSwitching && (
-                                            <span className="ml-1.5 text-[10px] text-violet-600 animate-pulse font-bold shrink-0">
-                                                Ganti...
+                                            <span className="ml-1 text-[10px] text-violet-600 animate-pulse font-bold shrink-0">
+                                                ...
                                             </span>
                                         )}
                                     </div>
@@ -381,7 +404,7 @@ export default function PortalLayout({ children }) {
                 </header>
 
                 {/* Main Content Body */}
-                <main className="flex-1 p-3.5 xs:p-4 sm:p-6 lg:p-8 2xl:p-10 max-w-7xl 2xl:max-w-[96rem] w-full mx-auto">
+                <main className="flex-1 p-3 xs:p-4 sm:p-6 lg:p-8 2xl:p-10 max-w-7xl 2xl:max-w-[96rem] w-full mx-auto">
                     {children}
                 </main>
             </div>

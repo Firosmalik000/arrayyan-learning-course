@@ -34,11 +34,49 @@ const icons = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
         </svg>
     ),
+    mail: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+        </svg>
+    ),
+    phone: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+        </svg>
+    ),
+    card: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5.25A2.25 2.25 0 003 8.25v7.5A2.25 2.25 0 005.25 18H19.5a1.5 1.5 0 001.5-1.5v-6a1.5 1.5 0 00-1.5-1.5H14m-4 0V6m0 0L8.5 7.5M10 6l-1.5 1.5M14 18h4" />
+        </svg>
+    ),
+    academic: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+        </svg>
+    ),
+    mapPin: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+        </svg>
+    ),
 };
 
 const statusBadge = (isActive) => (
     <StatusBadge tone={isActive ? 'emerald' : 'slate'}>{isActive ? 'Aktif' : 'Nonaktif'}</StatusBadge>
 );
+
+const getWhatsAppUrl = (phone) => {
+    if (!phone) return null;
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (!cleanPhone) return null;
+    const waNumber = cleanPhone.startsWith('0')
+        ? '62' + cleanPhone.slice(1)
+        : cleanPhone.startsWith('62')
+          ? cleanPhone
+          : '62' + cleanPhone;
+    return `https://wa.me/${waNumber}`;
+};
 
 export default function Students() {
     const { students: studentsData = [], programs = [], allowedActions = {}, flash } = usePage().props;
@@ -54,6 +92,7 @@ export default function Students() {
         program: student.program ?? '',
         package: student.package ?? '',
         parent_contact: student.parent_contact ?? '',
+        parent_email: student.parent_email ?? '',
         preferred_mode: student.preferred_mode ?? '',
         notes: student.notes ?? '',
         is_active: student.is_active ?? true,
@@ -83,6 +122,7 @@ export default function Students() {
         program_id: '',
         package: '',
         parent_contact: '',
+        parent_email: '',
         preferred_mode: '',
         notes: '',
         is_active: true,
@@ -133,6 +173,7 @@ export default function Students() {
             program_id: student.program_id ? String(student.program_id) : '',
             package: student.package,
             parent_contact: student.parent_contact,
+            parent_email: student.parent_email ?? '',
             preferred_mode: student.preferred_mode,
             notes: student.notes,
             is_active: Boolean(student.is_active),
@@ -164,7 +205,6 @@ export default function Students() {
             <div className="space-y-6">
                 <PageHeader
                     title="Pelajar"
-                    subtitle="Data siswa aktif yang terdaftar di ALC"
                 />
 
                 <FlashMessage flash={flash} />
@@ -187,11 +227,11 @@ export default function Students() {
                             onChange={setSearch}
                             placeholder="Cari pelajar..."
                         />
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
                             <select
                                 value={filterLevel}
                                 onChange={(e) => setFilterLevel(e.target.value)}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none sm:w-auto"
                             >
                                 <option value="">Semua Jenjang</option>
                                 {resolvedLevelOptions.map((opt) => (
@@ -201,7 +241,7 @@ export default function Students() {
                             <select
                                 value={filterStatus}
                                 onChange={(e) => setFilterStatus(e.target.value)}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none sm:w-auto"
                             >
                                 <option value="">Semua Status</option>
                                 <option value="Aktif">Aktif</option>
@@ -303,27 +343,204 @@ export default function Students() {
             <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title="Detail Pelajar" size="lg">
                 {detailModal && (
                     <div className="space-y-4">
-                        <div className="rounded-xl bg-slate-50 p-4">
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <div><p className="text-xs text-slate-500">Nama</p><p className="font-medium text-slate-800">{detailModal.name}</p></div>
-                                <div><p className="text-xs text-slate-500">Jenjang</p><p className="font-medium text-slate-800">{detailModal.level || '-'}</p></div>
-                                <div><p className="text-xs text-slate-500">Alamat</p><p className="font-medium text-slate-800">{detailModal.address || '-'}</p></div>
-                                <div><p className="text-xs text-slate-500">Sekolah</p><p className="font-medium text-slate-800">{detailModal.school_name || '-'}</p></div>
-                                <div><p className="text-xs text-slate-500">Program</p><p className="font-medium text-slate-800">{detailModal.program || '-'}</p></div>
-                                <div><p className="text-xs text-slate-500">Paket</p><p className="font-medium text-slate-800">{detailModal.package || '-'}</p></div>
-                                <div><p className="text-xs text-slate-500">Mata Pelajaran</p><p className="font-medium text-slate-800">{detailModal.subjects || '-'}</p></div>
-                                <div><p className="text-xs text-slate-500">Mode</p><p className="font-medium text-slate-800">{detailModal.preferred_mode || '-'}</p></div>
-                                <div><p className="text-xs text-slate-500">Kontak Orang Tua</p><p className="font-medium text-slate-800">{detailModal.parent_contact || '-'}</p></div>
-                                <div><p className="text-xs text-slate-500">Status</p>{statusBadge(detailModal.is_active)}</div>
-                                <div><p className="text-xs text-slate-500">Tanggal Daftar</p><p className="font-medium text-slate-800">{detailModal.created_at ? new Date(detailModal.created_at).toLocaleDateString('id-ID') : '-'}</p></div>
+                        {/* Header Profile Card */}
+                        <div className="flex flex-col gap-3.5 rounded-2xl bg-gradient-to-br from-violet-50/80 via-slate-50 to-indigo-50/40 p-4 border border-violet-100/80 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-3.5 min-w-0">
+                                <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-primary font-bold text-lg sm:text-xl text-white shadow-md shadow-brand-primary/20">
+                                    {detailModal.name ? detailModal.name.charAt(0).toUpperCase() : 'P'}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <h4 className="text-base sm:text-lg font-bold text-slate-800 break-words">
+                                            {detailModal.name}
+                                        </h4>
+                                        <span className="rounded-md bg-slate-200/70 px-2 py-0.5 text-xs font-mono font-medium text-slate-600">
+                                            ID #{detailModal.id}
+                                        </span>
+                                    </div>
+                                    <p className="mt-0.5 text-xs text-slate-500 break-words">
+                                        {detailModal.school_name ? detailModal.school_name : 'Siswa Bimbel ALC'}
+                                        {detailModal.level ? ` • ${detailModal.level}` : ''}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                                {statusBadge(detailModal.is_active)}
+                                {detailModal.level && (
+                                    <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-800">
+                                        {detailModal.level}
+                                    </span>
+                                )}
+                                {detailModal.preferred_mode && (
+                                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 uppercase">
+                                        {detailModal.preferred_mode}
+                                    </span>
+                                )}
                             </div>
                         </div>
-                        {detailModal.notes && (
-                            <div className="rounded-xl border border-slate-100 bg-white p-4 text-sm text-slate-600">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Catatan</p>
-                                <p className="mt-2">{detailModal.notes}</p>
+
+                        {/* Grid Information: 2 Columns on desktop, 1 on mobile */}
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            {/* Kontak & Data Orang Tua */}
+                            <div className="flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/60 p-4 space-y-3">
+                                <div>
+                                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60">
+                                        <span className="text-violet-600">{icons.phone}</span>
+                                        <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                            Kontak & Orang Tua
+                                        </h5>
+                                    </div>
+                                    <div className="mt-3 space-y-2.5 text-xs">
+                                        {/* Email Orang Tua / Wali */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border-b border-slate-100 pb-2 min-w-0">
+                                            <span className="text-slate-500 flex items-center gap-1.5 shrink-0">
+                                                <span className="text-slate-400">{icons.mail}</span>
+                                                Email
+                                            </span>
+                                            {detailModal.parent_email ? (
+                                                <a
+                                                    href={`mailto:${detailModal.parent_email}`}
+                                                    className="font-medium text-brand-primary hover:underline break-all sm:text-right"
+                                                    title={`Kirim email ke ${detailModal.parent_email}`}
+                                                >
+                                                    {detailModal.parent_email}
+                                                </a>
+                                            ) : (
+                                                <span className="font-medium text-slate-400 sm:text-right">-</span>
+                                            )}
+                                        </div>
+
+                                        {/* Kontak Orang Tua / HP */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border-b border-slate-100 pb-2 min-w-0">
+                                            <span className="text-slate-500 flex items-center gap-1.5 shrink-0">
+                                                <span className="text-slate-400">{icons.phone}</span>
+                                                Kontak HP / WA
+                                            </span>
+                                            <div className="flex items-center gap-1.5 flex-wrap sm:justify-end">
+                                                <span className="font-medium text-slate-800 break-all">
+                                                    {detailModal.parent_contact || '-'}
+                                                </span>
+                                                {getWhatsAppUrl(detailModal.parent_contact) && (
+                                                    <a
+                                                        href={getWhatsAppUrl(detailModal.parent_contact)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 rounded bg-emerald-100 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-800 transition hover:bg-emerald-200"
+                                                        title="Chat WhatsApp"
+                                                    >
+                                                        WA
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Alamat */}
+                                        <div className="flex flex-col gap-1 min-w-0 pt-0.5">
+                                            <span className="text-slate-500 flex items-center gap-1.5">
+                                                <span className="text-slate-400">{icons.mapPin}</span>
+                                                Alamat Domisili
+                                            </span>
+                                            <span className="font-medium text-slate-800 text-xs leading-relaxed break-words pl-5">
+                                                {detailModal.address || '-'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        )}
+
+                            {/* Data Bimbingan & Akademik */}
+                            <div className="flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/60 p-4 space-y-3">
+                                <div>
+                                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60">
+                                        <span className="text-violet-600">{icons.academic}</span>
+                                        <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                            Pendidikan & Program
+                                        </h5>
+                                    </div>
+                                    <div className="mt-3 space-y-2.5 text-xs">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border-b border-slate-100 pb-2">
+                                            <span className="text-slate-500 shrink-0">Program Bimbel</span>
+                                            <span className="font-semibold text-violet-700 sm:text-right break-words">{detailModal.program || '-'}</span>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border-b border-slate-100 pb-2">
+                                            <span className="text-slate-500 shrink-0">Paket Bimbingan</span>
+                                            <span className="font-medium text-slate-800 sm:text-right break-words">{detailModal.package || '-'}</span>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border-b border-slate-100 pb-2">
+                                            <span className="text-slate-500 shrink-0">Asal Sekolah</span>
+                                            <span className="font-medium text-slate-800 sm:text-right break-words">{detailModal.school_name || '-'}</span>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border-b border-slate-100 pb-2">
+                                            <span className="text-slate-500 shrink-0">Mata Pelajaran</span>
+                                            <span className="font-medium text-slate-800 sm:text-right break-words">{detailModal.subjects || '-'}</span>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pt-0.5">
+                                            <span className="text-slate-500 shrink-0">Mode Belajar</span>
+                                            <span className="font-medium text-slate-800 sm:text-right uppercase">{detailModal.preferred_mode || '-'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Tanggal & Catatan */}
+                        <div className="rounded-xl border border-slate-100 bg-white p-4 space-y-2 text-xs">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-slate-500">
+                                <span>Terdaftar Pada:</span>
+                                <span className="font-medium text-slate-700">
+                                    {detailModal.created_at ? new Date(detailModal.created_at).toLocaleDateString('id-ID', {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    }) : '-'}
+                                </span>
+                            </div>
+                            {detailModal.notes && (
+                                <div className="pt-2 border-t border-slate-100">
+                                    <p className="font-semibold uppercase tracking-wide text-slate-400 text-[11px]">Catatan Khusus</p>
+                                    <p className="mt-1 text-slate-600 leading-relaxed break-words">{detailModal.notes}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer Action Buttons: Responsive */}
+                        <div className="flex flex-col-reverse sm:flex-row sm:justify-between items-stretch sm:items-center gap-2 pt-3 border-t border-slate-100">
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                {canView && (
+                                    <a
+                                        href={`/admin/pelajar/${detailModal.id}/kartu`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-xs cursor-pointer"
+                                    >
+                                        {icons.card}
+                                        Cetak Kartu
+                                    </a>
+                                )}
+                                {canEdit && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const studentToEdit = detailModal;
+                                            setDetailModal(null);
+                                            openEditModal(studentToEdit);
+                                        }}
+                                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-xs cursor-pointer"
+                                    >
+                                        {icons.edit}
+                                        Edit Pelajar
+                                    </button>
+                                )}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setDetailModal(null)}
+                                className="inline-flex items-center justify-center rounded-xl bg-slate-800 px-5 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 cursor-pointer"
+                            >
+                                Tutup
+                            </button>
+                        </div>
                     </div>
                 )}
             </Modal>
@@ -354,8 +571,9 @@ export default function Students() {
                     {editForm.errors.program_id && <p className="text-xs text-rose-500">{editForm.errors.program_id}</p>}
                     <div className="grid gap-4 sm:grid-cols-2">
                         <FormInput label="Kontak Orang Tua" value={editForm.data.parent_contact} onChange={(v) => editForm.setData('parent_contact', v)} />
-                        <FormInput label="Mode Belajar" value={editForm.data.preferred_mode} onChange={(v) => editForm.setData('preferred_mode', v)} />
+                        <FormInput type="email" label="Email Orang Tua / Wali" value={editForm.data.parent_email} onChange={(v) => editForm.setData('parent_email', v)} error={editForm.errors.parent_email} />
                     </div>
+                    <FormInput label="Mode Belajar" value={editForm.data.preferred_mode} onChange={(v) => editForm.setData('preferred_mode', v)} />
                     <FormTextarea label="Catatan" value={editForm.data.notes} onChange={(v) => editForm.setData('notes', v)} />
                     <FormSelect
                         label="Status"
@@ -363,11 +581,11 @@ export default function Students() {
                         onChange={(v) => editForm.setData('is_active', v === 'Aktif')}
                         options={statusOptions.map((opt) => ({ value: opt, label: opt }))}
                     />
-                    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
-                        <button type="button" onClick={() => setEditModal(null)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
+                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-slate-100 pt-4">
+                        <button type="button" onClick={() => setEditModal(null)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 cursor-pointer">
                             Batal
                         </button>
-                        <button type="submit" disabled={editForm.processing} className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
+                        <button type="submit" disabled={editForm.processing} className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer">
                             Simpan Perubahan
                         </button>
                     </div>

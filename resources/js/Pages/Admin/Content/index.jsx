@@ -218,18 +218,17 @@ export default function Content() {
             <div className="space-y-6">
                 <PageHeader
                     title="Konten Website"
-                    subtitle="Kelola artikel, testimoni, FAQ, dan riwayat revisi landing."
                 />
 
                 <FlashMessage flash={flash} />
 
-                <div className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1">
+                <div className="grid grid-cols-2 gap-1 rounded-xl border border-slate-200 bg-white p-1 sm:flex sm:flex-wrap">
                     {tabs.map((tab) => (
                         <button
                             key={tab.key}
                             type="button"
                             onClick={() => switchTab(tab.key)}
-                            className={`flex-1 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
+                            className={`flex-1 whitespace-nowrap rounded-lg px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold transition text-center ${
                                 activeTab === tab.key
                                     ? 'bg-brand-primary text-white shadow'
                                     : 'text-slate-500 hover:text-slate-700'

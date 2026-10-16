@@ -434,7 +434,7 @@ class MasterDataController extends Controller
     {
         return Inertia::render('Admin/Students', [
             'students' => Student::query()
-                ->with('programItem:id,name')
+                ->with(['programItem:id,name', 'parentAccount:id,email'])
                 ->latest()
                 ->get()
                 ->map(function (Student $student) {
@@ -449,6 +449,7 @@ class MasterDataController extends Controller
                         'program' => $student->programItem?->name ?? $student->program,
                         'package' => $student->package,
                         'parent_contact' => $student->parent_contact,
+                        'parent_email' => $student->parent_email ?: $student->parentAccount?->email,
                         'preferred_mode' => $student->preferred_mode,
                         'notes' => $student->notes,
                         'is_active' => $student->is_active,

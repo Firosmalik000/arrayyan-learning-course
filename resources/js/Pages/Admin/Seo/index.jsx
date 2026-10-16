@@ -995,9 +995,6 @@ export default function Seo({ settings }) {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 className="text-xl font-semibold text-slate-800 sm:text-2xl">SEO & Site Settings</h2>
-                        <p className="mt-1 text-sm text-slate-600">
-                            Pusat pengaturan SEO, kontak, dan informasi website
-                        </p>
                     </div>
                     <button
                         type="button"

@@ -752,6 +752,7 @@ export default function Register() {
                                                                                     {option.sessions && (
                                                                                         <p className="mt-1 text-xs text-slate-600">
                                                                                             {option.sessions} pertemuan/bulan
+                                                                                            {selectedProgram?.duration ? ` • ${selectedProgram.duration}` : ''}
                                                                                             {option.intensity ? ` • ${option.intensity}` : ''}
                                                                                         </p>
                                                                                     )}
@@ -818,7 +819,7 @@ export default function Register() {
                                                     <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Sekolah</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.school_name || '-'}</dd></div>
                                                     <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Jenjang & Kelas</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.level ? `${studentForm.data.level}${studentForm.data.class_level ? ` • ${studentForm.data.class_level}` : ''}` : '-'}</dd></div>
                                                     <div className="sm:col-span-2"><dt className="font-semibold uppercase tracking-wide text-slate-500">Mata Pelajaran</dt><dd className="mt-0.5 font-bold text-slate-900">{studentForm.data.subjects || '-'}</dd></div>
-                                                    <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Program</dt><dd className="mt-0.5 font-bold text-slate-900">{selectedProgramLabel}</dd></div>
+                                                    <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Program</dt><dd className="mt-0.5 font-bold text-slate-900">{selectedProgramLabel}{selectedProgram?.duration ? ` (${selectedProgram.duration})` : ''}</dd></div>
                                                     <div><dt className="font-semibold uppercase tracking-wide text-slate-500">Paket & Mode</dt><dd className="mt-0.5 font-bold text-slate-900">{selectedPackageLabel} • {studentForm.data.preferred_mode || '-'}</dd></div>
                                                 </dl>
                                             </div>

@@ -72,6 +72,7 @@ export default function ProgramIndex() {
         image_url: item.image_url || null,
         price: item.price,
         base_price: item.base_price,
+        duration: item.duration || null,
         packages: Array.isArray(item.packages) ? item.packages : [],
     }));
 

@@ -44,41 +44,48 @@ export default function Pagination({
     if (activeTotalItems === 0) return null;
 
     return (
-        <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 text-xs text-slate-600">
+        <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-3 xs:px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 text-xs text-slate-600">
             {/* Per Page Selector */}
-            <div className="flex items-center gap-2">
-                <span className="text-slate-500 font-medium">Tampilkan</span>
-                <select
-                    value={activePerPage}
-                    onChange={(e) => {
-                        const val = Number(e.target.value);
-                        if (onPerPageChange) onPerPageChange(val);
-                    }}
-                    className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-violet-400 shadow-2xs cursor-pointer"
-                >
-                    {perPageOptions.map((opt) => (
-                        <option key={opt} value={opt}>
-                            {opt}
-                        </option>
-                    ))}
-                </select>
-                <span className="text-slate-500 font-medium">per halaman</span>
+            <div className="flex items-center justify-between sm:justify-start gap-2">
+                <div className="flex items-center gap-2">
+                    <span className="text-slate-500 font-medium">Tampilkan</span>
+                    <select
+                        value={activePerPage}
+                        onChange={(e) => {
+                            const val = Number(e.target.value);
+                            if (onPerPageChange) onPerPageChange(val);
+                        }}
+                        className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-violet-400 shadow-2xs cursor-pointer"
+                    >
+                        {perPageOptions.map((opt) => (
+                            <option key={opt} value={opt}>
+                                {opt}
+                            </option>
+                        ))}
+                    </select>
+                    <span className="text-slate-500 font-medium">per halaman</span>
+                </div>
+
+                {/* Mobile-only compact counter */}
+                <span className="block sm:hidden text-slate-400 text-[11px]">
+                    Hal {activeCurrentPage} / {activeTotalPages}
+                </span>
             </div>
 
             {/* Total count summary */}
-            <div className="text-slate-500 font-medium">
+            <div className="text-center sm:text-left text-slate-500 font-medium text-[11px] sm:text-xs">
                 Menampilkan <strong className="text-slate-700">{from}</strong> –{' '}
                 <strong className="text-slate-700">{to}</strong> dari{' '}
                 <strong className="text-slate-700">{activeTotalItems}</strong> data
             </div>
 
             {/* Pagination Controls */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center justify-center sm:justify-end gap-1 flex-wrap">
                 <button
                     type="button"
                     disabled={activeCurrentPage <= 1}
                     onClick={() => handlePage && handlePage(activeCurrentPage - 1)}
-                    className="inline-flex h-7 px-2.5 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition"
+                    className="inline-flex h-8 px-2.5 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition"
                 >
                     ‹ Prev
                 </button>
@@ -90,7 +97,7 @@ export default function Pagination({
                             key={p}
                             type="button"
                             onClick={() => handlePage && handlePage(p)}
-                            className={`inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold transition ${
+                            className={`inline-flex h-8 min-w-8 px-1 items-center justify-center rounded-lg text-xs font-bold transition ${
                                 isActive
                                     ? 'bg-violet-600 text-white shadow-xs'
                                     : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 shadow-2xs'
@@ -105,7 +112,7 @@ export default function Pagination({
                     type="button"
                     disabled={activeCurrentPage >= activeTotalPages}
                     onClick={() => handlePage && handlePage(activeCurrentPage + 1)}
-                    className="inline-flex h-7 px-2.5 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition"
+                    className="inline-flex h-8 px-2.5 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition"
                 >
                     Next ›
                 </button>

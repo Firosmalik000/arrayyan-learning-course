@@ -257,7 +257,6 @@ export default function Olympiads() {
                 {/* Header */}
                 <PageHeader
                     title="Olimpiade"
-                    subtitle="Kelola jadwal lomba, biaya, dan sistem seleksi"
                     actions={canCreate && (
                         <button
                             type="button"
@@ -300,11 +299,11 @@ export default function Olympiads() {
                                 className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                             />
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
                             <select
                                 value={filterLevel}
                                 onChange={(e) => setFilterLevel(e.target.value)}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400 sm:w-auto"
                             >
                                 <option value="">Semua Jenjang</option>
                                 {levelFilterOptions.map((level) => (
@@ -314,7 +313,7 @@ export default function Olympiads() {
                             <select
                                 value={filterCategory}
                                 onChange={(e) => setFilterCategory(e.target.value)}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400 sm:w-auto"
                             >
                                 <option value="">Semua Kategori</option>
                                 {categoryOptions.map((option) => (
@@ -324,7 +323,7 @@ export default function Olympiads() {
                             <select
                                 value={filterStatus}
                                 onChange={(e) => setFilterStatus(e.target.value)}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400 sm:w-auto"
                             >
                                 <option value="">Semua Status</option>
                                 {statusOptions.map((status) => (

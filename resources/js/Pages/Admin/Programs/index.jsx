@@ -351,7 +351,6 @@ export default function Programs() {
                 {/* Header */}
                 <PageHeader
                     title="Program & Daftar Harga"
-                    subtitle="Kelola jenis program lalu atur harga per jenjang dan jumlah pertemuan."
                     actions={
                         canCreate && (
                             <button
@@ -732,10 +731,10 @@ export default function Programs() {
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-1">
                             <FormInput
-                                label="Durasi"
+                                label="Durasi per Sesi"
                                 value={programForm.data.duration}
                                 onChange={(v) => programForm.setData('duration', v)}
-                                placeholder="contoh: 3 bulan / 12 pertemuan"
+                                placeholder="contoh: 60 menit / sesi atau 90 menit / sesi"
                             />
                             {programForm.errors.duration && <p className="text-xs text-rose-500">{programForm.errors.duration}</p>}
                         </div>
@@ -865,7 +864,7 @@ export default function Programs() {
                                 </p>
                             </div>
                             <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Durasi</p>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Durasi per Sesi</p>
                                 <p className="mt-1 font-semibold text-slate-800">{programDetail.duration || '-'}</p>
                             </div>
                             <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm">

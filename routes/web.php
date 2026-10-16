@@ -117,6 +117,7 @@ Route::get('/pendaftaran', fn () => Inertia::render('Public/Register', [
             'quota' => $program->quota,
             'quota_remaining' => $program->quotaRemaining(),
             'is_full' => ! $program->hasAvailableQuota(),
+            'duration' => $program->duration,
             'packages' => $program->packages->map(fn ($package) => [
                 'id' => $package->id,
                 'name' => $package->name,

@@ -54,7 +54,7 @@ export default function PortalPagination({
                 </div>
 
                 {/* Total count summary */}
-                <div className="text-slate-500 font-medium">
+                <div className="text-slate-500 font-medium text-[11px] xs:text-xs">
                     <strong className="text-slate-700">{from}</strong>–<strong className="text-slate-700">{to}</strong> dari{' '}
                     <strong className="text-slate-700">{totalItems}</strong>
                 </div>
@@ -66,7 +66,7 @@ export default function PortalPagination({
                     type="button"
                     disabled={currentPage <= 1}
                     onClick={() => onPageChange(currentPage - 1)}
-                    className="inline-flex h-7 px-2.5 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition"
+                    className="inline-flex h-8 px-2.5 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition active:scale-95"
                 >
                     ‹ Prev
                 </button>
@@ -78,7 +78,7 @@ export default function PortalPagination({
                             key={p}
                             type="button"
                             onClick={() => onPageChange(p)}
-                            className={`inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold transition ${
+                            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition active:scale-95 ${
                                 isActive
                                     ? 'bg-violet-600 text-white shadow-xs'
                                     : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 shadow-2xs'
@@ -93,7 +93,7 @@ export default function PortalPagination({
                     type="button"
                     disabled={currentPage >= totalPages}
                     onClick={() => onPageChange(currentPage + 1)}
-                    className="inline-flex h-7 px-2.5 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition"
+                    className="inline-flex h-8 px-2.5 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition active:scale-95"
                 >
                     Next ›
                 </button>

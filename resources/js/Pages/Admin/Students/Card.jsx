@@ -25,26 +25,26 @@ export default function StudentCard() {
                 </div>
 
                 <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
-                    <div className="bg-gradient-to-r from-violet-600 to-violet-800 px-6 py-5 text-white">
-                        <p className="text-xs font-bold uppercase tracking-[0.25em] text-violet-200">
+                    <div className="bg-gradient-to-r from-violet-600 to-violet-800 px-4 xs:px-6 py-4 xs:py-5 text-white">
+                        <p className="text-[10px] xs:text-xs font-bold uppercase tracking-[0.25em] text-violet-200">
                             Kartu Murid
                         </p>
-                        <h1 className="mt-1 font-display text-2xl font-extrabold">
+                        <h1 className="mt-1 font-display text-lg xs:text-2xl font-extrabold">
                             Ar Rayyan Learning Course
                         </h1>
                     </div>
-                    <div className="flex items-center gap-5 px-6 py-6">
-                        <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-violet-100 font-display text-2xl font-bold text-brand-primary">
+                    <div className="flex flex-col xs:flex-row items-center gap-3.5 xs:gap-5 px-4 xs:px-6 py-5 xs:py-6 text-center xs:text-left">
+                        <span className="flex h-16 w-16 xs:h-20 xs:w-20 shrink-0 items-center justify-center rounded-2xl bg-violet-100 font-display text-xl xs:text-2xl font-bold text-brand-primary">
                             {(student.name || 'A')[0].toUpperCase()}
                         </span>
                         <div>
-                            <p className="font-display text-xl font-bold text-slate-900">{student.name}</p>
+                            <p className="font-display text-lg xs:text-xl font-bold text-slate-900">{student.name}</p>
                             <p className="mt-0.5 font-mono text-xs text-slate-500">
                                 ID-{String(student.id || 0).padStart(5, '0')}
                             </p>
                         </div>
                     </div>
-                    <dl className="grid grid-cols-2 gap-px bg-slate-100 text-sm">
+                    <dl className="grid grid-cols-1 xs:grid-cols-2 gap-px bg-slate-100 text-xs xs:text-sm">
                         {[
                             ['Program', student.program || '-'],
                             ['Kelas', className || '-'],
@@ -53,13 +53,13 @@ export default function StudentCard() {
                             ['Kontak Ortu', student.parent_contact || '-'],
                             ['Status', student.is_active ? 'Aktif' : 'Nonaktif'],
                         ].map(([label, value]) => (
-                            <div key={label} className="bg-white px-6 py-3">
-                                <dt className="text-xs text-slate-500">{label}</dt>
+                            <div key={label} className="bg-white px-4 xs:px-6 py-2.5 xs:py-3">
+                                <dt className="text-[11px] xs:text-xs text-slate-500">{label}</dt>
                                 <dd className="mt-0.5 font-bold text-slate-900">{value}</dd>
                             </div>
                         ))}
                     </dl>
-                    <p className="bg-slate-50 px-6 py-3 text-center text-xs text-slate-400">
+                    <p className="bg-slate-50 px-4 xs:px-6 py-3 text-center text-[11px] xs:text-xs text-slate-400">
                         Kartu ini adalah identitas resmi murid ALC. Harap dibawa setiap sesi belajar.
                     </p>
                 </div>

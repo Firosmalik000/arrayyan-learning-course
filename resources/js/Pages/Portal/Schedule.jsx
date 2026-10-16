@@ -345,9 +345,6 @@ export default function Schedule() {
                                     <h1 className="font-display text-2xl font-extrabold tracking-tight text-slate-900">
                                         Akademik & Jadwal Pengajar
                                     </h1>
-                                    <p className="mt-1 text-xs text-slate-500">
-                                        Daftar kelas yang Anda ampu. Pilih kelas untuk mengelola jadwal pertemuan, tracking absensi, dan nilai murid.
-                                    </p>
                                 </div>
                                 <div className="inline-flex items-center gap-2 rounded-xl bg-violet-50 px-3.5 py-1.5 text-xs font-bold text-violet-700">
                                     <span className="h-2 w-2 rounded-full bg-violet-500 animate-pulse" />
@@ -383,9 +380,69 @@ export default function Schedule() {
                                 </div>
                             </div>
 
-                            {/* Datatable List of Classes (No edit/delete class button) */}
+                            {/* Datatable & Mobile Cards List of Classes */}
                             <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
-                                <div className="overflow-x-auto">
+                                {/* Mobile Class Cards (< md) */}
+                                <div className="block md:hidden divide-y divide-slate-100">
+                                    {classes.map((cls, idx) => (
+                                        <div key={cls.id} className="p-4 space-y-3 hover:bg-slate-50/50 transition">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0 flex-1">
+                                                    <span className="inline-flex items-center rounded-full bg-violet-50 px-2.5 py-0.5 text-[10px] font-bold text-violet-700 mb-1">
+                                                        {cls.program_name}
+                                                    </span>
+                                                    <h3 className="font-display font-bold text-sm text-slate-900 truncate">
+                                                        {cls.name}
+                                                    </h3>
+                                                    <p className="text-[11px] text-slate-400 mt-0.5">
+                                                        {cls.level ? `Jenjang ${cls.level}` : ''} {cls.total_sessions ? `• ${cls.total_sessions} Pertemuan` : ''}
+                                                    </p>
+                                                </div>
+                                                <StatusBadge tone="emerald">Aktif</StatusBadge>
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                                                {cls.schedules?.length > 0 ? (
+                                                    cls.schedules.map((s) => (
+                                                        <span
+                                                            key={s.id}
+                                                            className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700"
+                                                        >
+                                                            {s.day} {s.start_time}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-xs text-slate-400 italic">Belum ada jadwal</span>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                                                <span className="font-semibold text-slate-600">
+                                                    {cls.members_count} {cls.quota != null ? `/ ${cls.quota}` : ''} Siswa
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedClassId(cls.id)}
+                                                    className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-violet-700 transition active:scale-95"
+                                                >
+                                                    <span>Kelola Kelas</span>
+                                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {classes.length === 0 && (
+                                        <div className="p-8 text-center text-xs text-slate-400">
+                                            Belum ada kelas yang Anda ampu saat ini.
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Desktop Datatable (>= md) */}
+                                <div className="hidden md:block overflow-x-auto">
                                     <table className="w-full min-w-[700px] text-left text-xs sm:text-sm">
                                         <thead>
                                             <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -612,7 +669,63 @@ export default function Schedule() {
                                         <h3 className="text-sm font-bold text-slate-800">
                                             Daftar Murid di Kelas Ini
                                         </h3>
-                                        <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                                        {/* Mobile Card View (< md) */}
+                                        <div className="block md:hidden space-y-2.5">
+                                            {(selectedClass.members || []).map((m, idx) => {
+                                                const contact = m.student?.parent_contact || '';
+                                                const clean = contact.replace(/\D/g, '');
+                                                const wa = clean.startsWith('0') ? '62' + clean.slice(1) : clean.startsWith('62') ? clean : clean ? '62' + clean : '';
+
+                                                return (
+                                                    <div
+                                                        key={m.student_id}
+                                                        className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs space-y-2.5"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100 text-[11px] font-mono font-bold text-slate-500">
+                                                                    #{idx + 1}
+                                                                </span>
+                                                                <div>
+                                                                    <h4 className="font-bold text-slate-900 text-sm">
+                                                                        {m.student_name}
+                                                                    </h4>
+                                                                    <p className="text-xs text-slate-500 mt-0.5">
+                                                                        {m.student?.school_name || '-'} {m.student?.level ? `(${m.student.level})` : ''}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <StatusBadge tone="emerald">Aktif</StatusBadge>
+                                                        </div>
+
+                                                        {contact && (
+                                                            <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
+                                                                <span className="text-slate-500 font-medium">{contact}</span>
+                                                                {wa && (
+                                                                    <a
+                                                                        href={`https://wa.me/${wa}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition"
+                                                                    >
+                                                                        <span>Hubungi WA</span>
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {(selectedClass.members || []).length === 0 && (
+                                                <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-400">
+                                                    Belum ada murid di kelas ini.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Desktop Table View (>= md) */}
+                                        <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-100">
                                             <table className="w-full min-w-[500px] text-left text-xs sm:text-sm">
                                                 <thead>
                                                     <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -760,7 +873,39 @@ export default function Schedule() {
                                             </button>
                                         </div>
 
-                                        <div className="overflow-x-auto rounded-2xl border border-slate-100">
+                                        {/* Mobile Card View (< md) */}
+                                        <div className="block md:hidden space-y-2.5">
+                                            {(selectedClass.members || []).map((m, idx) => (
+                                                <div
+                                                    key={m.student_id}
+                                                    className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs"
+                                                >
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100 text-[11px] font-mono font-bold text-slate-500 shrink-0">
+                                                            #{idx + 1}
+                                                        </span>
+                                                        <div className="min-w-0">
+                                                            <h4 className="font-bold text-slate-900 text-sm truncate">
+                                                                {m.student_name}
+                                                            </h4>
+                                                            <p className="text-xs text-slate-500 mt-0.5 truncate">
+                                                                {m.student?.school_name || 'Murid'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <StatusBadge tone="emerald">Aktif</StatusBadge>
+                                                </div>
+                                            ))}
+
+                                            {(selectedClass.members || []).length === 0 && (
+                                                <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-400">
+                                                    Belum ada murid di kelas ini.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Desktop Table View (>= md) */}
+                                        <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-100">
                                             <table className="w-full min-w-[500px] text-left text-xs sm:text-sm">
                                                 <thead>
                                                     <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -905,13 +1050,13 @@ export default function Schedule() {
 
                     {/* Filter bar & View Mode */}
                     <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex flex-wrap items-center gap-2.5">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
                             {/* Class selector */}
                             {classes.length > 1 && (
                                 <select
                                     value={filterClassId}
                                     onChange={(e) => setFilterClassId(e.target.value)}
-                                    className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
+                                    className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2 sm:py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
                                 >
                                     <option value="">Semua Program / Kelas</option>
                                     {classes.map((c) => (
@@ -926,7 +1071,7 @@ export default function Schedule() {
                             <select
                                 value={filterDay}
                                 onChange={(e) => setFilterDay(e.target.value)}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
+                                className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2 sm:py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
                             >
                                 <option value="">Semua Hari</option>
                                 {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map((d) => (
@@ -936,11 +1081,11 @@ export default function Schedule() {
                         </div>
 
                         {/* View toggle */}
-                        <div className="flex rounded-xl bg-slate-100 p-1 text-xs font-semibold self-start sm:self-auto">
+                        <div className="flex w-full sm:w-auto rounded-xl bg-slate-100 p-1 text-xs font-semibold">
                             <button
                                 type="button"
                                 onClick={() => setViewMode('table')}
-                                className={`rounded-lg px-3 py-1.5 transition ${
+                                className={`flex-1 sm:flex-initial text-center justify-center rounded-lg px-3 py-1.5 transition ${
                                     viewMode === 'table'
                                         ? 'bg-white text-slate-900 shadow-xs font-bold'
                                         : 'text-slate-500 hover:text-slate-800'
@@ -951,7 +1096,7 @@ export default function Schedule() {
                             <button
                                 type="button"
                                 onClick={() => setViewMode('calendar')}
-                                className={`rounded-lg px-3 py-1.5 transition ${
+                                className={`flex-1 sm:flex-initial text-center justify-center rounded-lg px-3 py-1.5 transition ${
                                     viewMode === 'calendar'
                                         ? 'bg-white text-slate-900 shadow-xs font-bold'
                                         : 'text-slate-500 hover:text-slate-800'
@@ -962,206 +1107,314 @@ export default function Schedule() {
                         </div>
                     </div>
 
-                    {/* View 1: TABEL JADWAL SESI (Table view requested by user) */}
+                    {/* View 1: TABEL JADWAL SESI */}
                     {viewMode === 'table' && (
-                        <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs">
-                            <div className="overflow-x-auto">
-                                <table className="w-full min-w-[700px] text-left text-xs sm:text-sm">
-                                    <thead>
-                                        <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            <th className="w-12 px-4 py-3.5 text-center font-bold">No</th>
-                                            <th className="px-5 py-3.5 font-bold">Hari & Tanggal</th>
-                                            <th className="px-5 py-3.5 font-bold">Waktu</th>
-                                            <th className="px-5 py-3.5 font-bold">Program & Kelas</th>
-                                            <th className="px-5 py-3.5 font-bold">Pengajar</th>
-                                            <th className="px-5 py-3.5 font-bold text-center">Status Sesi</th>
-                                            <th className="w-20 px-4 py-3.5 text-center font-bold">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {studentMonthlySessions.map((session, idx) => {
-                                            let statusBadge = null;
-                                            if (session.attendance && session.attendance.status && session.attendance.status !== 'belum_absen') {
-                                                const st = session.attendance.status;
-                                                const tone =
-                                                    st === 'hadir'
-                                                        ? 'bg-emerald-100 text-emerald-800'
-                                                        : st === 'izin'
-                                                        ? 'bg-amber-100 text-amber-800'
-                                                        : st === 'sakit'
-                                                        ? 'bg-sky-100 text-sky-800'
-                                                        : 'bg-rose-100 text-rose-800';
-                                                statusBadge = (
-                                                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${tone}`}>
-                                                        {st}
-                                                    </span>
-                                                );
-                                            } else if (session.isToday) {
-                                                statusBadge = (
-                                                    <span className="inline-flex items-center rounded-full bg-violet-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs animate-pulse">
-                                                        Hari Ini
-                                                    </span>
-                                                );
-                                            } else {
-                                                statusBadge = (
-                                                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
-                                                        Terjadwal
-                                                    </span>
-                                                );
-                                            }
+                        <div className="space-y-3">
+                            {/* Mobile Card List (< md) */}
+                            <div className="block md:hidden space-y-3">
+                                {studentMonthlySessions.map((session, idx) => {
+                                    let statusBadge = null;
+                                    if (session.attendance && session.attendance.status && session.attendance.status !== 'belum_absen') {
+                                        const st = session.attendance.status;
+                                        const tone =
+                                            st === 'hadir'
+                                                ? 'bg-emerald-100 text-emerald-800'
+                                                : st === 'izin'
+                                                ? 'bg-amber-100 text-amber-800'
+                                                : st === 'sakit'
+                                                ? 'bg-sky-100 text-sky-800'
+                                                : 'bg-rose-100 text-rose-800';
+                                        statusBadge = (
+                                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${tone}`}>
+                                                {st}
+                                            </span>
+                                        );
+                                    } else if (session.isToday) {
+                                        statusBadge = (
+                                            <span className="inline-flex items-center rounded-full bg-violet-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs animate-pulse">
+                                                Hari Ini
+                                            </span>
+                                        );
+                                    } else {
+                                        statusBadge = (
+                                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
+                                                Terjadwal
+                                            </span>
+                                        );
+                                    }
 
-                                            return (
-                                                <tr
-                                                    key={`${session.classId}-${session.dateStr}-${session.startTime}`}
-                                                    className={`hover:bg-slate-50/80 transition ${session.isToday ? 'bg-violet-50/30' : ''}`}
-                                                >
-                                                    <td className="w-12 px-4 py-3.5 text-center font-mono text-xs font-bold text-slate-400">
-                                                        #{idx + 1}
-                                                    </td>
-                                                    <td className="px-5 py-3.5">
-                                                        <div className="font-bold text-slate-900">
-                                                            {session.formattedDate}
-                                                        </div>
-                                                        <div className="text-[11px] text-slate-400">
-                                                            {session.dayName}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-5 py-3.5 font-semibold text-slate-700">
-                                                        {session.startTime} - {session.endTime} WIB
-                                                        {session.room && (
-                                                            <span className="text-[11px] text-slate-400 block font-normal">
-                                                                Ruang {session.room}
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-5 py-3.5">
-                                                        <div className="font-bold text-slate-900">
-                                                            {session.className}
-                                                        </div>
-                                                        <div className="text-[11px] text-violet-700 font-semibold">
-                                                            {session.programName} {session.level ? `• ${session.level}` : ''}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-slate-700 font-medium">
+                                    return (
+                                        <div
+                                            key={`mob-${session.classId}-${session.dateStr}-${session.startTime}`}
+                                            className={`rounded-2xl border p-4 shadow-2xs space-y-3 transition ${
+                                                session.isToday
+                                                    ? 'border-violet-300 bg-violet-50/40 ring-1 ring-violet-200'
+                                                    : 'border-slate-200/80 bg-white'
+                                            }`}
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                                        Sesi #{idx + 1} • {session.dayName}
+                                                    </span>
+                                                    <h3 className="font-bold text-slate-900 text-sm mt-0.5">
+                                                        {session.formattedDate}
+                                                    </h3>
+                                                </div>
+                                                {statusBadge}
+                                            </div>
+
+                                            <div className="space-y-1.5 border-t border-slate-100 pt-2.5 text-xs">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-slate-400">Kelas / Program:</span>
+                                                    <span className="font-bold text-slate-800 text-right">
+                                                        {session.className} ({session.programName})
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-slate-400">Waktu & Ruang:</span>
+                                                    <span className="font-semibold text-slate-700">
+                                                        {session.startTime} - {session.endTime} WIB {session.room ? `• Ruang ${session.room}` : ''}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-slate-400">Pengajar:</span>
+                                                    <span className="font-semibold text-slate-800">
                                                         {session.teacherName ? `Kak ${session.teacherName}` : '-'}
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-center">
-                                                        {statusBadge}
-                                                    </td>
-                                                    <td className="w-20 px-4 py-3.5 text-center">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleCopy(`${session.className} - ${session.formattedDate} (${session.startTime}-${session.endTime} WIB)`)}
-                                                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 transition"
-                                                            title="Salin Jadwal Sesi"
-                                                        >
-                                                            Salin
-                                                        </button>
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="border-t border-slate-100 pt-2.5 flex justify-end">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCopy(`${session.className} - ${session.formattedDate} (${session.startTime}-${session.endTime} WIB)`)}
+                                                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
+                                                >
+                                                    <svg className="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+                                                    </svg>
+                                                    <span>Salin Info Sesi</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+
+                                {studentMonthlySessions.length === 0 && (
+                                    <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-xs text-slate-400">
+                                        Tidak ada jadwal kelas pada bulan {MONTH_NAMES[currentMonth]} {currentYear}.
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Desktop Table View (>= md) */}
+                            <div className="hidden md:block overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full min-w-[700px] text-left text-xs sm:text-sm">
+                                        <thead>
+                                            <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                                <th className="w-12 px-4 py-3.5 text-center font-bold">No</th>
+                                                <th className="px-5 py-3.5 font-bold">Hari & Tanggal</th>
+                                                <th className="px-5 py-3.5 font-bold">Waktu</th>
+                                                <th className="px-5 py-3.5 font-bold">Program & Kelas</th>
+                                                <th className="px-5 py-3.5 font-bold">Pengajar</th>
+                                                <th className="px-5 py-3.5 font-bold text-center">Status Sesi</th>
+                                                <th className="w-20 px-4 py-3.5 text-center font-bold">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {studentMonthlySessions.map((session, idx) => {
+                                                let statusBadge = null;
+                                                if (session.attendance && session.attendance.status && session.attendance.status !== 'belum_absen') {
+                                                    const st = session.attendance.status;
+                                                    const tone =
+                                                        st === 'hadir'
+                                                            ? 'bg-emerald-100 text-emerald-800'
+                                                            : st === 'izin'
+                                                            ? 'bg-amber-100 text-amber-800'
+                                                            : st === 'sakit'
+                                                            ? 'bg-sky-100 text-sky-800'
+                                                            : 'bg-rose-100 text-rose-800';
+                                                    statusBadge = (
+                                                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${tone}`}>
+                                                            {st}
+                                                        </span>
+                                                    );
+                                                } else if (session.isToday) {
+                                                    statusBadge = (
+                                                        <span className="inline-flex items-center rounded-full bg-violet-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs animate-pulse">
+                                                            Hari Ini
+                                                        </span>
+                                                    );
+                                                } else {
+                                                    statusBadge = (
+                                                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
+                                                            Terjadwal
+                                                        </span>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <tr
+                                                        key={`${session.classId}-${session.dateStr}-${session.startTime}`}
+                                                        className={`hover:bg-slate-50/80 transition ${session.isToday ? 'bg-violet-50/30' : ''}`}
+                                                    >
+                                                        <td className="w-12 px-4 py-3.5 text-center font-mono text-xs font-bold text-slate-400">
+                                                            #{idx + 1}
+                                                        </td>
+                                                        <td className="px-5 py-3.5">
+                                                            <div className="font-bold text-slate-900">
+                                                                {session.formattedDate}
+                                                            </div>
+                                                            <div className="text-[11px] text-slate-400">
+                                                                {session.dayName}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-3.5 font-semibold text-slate-700">
+                                                            {session.startTime} - {session.endTime} WIB
+                                                            {session.room && (
+                                                                <span className="text-[11px] text-slate-400 block font-normal">
+                                                                    Ruang {session.room}
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-5 py-3.5">
+                                                            <div className="font-bold text-slate-900">
+                                                                {session.className}
+                                                            </div>
+                                                            <div className="text-[11px] text-violet-700 font-semibold">
+                                                                {session.programName} {session.level ? `• ${session.level}` : ''}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-slate-700 font-medium">
+                                                            {session.teacherName ? `Kak ${session.teacherName}` : '-'}
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-center">
+                                                            {statusBadge}
+                                                        </td>
+                                                        <td className="w-20 px-4 py-3.5 text-center">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleCopy(`${session.className} - ${session.formattedDate} (${session.startTime}-${session.endTime} WIB)`)}
+                                                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 transition"
+                                                                title="Salin Jadwal Sesi"
+                                                            >
+                                                                Salin
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+
+                                            {studentMonthlySessions.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={7} className="px-6 py-12 text-center text-xs text-slate-400">
+                                                        Tidak ada jadwal kelas pada bulan {MONTH_NAMES[currentMonth]} {currentYear}.
                                                     </td>
                                                 </tr>
-                                            );
-                                        })}
-
-                                        {studentMonthlySessions.length === 0 && (
-                                            <tr>
-                                                <td colSpan={7} className="px-6 py-12 text-center text-xs text-slate-400">
-                                                    Tidak ada jadwal kelas pada bulan {MONTH_NAMES[currentMonth]} {currentYear}.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     )}
 
                     {/* View 2: KALENDER MATRIKS HARI TERJADWAL */}
                     {viewMode === 'calendar' && (
-                        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-4 shadow-xs">
-                            <div className="grid grid-cols-7 gap-1 text-center font-bold text-xs text-slate-400 pb-3 border-b border-slate-100">
-                                <div>Sen</div>
-                                <div>Sel</div>
-                                <div>Rab</div>
-                                <div>Kam</div>
-                                <div>Jum</div>
-                                <div>Sab</div>
-                                <div>Min</div>
+                        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-3 sm:p-4 shadow-xs">
+                            <div className="block sm:hidden text-center text-[11px] text-slate-400 pb-2">
+                                👈 Geser ke samping untuk melihat kalender utuh 👉
                             </div>
+                            <div className="overflow-x-auto">
+                                <div className="min-w-[620px] sm:min-w-0">
+                                    <div className="grid grid-cols-7 gap-1 text-center font-bold text-xs text-slate-400 pb-3 border-b border-slate-100">
+                                        <div>Sen</div>
+                                        <div>Sel</div>
+                                        <div>Rab</div>
+                                        <div>Kam</div>
+                                        <div>Jum</div>
+                                        <div>Sab</div>
+                                        <div>Min</div>
+                                    </div>
 
-                            <div className="grid grid-cols-7 gap-1.5 pt-3">
-                                {studentCalendarGrid.map((item, idx) => {
-                                    if (!item.day) {
-                                        return (
-                                            <div
-                                                key={`empty-${idx}`}
-                                                className="min-h-[76px] rounded-2xl bg-slate-50/50 p-1"
-                                            />
-                                        );
-                                    }
+                                    <div className="grid grid-cols-7 gap-1.5 pt-3">
+                                        {studentCalendarGrid.map((item, idx) => {
+                                            if (!item.day) {
+                                                return (
+                                                    <div
+                                                        key={`empty-${idx}`}
+                                                        className="min-h-[76px] rounded-2xl bg-slate-50/50 p-1"
+                                                    />
+                                                );
+                                            }
 
-                                    const isToday =
-                                        today.getDate() === item.day &&
-                                        today.getMonth() === currentMonth &&
-                                        today.getFullYear() === currentYear;
+                                            const isToday =
+                                                today.getDate() === item.day &&
+                                                today.getMonth() === currentMonth &&
+                                                today.getFullYear() === currentYear;
 
-                                    const daySessions = item.sessions || [];
+                                            const daySessions = item.sessions || [];
 
-                                    return (
-                                        <div
-                                            key={`cal-${item.day}`}
-                                            className={`min-h-[76px] rounded-2xl p-1.5 transition flex flex-col justify-between ${
-                                                daySessions.length > 0
-                                                    ? isToday
-                                                        ? 'border-2 border-violet-500 bg-violet-50/70 shadow-xs'
-                                                        : 'border border-violet-200 bg-violet-50/20'
-                                                    : isToday
-                                                    ? 'border border-slate-400 bg-slate-50'
-                                                    : 'border border-slate-100 hover:bg-slate-50/70'
-                                            }`}
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                                                    isToday
-                                                        ? 'bg-violet-600 text-white font-extrabold'
-                                                        : 'text-slate-700'
-                                                }`}>
-                                                    {item.day}
-                                                </span>
+                                            return (
+                                                <div
+                                                    key={`cal-${item.day}`}
+                                                    className={`min-h-[76px] rounded-2xl p-1.5 transition flex flex-col justify-between ${
+                                                        daySessions.length > 0
+                                                            ? isToday
+                                                                ? 'border-2 border-violet-500 bg-violet-50/70 shadow-xs'
+                                                                : 'border border-violet-200 bg-violet-50/20'
+                                                            : isToday
+                                                            ? 'border border-slate-400 bg-slate-50'
+                                                            : 'border border-slate-100 hover:bg-slate-50/70'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                                                            isToday
+                                                                ? 'bg-violet-600 text-white font-extrabold'
+                                                                : 'text-slate-700'
+                                                        }`}>
+                                                            {item.day}
+                                                        </span>
 
-                                                {daySessions.length > 0 && (
-                                                    <span className="h-1.5 w-1.5 rounded-full bg-violet-600" />
-                                                )}
-                                            </div>
+                                                        {daySessions.length > 0 && (
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-violet-600" />
+                                                        )}
+                                                    </div>
 
-                                            {daySessions.length > 0 && (
-                                                <div className="mt-1 space-y-1">
-                                                    {daySessions.map((s, sIdx) => (
-                                                        <div
-                                                            key={sIdx}
-                                                            className="rounded-xl bg-white p-1 text-[10px] shadow-2xs border border-violet-100"
-                                                        >
-                                                            <p className="font-extrabold text-violet-900 truncate">
-                                                                {s.startTime}
-                                                            </p>
-                                                            <p className="text-slate-500 truncate font-semibold">
-                                                                {s.className}
-                                                            </p>
-                                                            {s.attendance && s.attendance.status && s.attendance.status !== 'belum_absen' ? (
-                                                                <span className="font-bold text-emerald-600 capitalize">
-                                                                    {s.attendance.status}
-                                                                </span>
-                                                            ) : s.isToday ? (
-                                                                <span className="font-bold text-violet-600">Hari Ini</span>
-                                                            ) : (
-                                                                <span className="font-medium text-slate-400">Terjadwal</span>
-                                                            )}
+                                                    {daySessions.length > 0 && (
+                                                        <div className="mt-1 space-y-1">
+                                                            {daySessions.map((s, sIdx) => (
+                                                                <div
+                                                                    key={sIdx}
+                                                                    className="rounded-xl bg-white p-1 text-[10px] shadow-2xs border border-violet-100"
+                                                                >
+                                                                    <p className="font-extrabold text-violet-900 truncate">
+                                                                        {s.startTime}
+                                                                    </p>
+                                                                    <p className="text-slate-500 truncate font-semibold">
+                                                                        {s.className}
+                                                                    </p>
+                                                                    {s.attendance && s.attendance.status && s.attendance.status !== 'belum_absen' ? (
+                                                                        <span className="font-bold text-emerald-600 capitalize">
+                                                                            {s.attendance.status}
+                                                                        </span>
+                                                                    ) : s.isToday ? (
+                                                                        <span className="font-bold text-violet-600">Hari Ini</span>
+                                                                    ) : (
+                                                                        <span className="font-medium text-slate-400">Terjadwal</span>
+                                                                    )}
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    ))}
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}

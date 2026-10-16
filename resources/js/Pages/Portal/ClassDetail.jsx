@@ -105,19 +105,71 @@ export default function ClassDetail() {
                             value={attDate}
                             max={todayStr()}
                             onChange={(e) => setAttDate(e.target.value)}
-                            className="w-full xs:w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-400 shadow-2xs"
+                            className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-400 shadow-2xs"
                         />
                         <button
                             type="button"
                             onClick={submitAttendance}
-                            className="w-full xs:w-auto rounded-full bg-brand-primary px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 active:scale-95 transition"
+                            className="w-full sm:w-auto rounded-full bg-brand-primary px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 active:scale-95 transition"
                         >
                             Simpan Absensi
                         </button>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* Mobile Student Attendance Cards (< md) */}
+                <div className="block md:hidden divide-y divide-slate-100">
+                    {displayedAttMembers.map((m, idx) => {
+                        const rowNumber = attStart + idx + 1;
+                        const currentStatus = attRows[m.student_id] || 'hadir';
+
+                        return (
+                            <div key={m.student_id} className="p-4 space-y-2.5 hover:bg-slate-50/50 transition">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <span className="font-mono text-xs font-bold text-slate-400">
+                                            #{rowNumber}
+                                        </span>
+                                        <h4 className="font-bold text-xs sm:text-sm text-slate-900 truncate">
+                                            {m.student_name}
+                                        </h4>
+                                    </div>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                        Status: {currentStatus}
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-4 gap-1.5">
+                                    {attendanceOptions.map((s) => {
+                                        const isSelected = currentStatus === s;
+                                        return (
+                                            <button
+                                                key={s}
+                                                type="button"
+                                                onClick={() =>
+                                                    setAttRows((prev) => ({
+                                                        ...prev,
+                                                        [m.student_id]: s,
+                                                    }))
+                                                }
+                                                className={`rounded-xl py-2 text-xs font-bold uppercase tracking-wider transition active:scale-95 text-center ${
+                                                    isSelected
+                                                        ? 'bg-brand-primary text-white shadow-xs'
+                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                }`}
+                                            >
+                                                {s}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Desktop Attendance Datatable (>= md) */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full min-w-[500px] text-left text-xs sm:text-sm">
                         <thead>
                             <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -137,7 +189,7 @@ export default function ClassDetail() {
                                             ...prev,
                                             [m.student_id]: opt,
                                         })),
-                                }));
+                                 }));
 
                                 return (
                                     <tr key={m.student_id} className="hover:bg-slate-50/70 transition-colors">
@@ -208,26 +260,68 @@ export default function ClassDetail() {
                             value={gradeSubject}
                             onChange={(e) => setGradeSubject(e.target.value)}
                             placeholder="Mata Pelajaran"
-                            className="w-full xs:w-32 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-400 shadow-2xs"
+                            className="w-full sm:w-36 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-400 shadow-2xs"
                         />
                         <input
                             type="text"
                             value={gradeTerm}
                             onChange={(e) => setGradeTerm(e.target.value)}
                             placeholder="Term / Periode"
-                            className="w-full xs:w-28 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-400 shadow-2xs"
+                            className="w-full sm:w-32 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-400 shadow-2xs"
                         />
                         <button
                             type="button"
                             onClick={submitGrades}
-                            className="w-full xs:w-auto rounded-full bg-brand-primary px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 active:scale-95 transition"
+                            className="w-full sm:w-auto rounded-full bg-brand-primary px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 active:scale-95 transition"
                         >
                             Simpan Nilai
                         </button>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* Mobile Student Grade Cards (< md) */}
+                <div className="block md:hidden divide-y divide-slate-100">
+                    {displayedGradeMembers.map((m, idx) => {
+                        const rowNumber = gradeStart + idx + 1;
+                        return (
+                            <div key={m.student_id} className="p-4 space-y-2.5 hover:bg-slate-50/50 transition">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="font-mono text-xs font-bold text-slate-400">
+                                                #{rowNumber}
+                                            </span>
+                                            <h4 className="font-bold text-xs sm:text-sm text-slate-900 truncate">
+                                                {m.student_name}
+                                            </h4>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <label className="text-[11px] font-bold text-slate-500">Nilai:</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            step="0.5"
+                                            value={gradeRows[m.student_id] ?? ''}
+                                            onChange={(e) =>
+                                                setGradeRows((prev) => ({
+                                                    ...prev,
+                                                    [m.student_id]: e.target.value,
+                                                }))
+                                            }
+                                            placeholder="0–100"
+                                            className="w-20 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-sm font-extrabold text-slate-800 outline-none focus:border-violet-400 text-center shadow-2xs"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Desktop Grades Datatable (>= md) */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full min-w-[500px] text-left text-xs sm:text-sm">
                         <thead>
                             <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">

@@ -57,7 +57,6 @@ export default function Activities() {
             <div className="space-y-6">
                 <PageHeader
                     title="Log Aktivitas"
-                    subtitle="Siapa melakukan apa dan kapan — jejak audit aksi admin."
                 />
 
                 <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
@@ -69,7 +68,7 @@ export default function Activities() {
                             placeholder="Cari aksi / pelaku..."
                             className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 sm:max-w-xs"
                         />
-                        <select value={event} onChange={(e) => setEvent(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
+                        <select value={event} onChange={(e) => setEvent(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none sm:w-auto">
                             <option value="">Semua Event</option>
                             {events.map((ev) => (
                                 <option key={ev} value={ev}>{ev}</option>

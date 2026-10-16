@@ -43,6 +43,7 @@ class ProgramPublicTest extends TestCase
             'name' => 'Privat',
             'level' => 'SMA',
             'description' => 'Program privat',
+            'duration' => '90 menit / sesi',
             'subjects' => ['Fokus', 'Fleksibel'],
             'mode' => 'online',
             'is_active' => true,
@@ -55,6 +56,7 @@ class ProgramPublicTest extends TestCase
             ->component('Public/Program/Detail', false)
             ->where('program.id', $program->id)
             ->where('program.name', 'Privat')
+            ->where('program.duration', '90 menit / sesi')
         );
     }
 

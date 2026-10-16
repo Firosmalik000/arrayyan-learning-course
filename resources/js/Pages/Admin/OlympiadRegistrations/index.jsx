@@ -147,7 +147,6 @@ export default function OlympiadRegistrations() {
             <div className="space-y-6">
                 <PageHeader
                     title="Pendaftar Lomba"
-                    subtitle="Kelola peserta olimpiade yang mendaftar."
                 />
 
                 <FlashMessage flash={flash} />
@@ -161,14 +160,14 @@ export default function OlympiadRegistrations() {
                             onChange={setSearch}
                             placeholder="Cari nama / tiket / sekolah..."
                         />
-                        <div className="flex flex-wrap gap-2">
-                            <select value={olympiadId} onChange={(e) => setOlympiadId(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
+                        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                            <select value={olympiadId} onChange={(e) => setOlympiadId(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none sm:w-auto">
                                 <option value="">Semua Lomba</option>
                                 {olympiads.map((o) => (
                                     <option key={o.id} value={o.id}>{o.name}</option>
                                 ))}
                             </select>
-                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
+                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none sm:w-auto">
                                 <option value="">Semua Status</option>
                                 <option value="pending">Pending</option>
                                 <option value="approved">Disetujui</option>

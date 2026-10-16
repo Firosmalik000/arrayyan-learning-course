@@ -45,6 +45,7 @@ class RegistrationTest extends TestCase
         Program::create([
             'name' => 'Reguler',
             'level' => 'SMP',
+            'duration' => '60 menit / sesi',
             'is_active' => true,
         ]);
 
@@ -61,6 +62,7 @@ class RegistrationTest extends TestCase
             ->component('Public/Register', false)
             ->has('programs', 1)
             ->where('programs.0.name', 'Reguler')
+            ->where('programs.0.duration', '60 menit / sesi')
         );
     }
 

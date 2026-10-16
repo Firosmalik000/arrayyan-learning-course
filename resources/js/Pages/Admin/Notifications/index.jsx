@@ -67,7 +67,6 @@ export default function Notifications() {
             <div className="space-y-6">
                 <PageHeader
                     title="Pusat Notifikasi"
-                    subtitle="Jejak pesan WhatsApp yang dikirim sistem (termasuk yang gagal)."
                 />
 
                 <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
@@ -79,14 +78,14 @@ export default function Notifications() {
                             placeholder="Cari nomor / isi pesan..."
                             className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 sm:max-w-xs"
                         />
-                        <div className="flex flex-wrap gap-2">
-                            <select value={event} onChange={(e) => setEvent(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
+                        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                            <select value={event} onChange={(e) => setEvent(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none sm:w-auto">
                                 <option value="">Semua Event</option>
                                 {events.map((ev) => (
                                     <option key={ev} value={ev}>{ev}</option>
                                 ))}
                             </select>
-                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
+                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none sm:w-auto">
                                 <option value="">Semua Status</option>
                                 <option value="sent">Terkirim</option>
                                 <option value="failed">Gagal</option>

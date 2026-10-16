@@ -288,7 +288,6 @@ export default function BankSoal() {
                 {/* Header */}
                 <PageHeader
                     title="Bank Soal"
-                    subtitle="Kelola modul latihan dan soal untuk siswa"
                     actions={canCreate && (
                         <button
                             type="button"
@@ -328,14 +327,14 @@ export default function BankSoal() {
                                 className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                             />
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
                             <select
                                 value={filterLevel}
                                 onChange={(e) => {
                                     setFilterLevel(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400 sm:w-auto"
                             >
                                 <option value="">Semua Jenjang</option>
                                 {resolvedLevelOptions.map((opt) => (
@@ -348,7 +347,7 @@ export default function BankSoal() {
                                     setFilterCategory(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400 sm:w-auto"
                             >
                                 <option value="">Semua Kategori</option>
                                 {categoryOptions.map((opt) => (
@@ -361,7 +360,7 @@ export default function BankSoal() {
                                     setFilterFormat(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400 sm:w-auto"
                             >
                                 <option value="">Semua Format</option>
                                 {resolvedFormatOptions.map((opt) => (

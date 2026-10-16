@@ -84,7 +84,66 @@ export default function Attendance() {
                 </div>
             ) : (
                 <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xs">
-                    <div className="overflow-x-auto">
+                    {/* Mobile Card List (< md) */}
+                    <div className="block md:hidden divide-y divide-slate-100">
+                        {displayedRecords.map((r, i) => {
+                            const isHadir = r.status === 'hadir';
+                            return (
+                                <div key={i} className="p-4 space-y-3 hover:bg-slate-50/50 transition">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-xs text-slate-800">
+                                                {formatDate(r.date)}
+                                            </span>
+                                        </div>
+                                        <span
+                                            className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                                                isHadir
+                                                    ? 'bg-emerald-100 text-emerald-700'
+                                                    : r.status === 'alpa'
+                                                    ? 'bg-rose-100 text-rose-700'
+                                                    : 'bg-amber-100 text-amber-700'
+                                            }`}
+                                        >
+                                            {r.status}
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-0.5">
+                                        <p className="font-display text-sm font-bold text-slate-900 truncate">
+                                            {r.class}
+                                        </p>
+                                        {r.note && (
+                                            <p className="text-xs text-slate-500 font-medium">
+                                                Catatan: {r.note}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center gap-2 pt-1 border-t border-slate-100 text-xs">
+                                        <button
+                                            type="button"
+                                            onClick={() => setDetailRow(r)}
+                                            className="flex-1 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 hover:bg-slate-50 transition active:scale-95"
+                                        >
+                                            Detail Absensi
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCopy(r)}
+                                            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-600 hover:bg-slate-50 transition active:scale-95"
+                                            title="Salin Info"
+                                        >
+                                            Salin
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Desktop Datatable (>= md) */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full min-w-[520px] text-left text-xs sm:text-sm">
                             <thead>
                                 <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -105,7 +164,7 @@ export default function Attendance() {
                                         {
                                             label: 'Lihat Detail',
                                             icon: (
-                                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                 </svg>
@@ -115,7 +174,7 @@ export default function Attendance() {
                                         {
                                             label: 'Salin Info',
                                             icon: (
-                                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                                                 </svg>
                                             ),

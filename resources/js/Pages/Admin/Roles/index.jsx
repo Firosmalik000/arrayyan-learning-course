@@ -155,9 +155,6 @@ export default function Roles() {
                         <h2 className="text-xl font-semibold text-slate-800 sm:text-2xl">
                             Role Administrator
                         </h2>
-                        <p className="mt-1 text-sm text-slate-600 sm:mt-2">
-                            Kelola role admin dan atur akses di menu Akses Menu.
-                        </p>
                     </div>
                     <div className="flex shrink-0 flex-wrap gap-2 sm:gap-3">
                         {canAccessMenu && (

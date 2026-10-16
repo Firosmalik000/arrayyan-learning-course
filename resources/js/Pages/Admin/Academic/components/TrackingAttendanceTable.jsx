@@ -198,88 +198,92 @@ export default function TrackingAttendanceTable({
             )}
 
             {/* Matrix Attendance Table */}
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs">
-                <table className="w-full min-w-[700px] text-left text-xs">
-                    <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                            {/* Sticky Left: No */}
-                            <th className="w-12 px-3 py-3 text-center border-r border-slate-200 bg-slate-50/90 shrink-0">
-                                No
-                            </th>
-                            {/* Sticky Left: Nama Murid */}
-                            <th className="min-w-[190px] px-4 py-3 border-r border-slate-200 bg-slate-50/90 shrink-0">
-                                Nama Murid
-                            </th>
-
-                            {/* Session Date Columns */}
-                            {sessionColumns.map((col) => (
-                                <th
-                                    key={col.dateStr}
-                                    className="min-w-[72px] px-2 py-2 text-center border-r border-slate-100 hover:bg-violet-50/60 transition cursor-pointer group"
-                                    onClick={() => canEdit && onOpenAttendanceModal(col.dateStr)}
-                                    title={`Klik untuk catat / edit absensi tanggal ${col.dateStr}`}
-                                >
-                                    <div className="flex flex-col items-center justify-center">
-                                        <span className="text-[10px] font-mono font-extrabold text-violet-700 group-hover:underline">
-                                            P{col.index}
-                                        </span>
-                                        <span className="text-[11px] font-extrabold text-slate-800">
-                                            {col.displayDate}
-                                        </span>
-                                        <span className="text-[9px] font-medium text-slate-400">
-                                            ({col.dayAbbr})
-                                        </span>
-                                    </div>
+            <div className="space-y-1">
+                <div className="block sm:hidden text-center text-[11px] text-slate-400">
+                    👈 Geser tabel ke samping untuk melihat seluruh pertemuan 👉
+                </div>
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                    <table className="w-full min-w-[700px] text-left text-xs">
+                        <thead>
+                            <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                                {/* Sticky Left: No */}
+                                <th className="sticky left-0 z-20 w-12 px-3 py-3 text-center border-r border-slate-200 bg-slate-50 shrink-0">
+                                    No
                                 </th>
-                            ))}
+                                {/* Sticky Left: Nama Murid */}
+                                <th className="sticky left-12 z-20 min-w-[170px] sm:min-w-[190px] px-4 py-3 border-r border-slate-200 bg-slate-50 shrink-0 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]">
+                                    Nama Murid
+                                </th>
 
-                            {/* Summary Columns */}
-                            <th className="w-12 px-2 py-3 text-center text-emerald-700 bg-emerald-50/50 border-r border-slate-100" title="Total Hadir">
-                                H
-                            </th>
-                            <th className="w-12 px-2 py-3 text-center text-amber-700 bg-amber-50/50 border-r border-slate-100" title="Total Izin">
-                                I
-                            </th>
-                            <th className="w-12 px-2 py-3 text-center text-sky-700 bg-sky-50/50 border-r border-slate-100" title="Total Sakit">
-                                S
-                            </th>
-                            <th className="w-12 px-2 py-3 text-center text-rose-700 bg-rose-50/50 border-r border-slate-100" title="Total Alpa">
-                                A
-                            </th>
-                            <th className="min-w-[90px] px-3 py-3 text-center bg-slate-50/90">
-                                Kehadiran
-                            </th>
-                        </tr>
-                    </thead>
-
-                    <tbody className="divide-y divide-slate-100">
-                        {filteredMembers.map((m, idx) => {
-                            const stat = studentStats[m.student_id] || { hadir: 0, izin: 0, sakit: 0, alpa: 0, total: 0, pct: 0 };
-                            const studentMatrix = attendanceMatrix[m.student_id] || {};
-
-                            return (
-                                <tr key={m.student_id} className="hover:bg-slate-50/70 transition">
-                                    {/* No */}
-                                    <td className="w-12 px-3 py-2.5 text-center font-mono font-bold text-slate-400 border-r border-slate-200">
-                                        {idx + 1}
-                                    </td>
-
-                                    {/* Student Info */}
-                                    <td className="min-w-[190px] px-4 py-2.5 border-r border-slate-200">
-                                        <div className="font-bold text-slate-900 truncate">
-                                            {m.student_name}
+                                {/* Session Date Columns */}
+                                {sessionColumns.map((col) => (
+                                    <th
+                                        key={col.dateStr}
+                                        className="min-w-[72px] px-2 py-2 text-center border-r border-slate-100 hover:bg-violet-50/60 transition cursor-pointer group"
+                                        onClick={() => canEdit && onOpenAttendanceModal(col.dateStr)}
+                                        title={`Klik untuk catat / edit absensi tanggal ${col.dateStr}`}
+                                    >
+                                        <div className="flex flex-col items-center justify-center">
+                                            <span className="text-[10px] font-mono font-extrabold text-violet-700 group-hover:underline">
+                                                P{col.index}
+                                            </span>
+                                            <span className="text-[11px] font-extrabold text-slate-800">
+                                                {col.displayDate}
+                                            </span>
+                                            <span className="text-[9px] font-medium text-slate-400">
+                                                ({col.dayAbbr})
+                                            </span>
                                         </div>
-                                        <div className="text-[10px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
-                                            {m.student?.school_name && (
-                                                <span>{m.student.school_name}</span>
-                                            )}
-                                            {m.target_sessions != null && (
-                                                <span className={`font-semibold ${m.is_quota_reached ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
-                                                    • {m.attended_sessions}/{m.target_sessions} sesi
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
+                                    </th>
+                                ))}
+
+                                {/* Summary Columns */}
+                                <th className="w-12 px-2 py-3 text-center text-emerald-700 bg-emerald-50/50 border-r border-slate-100" title="Total Hadir">
+                                    H
+                                </th>
+                                <th className="w-12 px-2 py-3 text-center text-amber-700 bg-amber-50/50 border-r border-slate-100" title="Total Izin">
+                                    I
+                                </th>
+                                <th className="w-12 px-2 py-3 text-center text-sky-700 bg-sky-50/50 border-r border-slate-100" title="Total Sakit">
+                                    S
+                                </th>
+                                <th className="w-12 px-2 py-3 text-center text-rose-700 bg-rose-50/50 border-r border-slate-100" title="Total Alpa">
+                                    A
+                                </th>
+                                <th className="min-w-[90px] px-3 py-3 text-center bg-slate-50/90">
+                                    Kehadiran
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-slate-100">
+                            {filteredMembers.map((m, idx) => {
+                                const stat = studentStats[m.student_id] || { hadir: 0, izin: 0, sakit: 0, alpa: 0, total: 0, pct: 0 };
+                                const studentMatrix = attendanceMatrix[m.student_id] || {};
+
+                                return (
+                                    <tr key={m.student_id} className="hover:bg-slate-50/70 transition group">
+                                        {/* No */}
+                                        <td className="sticky left-0 z-10 w-12 px-3 py-2.5 text-center font-mono font-bold text-slate-400 border-r border-slate-200 bg-white group-hover:bg-slate-50">
+                                            {idx + 1}
+                                        </td>
+
+                                        {/* Student Info */}
+                                        <td className="sticky left-12 z-10 min-w-[170px] sm:min-w-[190px] px-4 py-2.5 border-r border-slate-200 bg-white group-hover:bg-slate-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)]">
+                                            <div className="font-bold text-slate-900 truncate">
+                                                {m.student_name}
+                                            </div>
+                                            <div className="text-[10px] text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
+                                                {m.student?.school_name && (
+                                                    <span>{m.student.school_name}</span>
+                                                )}
+                                                {m.target_sessions != null && (
+                                                    <span className={`font-semibold ${m.is_quota_reached ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
+                                                        • {m.attended_sessions}/{m.target_sessions} sesi
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
 
                                     {/* Matrix Session Cells */}
                                     {sessionColumns.map((col) => {
@@ -384,6 +388,7 @@ export default function TrackingAttendanceTable({
                         )}
                     </tbody>
                 </table>
+            </div>
             </div>
 
             {/* Legend & Guide Bar */}

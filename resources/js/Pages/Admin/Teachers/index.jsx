@@ -219,7 +219,6 @@ export default function Teachers() {
             <div className="space-y-6">
                 <PageHeader
                     title="Pengajar"
-                    subtitle="Kelola data pengajar yang terdaftar di ALC"
                     actions={canCreate && (
                         <button
                             type="button"
@@ -252,7 +251,7 @@ export default function Teachers() {
                     <select
                         value={filterEducation}
                         onChange={(e) => setFilterEducation(e.target.value)}
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 outline-none"
+                        className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 outline-none"
                     >
                         <option value="">Semua Pendidikan</option>
                         {resolvedEducationOptions.map((opt) => (
