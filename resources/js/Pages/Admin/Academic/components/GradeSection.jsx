@@ -32,7 +32,7 @@ export default function GradeSection({
                     </button>
                 </div>
             </div>
-            <div className="mt-3 overflow-x-auto rounded-xl border border-slate-100">
+            <div className="mt-3 overflow-x-auto rounded-xl border border-slate-100 w-full max-w-full">
                 <table className="w-full min-w-[360px] text-left text-sm">
                     <tbody className="divide-y divide-slate-100">
                         {members.map((m) => (

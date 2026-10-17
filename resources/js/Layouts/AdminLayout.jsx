@@ -507,10 +507,10 @@ export default function AdminLayout({ children }) {
     };
 
     return (
-        <div className="min-h-screen bg-brand-shell text-slate-900">
-            <div className="flex min-h-screen">
+        <div className="min-h-screen bg-brand-shell text-slate-900 w-full overflow-x-hidden">
+            <div className="flex min-h-screen w-full">
                 {/* Desktop Sidebar */}
-                <aside className="hidden w-64 flex-col border-r border-slate-200/60 bg-white/90 backdrop-blur-xl md:flex h-screen sticky top-0">
+                <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200/60 bg-white/90 backdrop-blur-xl md:flex h-screen sticky top-0">
                     {/* Sidebar Header */}
                     <div className="shrink-0 border-b border-slate-100 px-4 py-3.5">
                         <Link href="/admin" className="flex items-center gap-2.5 group">
@@ -647,9 +647,9 @@ export default function AdminLayout({ children }) {
                 </aside>
 
                 {/* Main Content Area */}
-                <div className="flex flex-1 flex-col">
+                <div className="flex flex-1 flex-col min-w-0 w-full max-w-full overflow-x-hidden">
                     {/* Header / Appbar */}
-                    <header className="sticky top-0 z-30 border-b border-slate-200/50 bg-white/80 backdrop-blur-xl">
+                    <header className="sticky top-0 z-30 w-full border-b border-slate-200/50 bg-white/80 backdrop-blur-xl">
                         {impersonation.active && (
                             <div className="border-b border-amber-100 bg-amber-50/80 text-[11px] text-amber-800 sm:text-xs">
                                 <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 sm:px-6 lg:px-8">
@@ -778,7 +778,7 @@ export default function AdminLayout({ children }) {
                         </div>
 
                         {/* Mobile Navigation Pills */}
-                        <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-2.5 sm:-mx-6 sm:px-6 md:hidden">
+                        <div className="flex gap-1.5 overflow-x-auto px-3.5 pb-2.5 sm:px-5 md:hidden">
                             {flatMenu.map((item) => {
                                 const isActive = url === item.href;
                                 return (
@@ -792,7 +792,7 @@ export default function AdminLayout({ children }) {
                                         }`}
                                     >
                                         {icons[item.icon]}
-                                        <span>{item.label}</span>
+                                        <span className="whitespace-nowrap">{item.label}</span>
                                     </Link>
                                 );
                             })}
@@ -800,7 +800,7 @@ export default function AdminLayout({ children }) {
                     </header>
 
                     {/* Main Content */}
-                    <main className="flex-1 w-full mx-auto max-w-[96rem] p-3 xs:p-4 sm:p-5 lg:p-6">{children}</main>
+                    <main className="flex-1 w-full min-w-0 max-w-[96rem] mx-auto p-3 xs:p-4 sm:p-5 lg:p-6">{children}</main>
                 </div>
             </div>
 

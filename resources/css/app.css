@@ -8,6 +8,7 @@
 @source '../**/*.jsx';
 
 @theme {
+    --breakpoint-sx: 24rem;
     --breakpoint-xs: 30rem;
     --breakpoint-xxl: 96rem;
 
@@ -37,10 +38,14 @@
 @layer base {
     html {
         scroll-behavior: smooth;
+        overflow-x: hidden;
+        max-width: 100vw;
     }
 
     body {
         @apply bg-slate-50 text-slate-900 antialiased;
+        overflow-x: hidden;
+        max-width: 100vw;
     }
 }
 

@@ -202,7 +202,7 @@ export default function TrackingAttendanceTable({
                 <div className="block sm:hidden text-center text-[11px] text-slate-400">
                     👈 Geser tabel ke samping untuk melihat seluruh pertemuan 👉
                 </div>
-                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs w-full max-w-full">
                     <table className="w-full min-w-[700px] text-left text-xs">
                         <thead>
                             <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-600">

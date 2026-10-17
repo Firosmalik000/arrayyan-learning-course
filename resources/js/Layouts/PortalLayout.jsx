@@ -147,7 +147,7 @@ export default function PortalLayout({ children }) {
         .join('') || (isTeacher ? 'PG' : 'OT');
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex antialiased selection:bg-violet-100 selection:text-brand-primary">
+        <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex antialiased selection:bg-violet-100 selection:text-brand-primary w-full overflow-x-hidden">
             {/* Desktop Sidebar (Mirip AdminLayout) */}
             <aside className="hidden w-60 md:w-64 flex-col border-r border-slate-200/80 bg-white/95 backdrop-blur-xl md:flex h-screen sticky top-0 shrink-0">
                 {/* Brand / Logo Header */}
@@ -332,9 +332,9 @@ export default function PortalLayout({ children }) {
             )}
 
             {/* Main Wrapper */}
-            <div className="flex flex-1 flex-col min-w-0">
+            <div className="flex flex-1 flex-col min-w-0 w-full max-w-full overflow-x-hidden">
                 {/* Modern Top Header */}
-                <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-3 sm:px-5 py-2 flex items-center justify-between gap-2 sm:gap-3">
+                <header className="sticky top-0 z-20 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-3 sm:px-5 py-2 flex items-center justify-between gap-2 sm:gap-3">
                     {/* Left: Mobile Toggle & Page Indicator */}
                     <div className="flex items-center gap-2 min-w-0">
                         <button
@@ -404,7 +404,7 @@ export default function PortalLayout({ children }) {
                 </header>
 
                 {/* Main Content Body */}
-                <main className="flex-1 p-3 xs:p-4 sm:p-5 lg:p-6 max-w-7xl w-full mx-auto">
+                <main className="flex-1 p-3 xs:p-4 sm:p-5 lg:p-6 max-w-7xl 2xl:max-w-[96rem] w-full min-w-0 mx-auto">
                     {children}
                 </main>
             </div>

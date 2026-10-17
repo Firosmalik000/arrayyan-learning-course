@@ -60,44 +60,44 @@ export default function ClassTable({
     return (
         <div className="space-y-6">
             {/* Stat Cards */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-2xs">
-                    <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="grid grid-cols-2 gap-2.5 xs:gap-3 sm:grid-cols-4">
+                <div className="rounded-2xl border border-slate-100 bg-white p-3 xs:p-4 shadow-2xs">
+                    <span className="block text-[10px] xs:text-[11px] font-bold uppercase tracking-wider text-slate-400">
                         Total Kelas
                     </span>
-                    <span className="mt-1 text-2xl font-extrabold text-slate-900">
+                    <span className="mt-1 text-xl xs:text-2xl font-extrabold text-slate-900">
                         {stats.total}
                     </span>
                 </div>
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 shadow-2xs">
-                    <span className="block text-[11px] font-bold uppercase tracking-wider text-emerald-600">
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-3 xs:p-4 shadow-2xs">
+                    <span className="block text-[10px] xs:text-[11px] font-bold uppercase tracking-wider text-emerald-600">
                         Kelas Aktif
                     </span>
-                    <span className="mt-1 text-2xl font-extrabold text-emerald-700">
+                    <span className="mt-1 text-xl xs:text-2xl font-extrabold text-emerald-700">
                         {stats.active}
                     </span>
                 </div>
-                <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-4 shadow-2xs">
-                    <span className="block text-[11px] font-bold uppercase tracking-wider text-violet-600">
-                        Total Murid Terdaftar
+                <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-3 xs:p-4 shadow-2xs">
+                    <span className="block text-[10px] xs:text-[11px] font-bold uppercase tracking-wider text-violet-600 truncate">
+                        Total Murid
                     </span>
-                    <span className="mt-1 text-2xl font-extrabold text-violet-700">
+                    <span className="mt-1 text-xl xs:text-2xl font-extrabold text-violet-700">
                         {stats.totalStudents}
                     </span>
                 </div>
-                <div className="rounded-2xl border border-sky-100 bg-sky-50/40 p-4 shadow-2xs">
-                    <span className="block text-[11px] font-bold uppercase tracking-wider text-sky-600">
-                        Kapasitas Terisi
+                <div className="rounded-2xl border border-sky-100 bg-sky-50/40 p-3 xs:p-4 shadow-2xs">
+                    <span className="block text-[10px] xs:text-[11px] font-bold uppercase tracking-wider text-sky-600">
+                        Kapasitas
                     </span>
-                    <span className="mt-1 text-2xl font-extrabold text-sky-700">
+                    <span className="mt-1 text-xl xs:text-2xl font-extrabold text-sky-700">
                         {stats.occupancyRate}%
                     </span>
                 </div>
             </div>
 
             {/* Filter Bar */}
-            <div className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-1 flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5">
+            <div className="flex flex-col gap-2.5 rounded-2xl border border-slate-100 bg-white p-3 xs:p-4 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-1 flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 xs:gap-2.5 w-full">
                     {/* Search */}
                     <div className="relative w-full sm:min-w-[200px] sm:max-w-xs">
                         <svg
@@ -121,7 +121,7 @@ export default function ClassTable({
                         />
                     </div>
 
-                    <div className="flex flex-col xs:flex-row items-center gap-2 w-full sm:w-auto">
+                    <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:w-auto">
                         {/* Program Filter */}
                         <select
                             value={filterProgram}
@@ -129,7 +129,7 @@ export default function ClassTable({
                                 setFilterProgram(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            className="w-full xs:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
+                            className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer truncate"
                         >
                             <option value="">Semua Program</option>
                             {programs.map((p) => (
@@ -146,7 +146,7 @@ export default function ClassTable({
                                 setFilterStatus(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            className="w-full xs:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
+                            className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer truncate"
                         >
                             <option value="">Semua Status</option>
                             <option value="aktif">Aktif</option>
@@ -154,27 +154,10 @@ export default function ClassTable({
                         </select>
                     </div>
                 </div>
-
-                {/* Per Page */}
-                <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto text-xs text-slate-500 border-t sm:border-t-0 border-slate-100 pt-2 sm:pt-0">
-                    <span>Tampilkan:</span>
-                    <select
-                        value={perPage}
-                        onChange={(e) => {
-                            setPerPage(Number(e.target.value));
-                            setCurrentPage(1);
-                        }}
-                        className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
-                    >
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                    </select>
-                </div>
             </div>
 
             {/* Datatable */}
-            <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
+            <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs w-full max-w-full">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[760px] text-left text-xs sm:text-sm">
                         <thead>

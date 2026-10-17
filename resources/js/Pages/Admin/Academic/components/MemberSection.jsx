@@ -37,7 +37,7 @@ export default function MemberSection({
                     </button>
                 )}
             </div>
-            <div className="mt-3 overflow-x-auto rounded-xl border border-slate-100">
+            <div className="mt-3 overflow-x-auto rounded-xl border border-slate-100 w-full max-w-full">
                 <table className="w-full min-w-[550px] text-left text-sm">
                     <thead>
                         <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
