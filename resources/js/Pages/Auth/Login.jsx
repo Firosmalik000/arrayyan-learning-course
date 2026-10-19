@@ -37,13 +37,10 @@ export default function Login() {
             <Head title="Masuk ke Akun - ALC" />
 
             <div className="space-y-5">
-                <div className="text-center space-y-1">
+                <div className="text-center">
                     <h1 className="font-display text-xl font-bold tracking-tight text-slate-900">
                         Masuk ke Akun
                     </h1>
-                    <p className="text-xs text-slate-500">
-                        Akses Portal Orang Tua, Pengajar, & Tim ALC
-                    </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">

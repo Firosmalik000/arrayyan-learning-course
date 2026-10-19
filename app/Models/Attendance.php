@@ -17,6 +17,10 @@ class Attendance extends Model
         'student_id',
         'date',
         'status',
+        'subject',
+        'material',
+        'understanding_score',
+        'evaluation',
         'marked_by',
         'note',
     ];
@@ -25,6 +29,7 @@ class Attendance extends Model
     {
         return [
             'date' => 'date',
+            'understanding_score' => 'integer',
         ];
     }
 

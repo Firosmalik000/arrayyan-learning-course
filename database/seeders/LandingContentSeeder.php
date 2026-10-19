@@ -557,7 +557,20 @@ class LandingContentSeeder extends Seeder
                 ],
             ],
             'gallery' => [
-                'items' => [],
+                'items' => [
+                    [
+                        'path' => 'landing/gallery/gallery-science.jpg',
+                        'alt' => ['id' => 'Eksperimen Sains & Kreativitas', 'en' => 'Science & Creativity Experiment'],
+                    ],
+                    [
+                        'path' => 'landing/gallery/gallery-quran.jpg',
+                        'alt' => ['id' => 'Pembelajaran Al-Quran & Karakter', 'en' => 'Quran & Character Building'],
+                    ],
+                    [
+                        'path' => 'landing/gallery/gallery-library.jpg',
+                        'alt' => ['id' => 'Fasilitas Ruang Baca Nyaman', 'en' => 'Comfortable Study & Reading Room'],
+                    ],
+                ],
             ],
             'olympiadHighlights' => [
                 [
@@ -620,14 +633,14 @@ class LandingContentSeeder extends Seeder
             ],
             'media' => [
                 'heroImage' => [
-                    'path' => null,
+                    'path' => 'landing/hero-student.jpg',
                     'alt' => [
                         'id' => 'Siswa ALC',
                         'en' => 'ALC student',
                     ],
                 ],
                 'aboutImage' => [
-                    'path' => null,
+                    'path' => 'landing/about-class.jpg',
                     'alt' => [
                         'id' => 'Kelas ALC',
                         'en' => 'ALC class',

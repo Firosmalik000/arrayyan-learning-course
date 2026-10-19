@@ -465,6 +465,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::post('/users/{user}/invite', [UserController::class, 'invite'])
         ->middleware('role_or_permission:administrator|users.edit,admin')
         ->name('users.invite');
+    Route::patch('/users/portal-accounts/{portalAccount}/password', [UserController::class, 'resetPortalPassword'])
+        ->middleware('role_or_permission:administrator|users.edit,admin')
+        ->name('users.portal-accounts.password');
     Route::post('/users/{user}/impersonate', [UserController::class, 'impersonate'])
         ->name('users.impersonate');
     Route::post('/impersonate/stop', [UserController::class, 'stopImpersonate'])

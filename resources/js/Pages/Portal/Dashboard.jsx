@@ -300,11 +300,6 @@ export default function Dashboard() {
                     <h1 className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 truncate">
                         Halo, {props.portalAuth?.name || 'Bapak/Ibu'}
                     </h1>
-                    <p className="text-xs text-slate-500">
-                        {type === 'teacher'
-                            ? 'Pantau aktivitas mengajar dan kelola absensi serta nilai kelas.'
-                            : 'Selamat datang di Portal Orang Tua Ar Rayyan Learning Course.'}
-                    </p>
                 </div>
             </div>
             {type === 'teacher' ? (

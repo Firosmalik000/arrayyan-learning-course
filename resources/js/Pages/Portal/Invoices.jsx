@@ -108,11 +108,6 @@ export default function Invoices() {
                     <h1 className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
                         Tagihan & Pembayaran
                     </h1>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                        {selectedStudent
-                            ? `Daftar tagihan belajar ananda ${selectedStudent.name}`
-                            : 'Daftar tagihan dan administrasi bimbingan belajar'}
-                    </p>
                 </div>
 
                 <div className="flex items-center gap-2 w-full xs:w-auto">

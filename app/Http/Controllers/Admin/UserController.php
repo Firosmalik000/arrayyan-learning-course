@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ResetPortalAccountPasswordRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Models\PortalAccount;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\InviteUserService;
@@ -12,6 +14,7 @@ use App\Support\PermissionCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,6 +32,15 @@ class UserController extends Controller
 
         $users = User::query()
             ->with('roles')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $portalAccounts = PortalAccount::query()
+            ->with([
+                'student:id,name',
+                'students:id,name,parent_portal_account_id',
+                'teacher:id,name',
+            ])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -61,15 +73,20 @@ class UserController extends Controller
         })->values();
 
         $totalUsers = $users->count();
-        $activeUsers = $users->whereNotNull('email_verified_at')->count();
-        $editorUsers = $users->filter(fn (User $user) => $user->hasRole('editor', PermissionCatalog::GUARD))->count();
-        $pendingInvites = $users->whereNull('email_verified_at')->count();
+        $teacherAccounts = $portalAccounts
+            ->where('type', PortalAccount::TYPE_TEACHER)
+            ->map(fn (PortalAccount $account): array => $this->portalAccountPayload($account))
+            ->values();
+        $parentAccounts = $portalAccounts
+            ->whereIn('type', [PortalAccount::TYPE_PARENT, PortalAccount::TYPE_STUDENT])
+            ->map(fn (PortalAccount $account): array => $this->portalAccountPayload($account))
+            ->values();
 
         $stats = [
-            ['label' => 'Total User', 'value' => $totalUsers, 'tone' => 'violet'],
-            ['label' => 'Admin Aktif', 'value' => $activeUsers, 'tone' => 'amber'],
-            ['label' => 'Editor', 'value' => $editorUsers, 'tone' => 'rose'],
-            ['label' => 'Pending Invite', 'value' => $pendingInvites, 'tone' => 'emerald'],
+            ['label' => 'Total Akun', 'value' => $totalUsers + $portalAccounts->count(), 'tone' => 'violet'],
+            ['label' => 'Portal Admin', 'value' => $totalUsers, 'tone' => 'amber'],
+            ['label' => 'Portal Guru', 'value' => $teacherAccounts->count(), 'tone' => 'rose'],
+            ['label' => 'Portal Orang Tua', 'value' => $parentAccounts->count(), 'tone' => 'emerald'],
         ];
 
         $rolesPayload = $roles->map(function (Role $role) {
@@ -104,10 +121,50 @@ class UserController extends Controller
         return Inertia::render('Admin/Users', [
             'stats' => $stats,
             'users' => $usersPayload,
+            'portalAccounts' => [
+                'teachers' => $teacherAccounts,
+                'parents' => $parentAccounts,
+            ],
             'roles' => $rolesPayload,
             'invites' => $invites,
             'canImpersonate' => $canImpersonate,
         ]);
+    }
+
+    /**
+     * @return array{
+     *     id: int,
+     *     name: string,
+     *     email: ?string,
+     *     contact: string,
+     *     portal: string,
+     *     linked_names: list<string>,
+     *     status: string,
+     *     must_change_password: bool,
+     *     last_login_at: mixed,
+     *     created_at: mixed
+     * }
+     */
+    private function portalAccountPayload(PortalAccount $account): array
+    {
+        $linkedNames = $account->isTeacher()
+            ? collect([$account->teacher?->name])
+            : $account->students
+                ->pluck('name')
+                ->push($account->student?->name);
+
+        return [
+            'id' => $account->id,
+            'name' => $account->name,
+            'email' => $account->email,
+            'contact' => $account->contact,
+            'portal' => $account->isTeacher() ? 'Portal Guru' : 'Portal Orang Tua',
+            'linked_names' => $linkedNames->filter()->unique()->values()->all(),
+            'status' => $account->is_active ? 'Aktif' : 'Nonaktif',
+            'must_change_password' => $account->must_change_password,
+            'last_login_at' => $account->last_login_at,
+            'created_at' => $account->created_at,
+        ];
     }
 
     public function store(StoreUserRequest $request): RedirectResponse
@@ -184,6 +241,19 @@ class UserController extends Controller
         );
 
         return back()->with('success', 'Undangan berhasil dikirim ulang.');
+    }
+
+    public function resetPortalPassword(
+        ResetPortalAccountPasswordRequest $request,
+        PortalAccount $portalAccount
+    ): RedirectResponse {
+        $portalAccount->forceFill([
+            'password' => Hash::make($request->string('password')->value()),
+            'must_change_password' => true,
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        return back()->with('success', 'Password akun portal berhasil direset. Pengguna wajib mengganti password saat login berikutnya.');
     }
 
     public function impersonate(User $user): RedirectResponse

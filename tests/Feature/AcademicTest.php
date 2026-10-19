@@ -240,12 +240,30 @@ class AcademicTest extends TestCase
 
         $payload = [
             'date' => now()->toDateString(),
-            'rows' => [['student_id' => $student->id, 'status' => 'hadir']],
+            'subject' => 'Matematika',
+            'material' => 'Penjumlahan dua angka',
+            'rows' => [[
+                'student_id' => $student->id,
+                'status' => 'hadir',
+                'understanding_score' => 4,
+                'evaluation' => 'Murid mampu menyelesaikan latihan secara mandiri.',
+            ]],
         ];
 
         $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.academic.attendance.store', $class), $payload);
+        $this->assertDatabaseHas('attendances', [
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'subject' => 'Matematika',
+            'material' => 'Penjumlahan dua angka',
+            'understanding_score' => 4,
+            'evaluation' => 'Murid mampu menyelesaikan latihan secara mandiri.',
+        ]);
+
         $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.academic.attendance.store', $class), [
             'date' => now()->toDateString(),
+            'subject' => 'Matematika',
+            'material' => 'Penjumlahan dua angka',
             'rows' => [['student_id' => $student->id, 'status' => 'sakit']],
         ]);
 
@@ -257,6 +275,38 @@ class AcademicTest extends TestCase
             ->where('class_group_id', $class->id)
             ->where('student_id', $student->id)
             ->first()->status);
+        $this->assertNull(Attendance::query()->first()->understanding_score);
+        $this->assertNull(Attendance::query()->first()->evaluation);
+    }
+
+    public function test_present_attendance_requires_understanding_score_and_evaluation(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+        $student = $this->makeStudent($program);
+        $this->makePaid($student);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.members.store', $class),
+            ['student_ids' => [$student->id]]
+        );
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.attendance.store', $class),
+            [
+                'date' => now()->toDateString(),
+                'subject' => 'Bahasa Inggris',
+                'material' => 'Kosakata benda sehari-hari',
+                'rows' => [['student_id' => $student->id, 'status' => 'hadir']],
+            ]
+        );
+
+        $response->assertSessionHasErrors([
+            'rows.0.understanding_score',
+            'rows.0.evaluation',
+        ]);
+        $this->assertDatabaseCount('attendances', 0);
     }
 
     public function test_attendance_rejects_non_member(): void
@@ -270,7 +320,14 @@ class AcademicTest extends TestCase
             route('admin.academic.attendance.store', $class),
             [
                 'date' => now()->toDateString(),
-                'rows' => [['student_id' => $outsider->id, 'status' => 'hadir']],
+                'subject' => 'Matematika',
+                'material' => 'Penjumlahan',
+                'rows' => [[
+                    'student_id' => $outsider->id,
+                    'status' => 'hadir',
+                    'understanding_score' => 3,
+                    'evaluation' => 'Cukup memahami materi.',
+                ]],
             ]
         );
 
@@ -558,7 +615,14 @@ class AcademicTest extends TestCase
             route('admin.academic.attendance.store', $class),
             [
                 'date' => '2026-10-10',
-                'rows' => [['student_id' => $student->id, 'status' => 'hadir']],
+                'subject' => 'Matematika',
+                'material' => 'Penjumlahan',
+                'rows' => [[
+                    'student_id' => $student->id,
+                    'status' => 'hadir',
+                    'understanding_score' => 4,
+                    'evaluation' => 'Memahami materi.',
+                ]],
             ]
         );
         $res1->assertSessionHas('success');
@@ -568,7 +632,14 @@ class AcademicTest extends TestCase
             route('admin.academic.attendance.store', $class),
             [
                 'date' => '2026-10-11',
-                'rows' => [['student_id' => $student->id, 'status' => 'hadir']],
+                'subject' => 'Matematika',
+                'material' => 'Pengurangan',
+                'rows' => [[
+                    'student_id' => $student->id,
+                    'status' => 'hadir',
+                    'understanding_score' => 4,
+                    'evaluation' => 'Memahami materi.',
+                ]],
             ]
         );
         $res2->assertSessionHas('error');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreAttendanceRequest;
 use App\Models\ActivityLog;
 use App\Models\Attendance;
 use App\Models\ClassGroup;
@@ -35,7 +36,7 @@ class AcademicController extends Controller
                 'members.student:id,name,school_name,level,class_level,parent_contact,parent_email,address,preferred_mode,program,package,package_id,notes',
                 'members.student.packageItem:id,name,level,sessions',
                 'schedules',
-                'attendances:id,class_group_id,student_id,date,status,note',
+                'attendances:id,class_group_id,student_id,date,status,subject,material,understanding_score,evaluation,note',
             ])
             ->withCount(['activeMembers'])
             ->latest()
@@ -294,18 +295,19 @@ class AcademicController extends Controller
         return back()->with('success', 'Jadwal dihapus.');
     }
 
-    public function storeAttendance(Request $request, ClassGroup $classGroup): RedirectResponse
+    public function storeAttendance(StoreAttendanceRequest $request, ClassGroup $classGroup): RedirectResponse
     {
-        $data = $request->validate([
-            'date' => ['required', 'date'],
-            'rows' => ['required', 'array', 'min:1'],
-            'rows.*.student_id' => ['required', 'integer', 'exists:students,id'],
-            'rows.*.status' => ['required', 'string', 'in:hadir,izin,sakit,alpa'],
-            'rows.*.note' => ['nullable', 'string', 'max:255'],
-        ]);
+        $data = $request->validated();
 
         try {
-            $saved = AcademicService::saveAttendance($classGroup, $data['date'], $data['rows'], Auth::id());
+            $saved = AcademicService::saveAttendance(
+                $classGroup,
+                $data['date'],
+                $data['subject'],
+                $data['material'],
+                $data['rows'],
+                Auth::id()
+            );
         } catch (RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -546,6 +548,10 @@ class AcademicController extends Controller
                 'student_id' => $a->student_id,
                 'date' => $a->date?->format('Y-m-d') ?? substr((string) $a->date, 0, 10),
                 'status' => $a->status,
+                'subject' => $a->subject,
+                'material' => $a->material,
+                'understanding_score' => $a->understanding_score,
+                'evaluation' => $a->evaluation,
                 'note' => $a->note,
             ])->values()->all(),
         ];
@@ -577,7 +583,7 @@ class AcademicController extends Controller
     private function exportAttendanceRows(ClassGroup $class): array
     {
         $rows = [['Kelas', $class->name], []];
-        $rows[] = ['Tanggal', 'Nama', 'Status', 'Catatan'];
+        $rows[] = ['Tanggal', 'Nama', 'Status', 'Mata Pelajaran', 'Materi', 'Skala Pemahaman', 'Evaluasi', 'Catatan'];
 
         $records = Attendance::query()
             ->with('student:id,name')
@@ -591,6 +597,10 @@ class AcademicController extends Controller
                 $record->date?->format('Y-m-d') ?? '',
                 $record->student?->name ?? '-',
                 $record->status,
+                (string) ($record->subject ?? ''),
+                (string) ($record->material ?? ''),
+                (string) ($record->understanding_score ?? ''),
+                (string) ($record->evaluation ?? ''),
                 (string) ($record->note ?? ''),
             ];
         }

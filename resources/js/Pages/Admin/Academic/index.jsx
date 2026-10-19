@@ -267,12 +267,14 @@ export default function Academic() {
         setShowAttendanceModal(true);
     };
 
-    const submitAttendance = (date, rows) => {
+    const submitAttendance = (date, subject, material, rows, callbacks = {}) => {
         if (!selected) return;
         router.post(`/admin/akademik/kelas/${selected.id}/absensi`, {
             date,
+            subject,
+            material,
             rows,
-        }, { preserveScroll: true });
+        }, { preserveScroll: true, ...callbacks });
     };
 
     const handleGenerateSessions = (startDate, count, dates) => {

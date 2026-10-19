@@ -100,10 +100,16 @@ class AcademicService
     }
 
     /**
-     * @param  array<int, array{student_id: int, status: string, note?: ?string}>  $rows
+     * @param  array<int, array{student_id: int, status: string, understanding_score?: ?int, evaluation?: ?string, note?: ?string}>  $rows
      */
-    public static function saveAttendance(ClassGroup $classGroup, string $date, array $rows, ?int $markerId): int
-    {
+    public static function saveAttendance(
+        ClassGroup $classGroup,
+        string $date,
+        string $subject,
+        string $material,
+        array $rows,
+        ?int $markerId
+    ): int {
         $memberIds = array_map('intval', $classGroup->activeMembers()->pluck('student_id')->all());
         $saved = 0;
 
@@ -126,6 +132,14 @@ class AcademicService
 
             $payload = [
                 'status' => $row['status'],
+                'subject' => $subject,
+                'material' => $material,
+                'understanding_score' => $row['status'] === 'hadir'
+                    ? ($row['understanding_score'] ?? null)
+                    : null,
+                'evaluation' => $row['status'] === 'hadir'
+                    ? ($row['evaluation'] ?? null)
+                    : null,
                 'note' => $row['note'] ?? null,
                 'marked_by' => $markerId,
             ];

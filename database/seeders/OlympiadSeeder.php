@@ -19,6 +19,7 @@ class OlympiadSeeder extends Seeder
                 'category' => 'free',
                 'fee' => 0,
                 'notes' => 'Kompetisi sains bergengsi tingkat nasional yang diselenggarakan oleh Kementerian Pendidikan.',
+                'image_path' => 'olympiads/olympiad-sains.jpg',
                 'is_active' => true,
             ],
             [

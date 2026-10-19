@@ -556,6 +556,55 @@ class PortalTest extends TestCase
         $response->assertSessionHas('error');
     }
 
+    public function test_parent_can_view_attendance_evaluation_tracker(): void
+    {
+        $program = Program::create(['name' => 'Calistung', 'level' => 'TK', 'is_active' => true]);
+        $teacher = Teacher::create(['name' => 'Bu Titik', 'contact' => '081233333333', 'is_active' => true]);
+        $student = Student::create([
+            'name' => 'Haidar',
+            'program_id' => $program->id,
+            'class_level' => 'TK B',
+            'parent_contact' => '081244444444',
+            'is_active' => true,
+        ]);
+        $class = ClassGroup::create([
+            'program_id' => $program->id,
+            'teacher_id' => $teacher->id,
+            'name' => 'TK B',
+            'is_active' => true,
+        ]);
+        Attendance::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'date' => '2026-10-17',
+            'status' => 'hadir',
+            'subject' => 'Calistung',
+            'material' => 'Membaca angka 1 sampai 10',
+            'understanding_score' => 5,
+            'evaluation' => 'Murid mampu membaca dan menulis angka dengan baik.',
+        ]);
+        $parent = $this->makeAccount('parent', [
+            'contact' => '081244444444',
+            'student_id' => $student->id,
+        ]);
+
+        $response = $this->actingAs($parent, 'portal')->get(route('portal.attendance'));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Portal/Attendance', false)
+            ->where('selected_student.name', 'Haidar')
+            ->where('selected_student.level', 'TK B')
+            ->has('records', 1)
+            ->where('records.0.teacher', 'Bu Titik')
+            ->where('records.0.meeting_number', 1)
+            ->where('records.0.subject', 'Calistung')
+            ->where('records.0.material', 'Membaca angka 1 sampai 10')
+            ->where('records.0.understanding_score', 5)
+            ->where('records.0.evaluation', 'Murid mampu membaca dan menulis angka dengan baik.')
+        );
+    }
+
     public function test_teacher_can_manage_schedule_and_record_attendance_on_any_date_in_portal(): void
     {
         $program = Program::create(['name' => 'Reguler', 'level' => 'SMP', 'is_active' => true]);
@@ -603,8 +652,15 @@ class PortalTest extends TestCase
             route('portal.classes.attendance.store', $class),
             [
                 'date' => $futureDate,
+                'subject' => 'Calistung',
+                'material' => 'Membaca kalimat sederhana',
                 'rows' => [
-                    ['student_id' => $student->id, 'status' => 'hadir'],
+                    [
+                        'student_id' => $student->id,
+                        'status' => 'hadir',
+                        'understanding_score' => 5,
+                        'evaluation' => 'Murid membaca lancar dan mampu menjawab pertanyaan.',
+                    ],
                 ],
             ]
         );
@@ -615,6 +671,13 @@ class PortalTest extends TestCase
             ->whereDate('date', $futureDate)
             ->where('status', 'hadir')
             ->count());
+        $this->assertDatabaseHas('attendances', [
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'subject' => 'Calistung',
+            'understanding_score' => 5,
+            'evaluation' => 'Murid membaca lancar dan mampu menjawab pertanyaan.',
+        ]);
 
         // Teacher generates sessions with custom dates
         $genResponse = $this->actingAs($teacherAccount, 'portal')->post(
@@ -624,5 +687,82 @@ class PortalTest extends TestCase
         $genResponse->assertRedirect();
         $this->assertEquals(3, Attendance::query()->where('class_group_id', $class->id)->count());
         $this->assertEquals('belum_absen', Attendance::query()->where('class_group_id', $class->id)->whereDate('date', '2026-10-18')->first()->status);
+    }
+
+    public function test_parent_can_view_attendance_with_multiple_classes_and_programs(): void
+    {
+        $program1 = Program::create(['name' => 'Calistung', 'level' => 'TK', 'is_active' => true]);
+        $program2 = Program::create(['name' => 'Olimpiade Matematika', 'level' => 'SD', 'is_active' => true]);
+
+        $teacher1 = Teacher::create(['name' => 'Bu Ani', 'contact' => '081211111111', 'is_active' => true]);
+        $teacher2 = Teacher::create(['name' => 'Pak Budi', 'contact' => '081222222222', 'is_active' => true]);
+
+        $student = Student::create([
+            'name' => 'Rizky Multi',
+            'school_name' => 'SD Harapan',
+            'level' => 'SD',
+            'class_level' => 'Kelas 4',
+            'parent_contact' => '081233445566',
+            'is_active' => true,
+        ]);
+
+        $class1 = ClassGroup::create([
+            'program_id' => $program1->id,
+            'teacher_id' => $teacher1->id,
+            'name' => 'Calistung A',
+            'total_sessions' => 12,
+            'is_active' => true,
+        ]);
+        $class1->students()->attach($student->id, ['status' => 'active', 'joined_at' => now()]);
+
+        $class2 = ClassGroup::create([
+            'program_id' => $program2->id,
+            'teacher_id' => $teacher2->id,
+            'name' => 'Matematika SD Intensif',
+            'total_sessions' => 16,
+            'is_active' => true,
+        ]);
+        $class2->students()->attach($student->id, ['status' => 'active', 'joined_at' => now()]);
+
+        $parent = $this->makeAccount('parent', [
+            'contact' => '081233445566',
+            'student_id' => $student->id,
+        ]);
+
+        Attendance::create([
+            'class_group_id' => $class1->id,
+            'student_id' => $student->id,
+            'date' => '2026-10-15',
+            'status' => 'hadir',
+            'subject' => 'Calistung',
+            'material' => 'Mengeja huruf',
+            'understanding_score' => 4,
+            'evaluation' => 'Bagus',
+        ]);
+
+        Attendance::create([
+            'class_group_id' => $class2->id,
+            'student_id' => $student->id,
+            'date' => '2026-10-16',
+            'status' => 'hadir',
+            'subject' => 'Aljabar Dasar',
+            'material' => 'Persamaan linear',
+            'understanding_score' => 5,
+            'evaluation' => 'Sangat cepat memahami',
+        ]);
+
+        $response = $this->actingAs($parent, 'portal')->get(route('portal.attendance'));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Portal/Attendance', false)
+            ->where('selected_student.name', 'Rizky Multi')
+            ->has('classes', 2)
+            ->where('classes.0.name', 'Calistung A')
+            ->where('classes.0.program_name', 'Calistung')
+            ->where('classes.1.name', 'Matematika SD Intensif')
+            ->where('classes.1.program_name', 'Olimpiade Matematika')
+            ->has('records', 2)
+        );
     }
 }

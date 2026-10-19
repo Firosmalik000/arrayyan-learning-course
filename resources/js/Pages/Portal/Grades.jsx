@@ -56,11 +56,6 @@ export default function Grades() {
                     <h1 className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
                         Nilai Belajar
                     </h1>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                        {selectedStudent
-                            ? `Evaluasi capaian & hasil belajar ananda ${selectedStudent.name}`
-                            : 'Evaluasi capaian pembelajaran siswa'}
-                    </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 w-full xs:w-auto">
                     {avg != null && (

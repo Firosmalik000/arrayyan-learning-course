@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreAttendanceRequest;
 use App\Http\Requests\StorePortalProgramEnrollmentRequest;
 use App\Jobs\SendRegistrationNotification;
 use App\Models\ActivityLog;
@@ -270,6 +271,10 @@ class PortalController extends Controller
                     'student_id' => $a->student_id,
                     'date' => $a->date?->format('Y-m-d') ?? substr((string) $a->date, 0, 10),
                     'status' => $a->status,
+                    'subject' => $a->subject,
+                    'material' => $a->material,
+                    'understanding_score' => $a->understanding_score,
+                    'evaluation' => $a->evaluation,
                     'note' => $a->note,
                 ])
                 ->values()
@@ -374,18 +379,89 @@ class PortalController extends Controller
             ]);
         }
 
-        $records = Attendance::query()
-            ->with('classGroup:id,name')
-            ->where('student_id', $student->id)
-            ->latest('date')
-            ->limit(100)
-            ->get()
-            ->map(fn (Attendance $attendance) => [
-                'class' => $attendance->classGroup?->name ?? '-',
-                'date' => $attendance->date,
-                'status' => $attendance->status,
-                'note' => $attendance->note,
+        $rawRecords = Attendance::query()
+            ->with([
+                'classGroup.teacher:id,name',
+                'classGroup.program:id,name,level',
+                'classGroup.package:id,name,sessions',
             ])
+            ->where('student_id', $student->id)
+            ->where('status', '!=', 'belum_absen')
+            ->latest('date')
+            ->limit(200)
+            ->get();
+
+        $studentClasses = $student->classGroups()
+            ->with([
+                'program:id,name,level',
+                'teacher:id,name',
+                'package:id,name,sessions',
+            ])
+            ->get();
+
+        $allClassGroups = $studentClasses->keyBy('id');
+        foreach ($rawRecords as $att) {
+            if ($att->classGroup && ! $allClassGroups->has($att->class_group_id)) {
+                $allClassGroups->put($att->class_group_id, $att->classGroup);
+            }
+        }
+
+        $classesData = $allClassGroups->values()->map(function (ClassGroup $cls) use ($rawRecords): array {
+            $classRecords = $rawRecords->where('class_group_id', $cls->id);
+            $totalRecorded = $classRecords->count();
+            $hadirCount = $classRecords->where('status', 'hadir')->count();
+            $scored = $classRecords->whereNotNull('understanding_score');
+            $avgScore = $scored->count() > 0 ? round((float) $scored->avg('understanding_score'), 1) : null;
+            $rate = $totalRecorded > 0 ? round(($hadirCount / $totalRecorded) * 100) : null;
+
+            $lastRecord = $classRecords->sortByDesc('date')->first();
+            $lastDate = $lastRecord ? ($lastRecord->date?->format('Y-m-d') ?? substr((string) $lastRecord->date, 0, 10)) : null;
+
+            return [
+                'id' => $cls->id,
+                'name' => $cls->name,
+                'program_id' => $cls->program_id,
+                'program_name' => $cls->program?->name ?? 'Program Belajar',
+                'level' => $cls->level ?? $cls->program?->level,
+                'package_name' => $cls->package?->name,
+                'total_sessions' => $cls->total_sessions ?? $cls->package?->sessions,
+                'teacher_name' => $cls->teacher?->name,
+                'total_recorded' => $totalRecorded,
+                'hadir_count' => $hadirCount,
+                'attendance_rate' => $rate,
+                'average_score' => $avgScore,
+                'last_date' => $lastDate,
+                'last_subject' => $lastRecord?->subject,
+                'last_material' => $lastRecord?->material,
+            ];
+        })->values()->all();
+
+        $meetingNumbers = [];
+        $records = $rawRecords
+            ->sortBy('date')
+            ->map(function (Attendance $attendance) use (&$meetingNumbers): array {
+                $classKey = (string) $attendance->class_group_id;
+                $meetingNumbers[$classKey] = ($meetingNumbers[$classKey] ?? 0) + 1;
+
+                return [
+                    'id' => $attendance->id,
+                    'class_group_id' => $attendance->class_group_id,
+                    'class' => $attendance->classGroup?->name ?? '-',
+                    'program_name' => $attendance->classGroup?->program?->name ?? 'Program Belajar',
+                    'program_level' => $attendance->classGroup?->level ?? $attendance->classGroup?->program?->level,
+                    'total_sessions' => $attendance->classGroup?->total_sessions ?? $attendance->classGroup?->package?->sessions,
+                    'teacher' => $attendance->classGroup?->teacher?->name ?? '-',
+                    'meeting_number' => $meetingNumbers[$classKey],
+                    'date' => $attendance->date?->format('Y-m-d') ?? substr((string) $attendance->date, 0, 10),
+                    'status' => $attendance->status,
+                    'subject' => $attendance->subject,
+                    'material' => $attendance->material,
+                    'understanding_score' => $attendance->understanding_score,
+                    'evaluation' => $attendance->evaluation,
+                    'note' => $attendance->note,
+                ];
+            })
+            ->sortByDesc('date')
             ->values()
             ->all();
 
@@ -397,7 +473,10 @@ class PortalController extends Controller
             'selected_student' => [
                 'id' => $student->id,
                 'name' => $student->name,
+                'level' => $student->class_level ?? $student->level,
+                'program' => $student->program,
             ],
+            'classes' => $classesData,
             'records' => $records,
             'rate' => $total > 0 ? round($present / $total * 100) : null,
         ]);
@@ -645,20 +724,21 @@ class PortalController extends Controller
         ]);
     }
 
-    public function storeClassAttendance(Request $request, ClassGroup $classGroup): RedirectResponse
+    public function storeClassAttendance(StoreAttendanceRequest $request, ClassGroup $classGroup): RedirectResponse
     {
         $this->authorizeTeacherClass($classGroup);
 
-        $data = $request->validate([
-            'date' => ['required', 'date'],
-            'rows' => ['required', 'array', 'min:1'],
-            'rows.*.student_id' => ['required', 'integer', 'exists:students,id'],
-            'rows.*.status' => ['required', 'string', 'in:hadir,izin,sakit,alpa'],
-            'rows.*.note' => ['nullable', 'string', 'max:255'],
-        ]);
+        $data = $request->validated();
 
         try {
-            $saved = AcademicService::saveAttendance($classGroup, $data['date'], $data['rows'], null);
+            $saved = AcademicService::saveAttendance(
+                $classGroup,
+                $data['date'],
+                $data['subject'],
+                $data['material'],
+                $data['rows'],
+                null
+            );
         } catch (RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }

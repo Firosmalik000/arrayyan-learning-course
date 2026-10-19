@@ -147,9 +147,9 @@ export default function PortalLayout({ children }) {
         .join('') || (isTeacher ? 'PG' : 'OT');
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex antialiased selection:bg-violet-100 selection:text-brand-primary w-full overflow-x-hidden">
-            {/* Desktop Sidebar (Mirip AdminLayout) */}
-            <aside className="hidden w-60 md:w-64 flex-col border-r border-slate-200/80 bg-white/95 backdrop-blur-xl md:flex h-screen sticky top-0 shrink-0">
+        <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex antialiased selection:bg-violet-100 selection:text-brand-primary w-full">
+            {/* Desktop Sidebar (Fixed) */}
+            <aside className="hidden md:flex fixed inset-y-0 left-0 z-30 w-64 flex-col border-r border-slate-200/80 bg-white/95 backdrop-blur-xl h-screen">
                 {/* Brand / Logo Header */}
                 <div className="shrink-0 border-b border-slate-100 px-4 py-3">
                     <Link href="/portal" className="flex items-center gap-2.5 group">
@@ -332,9 +332,9 @@ export default function PortalLayout({ children }) {
             )}
 
             {/* Main Wrapper */}
-            <div className="flex flex-1 flex-col min-w-0 w-full max-w-full overflow-x-hidden">
+            <div className="flex flex-1 flex-col min-w-0 w-full md:pl-64">
                 {/* Modern Top Header */}
-                <header className="sticky top-0 z-20 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-3 sm:px-5 py-2 flex items-center justify-between gap-2 sm:gap-3">
+                <header className="sticky top-0 z-20 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
                     {/* Left: Mobile Toggle & Page Indicator */}
                     <div className="flex items-center gap-2 min-w-0">
                         <button

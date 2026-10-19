@@ -21,6 +21,7 @@ class ProgramPricingSeeder extends Seeder
                 'description' => 'Bimbingan belajar kelompok dengan maksimal 5 siswa per kelas.',
                 'mode' => 'offline',
                 'duration' => '60 menit / sesi',
+                'image_path' => 'programs/program-group.jpg',
             ],
             'Privat' => [
                 'slug' => 'privat',
@@ -28,6 +29,7 @@ class ProgramPricingSeeder extends Seeder
                 'description' => 'Bimbingan belajar intensif satu guru untuk satu siswa.',
                 'mode' => 'offline',
                 'duration' => '90 menit / sesi',
+                'image_path' => 'programs/program-private.jpg',
             ],
         ])->mapWithKeys(function (array $defaults, string $name): array {
             $program = Program::query()->firstOrCreate(

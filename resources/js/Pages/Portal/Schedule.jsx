@@ -53,7 +53,7 @@ export default function Schedule() {
     const today = new Date();
     const [currentYear, setCurrentYear] = useState(today.getFullYear());
     const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-    const [filterClassId, setFilterClassId] = useState('');
+    const [filterClassId, setFilterClassId] = useState(null);
     const [filterDay, setFilterDay] = useState('');
     const [viewMode, setViewMode] = useState('table'); // 'table' | 'calendar'
     const [toastMessage, setToastMessage] = useState('');
@@ -98,14 +98,20 @@ export default function Schedule() {
         setShowAttendanceModal(true);
     };
 
-    const handleSubmitAttendance = (date, rows) => {
+    const handleSubmitAttendance = (date, subject, material, rows, callbacks = {}) => {
         if (!selectedClass) return;
         router.post(`/portal/kelas/${selectedClass.id}/absensi`, {
             date,
+            subject,
+            material,
             rows,
         }, {
             preserveScroll: true,
-            onSuccess: () => showToast('Absensi berhasil disimpan.'),
+            ...callbacks,
+            onSuccess: (...args) => {
+                showToast('Absensi dan evaluasi berhasil disimpan.');
+                callbacks.onSuccess?.(...args);
+            },
         });
     };
 
@@ -181,7 +187,7 @@ export default function Schedule() {
 
     // STUDENT / PARENT: Calculate monthly sessions for table
     const relevantClassesForStudent = useMemo(() => {
-        if (!filterClassId) return classes;
+        if (!filterClassId || filterClassId === 'all') return classes;
         return classes.filter((c) => String(c.id) === String(filterClassId));
     }, [classes, filterClassId]);
 
@@ -320,6 +326,23 @@ export default function Schedule() {
 
         return grid;
     }, [currentYear, currentMonth, studentMonthlySessions]);
+
+    const activeStudentClass = useMemo(() => {
+        if (!filterClassId || filterClassId === 'all') return null;
+        return classes.find((c) => String(c.id) === String(filterClassId)) || null;
+    }, [classes, filterClassId]);
+
+    const todaySessionsCount = useMemo(() => {
+        return studentMonthlySessions.filter((s) => s.isToday).length;
+    }, [studentMonthlySessions]);
+
+    const completedSessionsCount = useMemo(() => {
+        return studentMonthlySessions.filter((s) => s.attendance?.status && s.attendance.status !== 'belum_absen').length;
+    }, [studentMonthlySessions]);
+
+    const upcomingSessionsCount = useMemo(() => {
+        return studentMonthlySessions.filter((s) => !s.isPast && (!s.attendance || s.attendance.status === 'belum_absen')).length;
+    }, [studentMonthlySessions]);
 
     return (
         <PortalLayout>
@@ -995,89 +1018,386 @@ export default function Schedule() {
             {/* ========================================================================= */}
             {accountType !== 'teacher' && (
                 <div className="space-y-6">
-                    {/* Header */}
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <h1 className="font-display text-2xl font-extrabold tracking-tight text-slate-900">
-                                Jadwal Belajar
-                            </h1>
-                            <p className="mt-1 text-xs text-slate-500">
-                                {selectedStudent
-                                    ? `Tabel jadwal sesi bimbingan ananda ${selectedStudent.name}.`
-                                    : 'Tabel jadwal sesi bimbingan belajar.'}
+                    {/* ========================================================================= */}
+                    {/* LEVEL 1: DAFTAR PROGRAM & KELAS BELAJAR (TAMPILAN UTAMA PERTAMA)         */}
+                    {/* ========================================================================= */}
+                    {filterClassId === null && (
+                        <div className="space-y-6">
+                            {/* Header Banner */}
+                            <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-7 shadow-xs">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <div className="inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700 mb-2 border border-violet-100">
+                                            <span>📅</span>
+                                            <span>Jadwal Belajar Siswa</span>
+                                        </div>
+                                        <h1 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                                            Jadwal Program & Kelas
+                                        </h1>
+                                        <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium max-w-2xl">
+                                            {selectedStudent
+                                                ? `Daftar kelas yang diikuti oleh ananda ${selectedStudent.name}. Pilih salah satu kelas di bawah untuk melihat jadwal rutin mingguan dan kalender pertemuan bulanan.`
+                                                : 'Daftar program bimbingan belajar yang aktif diikuti.'}
+                                        </p>
+                                    </div>
+
+                                    {/* Tombol Kalender Gabungan */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setFilterClassId('all')}
+                                        className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-violet-700 active:scale-98 transition self-start sm:self-auto cursor-pointer"
+                                    >
+                                        <span>📅 Buka Kalender Gabungan Semua Kelas</span>
+                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Ringkasan Statistik Bulanan Siswa */}
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs">
+                                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                        Total Kelas Diikuti
+                                    </span>
+                                    <div className="mt-1 flex items-baseline gap-1.5">
+                                        <span className="text-2xl font-black text-slate-900">
+                                            {classes.length}
+                                        </span>
+                                        <span className="text-xs text-slate-400 font-medium">Kelas</span>
+                                    </div>
+                                    <p className="mt-1 text-[11px] text-slate-500">
+                                        Program aktif bimbingan
+                                    </p>
+                                </div>
+
+                                <div className="rounded-2xl border border-violet-100 bg-violet-50/30 p-4 shadow-2xs">
+                                    <span className="block text-[10px] font-bold uppercase tracking-wider text-violet-700">
+                                        Total Sesi Bulan Ini
+                                    </span>
+                                    <div className="mt-1 flex items-baseline gap-1.5">
+                                        <span className="text-2xl font-black text-violet-700">
+                                            {studentMonthlySessions.length}
+                                        </span>
+                                        <span className="text-xs text-violet-600 font-bold">Sesi</span>
+                                    </div>
+                                    <p className="mt-1 text-[11px] text-violet-600 font-medium">
+                                        {MONTH_NAMES[currentMonth]} {currentYear}
+                                    </p>
+                                </div>
+
+                                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/30 p-4 shadow-2xs">
+                                    <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                                        Jadwal Hari Ini
+                                    </span>
+                                    <div className="mt-1 flex items-baseline gap-1.5">
+                                        <span className="text-2xl font-black text-emerald-700">
+                                            {todaySessionsCount}
+                                        </span>
+                                        <span className="text-xs text-emerald-600 font-bold">Sesi</span>
+                                    </div>
+                                    <p className="mt-1 text-[11px] text-emerald-600 font-medium">
+                                        {todaySessionsCount > 0 ? 'Ada bimbingan hari ini' : 'Tidak ada jadwal hari ini'}
+                                    </p>
+                                </div>
+
+                                <div className="rounded-2xl border border-sky-100 bg-sky-50/30 p-4 shadow-2xs">
+                                    <span className="block text-[10px] font-bold uppercase tracking-wider text-sky-700">
+                                        Sesi Mendatang
+                                    </span>
+                                    <div className="mt-1 flex items-baseline gap-1.5">
+                                        <span className="text-2xl font-black text-sky-700">
+                                            {upcomingSessionsCount}
+                                        </span>
+                                        <span className="text-xs text-sky-600 font-medium">Agenda</span>
+                                    </div>
+                                    <p className="mt-1 text-[11px] text-sky-600 font-medium">
+                                        Siap diikuti ananda
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Section Header */}
+                            <div className="pt-2">
+                                <h2 className="font-display font-extrabold text-slate-900 text-lg">
+                                    Pilih Kelas untuk Melihat Kalender & Sesi
+                                </h2>
+                                <p className="text-xs text-slate-500 font-medium">
+                                    Setiap kelas memiliki jadwal hari dan jam sesi tersendiri.
+                                </p>
+                            </div>
+
+                            {/* Cards Grid: Program & Kelas */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                {classes.map((cls) => {
+                                    const classSessionsCount = studentMonthlySessions.filter((s) => String(s.classId) === String(cls.id)).length;
+                                    return (
+                                        <div
+                                            key={`sch-cls-${cls.id}`}
+                                            className="rounded-3xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs hover:border-violet-400 hover:shadow-md transition-all flex flex-col justify-between gap-5 group"
+                                        >
+                                            <div className="space-y-4">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <span className="inline-flex items-center rounded-xl bg-violet-600 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white shadow-xs">
+                                                        {cls.program_name}
+                                                    </span>
+                                                    {cls.level && (
+                                                        <span className="text-xs font-bold text-slate-400">
+                                                            Jenjang {cls.level}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <h3 className="font-display text-base sm:text-lg font-extrabold text-slate-900 group-hover:text-violet-700 transition">
+                                                        {cls.name}
+                                                    </h3>
+                                                    <p className="text-xs text-slate-500 font-semibold mt-1 flex items-center gap-1.5">
+                                                        <span>👨‍🏫</span>
+                                                        <span>{cls.teacher_name ? `Kak ${cls.teacher_name}` : 'Pengajar belum ditentukan'}</span>
+                                                    </p>
+                                                </div>
+
+                                                {/* Jadwal Rutin Mingguan */}
+                                                <div className="space-y-2 rounded-2xl bg-slate-50/80 p-3.5 border border-slate-100 text-xs">
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                                        Jadwal Rutin Mingguan
+                                                    </span>
+                                                    {cls.schedules?.length > 0 ? (
+                                                        <div className="space-y-1.5">
+                                                            {cls.schedules.map((sch) => (
+                                                                <div
+                                                                    key={sch.id}
+                                                                    className="flex items-center justify-between rounded-xl bg-white px-3 py-1.5 border border-slate-200/60 shadow-2xs font-semibold text-slate-700"
+                                                                >
+                                                                    <span>{sch.day}</span>
+                                                                    <span className="font-bold text-violet-700">
+                                                                        {sch.start_time} - {sch.end_time} WIB
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-slate-400 italic text-xs">Jadwal mingguan belum diatur.</p>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1">
+                                                    <span>Sesi Bulan Ini:</span>
+                                                    <strong className="text-slate-900 font-extrabold">{classSessionsCount} Sesi Terjadwal</strong>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => setFilterClassId(String(cls.id))}
+                                                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-violet-700 active:scale-98 transition cursor-pointer"
+                                            >
+                                                <span>Buka Kalender & Jadwal Sesi</span>
+                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ========================================================================= */}
+                    {/* LEVEL 2: DETAIL JADWAL & KALENDER SESI (KETIKA KELAS DIPILIH / GABUNGAN)   */}
+                    {/* ========================================================================= */}
+                    {filterClassId !== null && (
+                        <div className="space-y-6">
+                            {/* Navigation Bar: Back & Fast Switcher */}
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setFilterClassId(null)}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition self-start cursor-pointer group"
+                                >
+                                    <svg className="h-4 w-4 text-slate-500 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                                    </svg>
+                                    <span>← Kembali ke Daftar Program / Kelas</span>
+                                </button>
+
+                                {/* Fast Switcher */}
+                                {classes.length > 1 && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-slate-500 hidden sm:inline">
+                                            Ganti Kelas:
+                                        </span>
+                                        <select
+                                            value={filterClassId}
+                                            onChange={(e) => setFilterClassId(e.target.value)}
+                                            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 shadow-2xs outline-none focus:border-violet-500 cursor-pointer"
+                                        >
+                                            <option value="all">Semua Program & Kelas (Gabungan)</option>
+                                            {classes.map((c) => (
+                                                <option key={c.id} value={String(c.id)}>
+                                                    [{c.program_name}] {c.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Header Banner with Month Navigator */}
+                            <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-7 shadow-xs">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="rounded-xl bg-violet-600 px-3 py-1 text-xs font-black uppercase text-white shadow-xs">
+                                                {activeStudentClass ? activeStudentClass.program_name : 'Semua Program Belajar'}
+                                            </span>
+                                            {activeStudentClass?.level && (
+                                                <span className="text-xs font-bold text-slate-400">
+                                                    Jenjang {activeStudentClass.level}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h1 className="font-display text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                                            {activeStudentClass ? activeStudentClass.name : 'Jadwal Seluruh Sesi Belajar'}
+                                        </h1>
+                                        <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+                                            {activeStudentClass
+                                                ? `Pengajar: Kak ${activeStudentClass.teacher_name || '-'} • Kalender dan jadwal bimbingan belajar bulanan.`
+                                                : 'Kalender gabungan seluruh jadwal belajar ananda di Ar Rayyan Learning Course.'}
+                                        </p>
+                                    </div>
+
+                                    {/* Month Navigator */}
+                                    <div className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xs self-start sm:self-auto shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={handlePrevMonth}
+                                            className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                                            title="Bulan Sebelumnya"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                                            </svg>
+                                        </button>
+
+                                        <div className="px-3 text-center">
+                                            <span className="block text-xs font-extrabold text-slate-900">
+                                                {MONTH_NAMES[currentMonth]} {currentYear}
+                                            </span>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleNextMonth}
+                                            className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                                            title="Bulan Berikutnya"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                            </svg>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleResetMonth}
+                                            className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                                        >
+                                            Bulan Ini
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                    {/* Monthly Summary Stat Cards */}
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs">
+                            <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Total Sesi Bulan Ini
+                            </span>
+                            <div className="mt-1 flex items-baseline gap-1.5">
+                                <span className="text-2xl font-black text-slate-900">
+                                    {studentMonthlySessions.length}
+                                </span>
+                                <span className="text-xs text-slate-400 font-medium">Sesi</span>
+                            </div>
+                            <p className="mt-1 text-[11px] text-slate-500 truncate">
+                                {MONTH_NAMES[currentMonth]} {currentYear}
                             </p>
                         </div>
 
-                        {/* Month Navigator */}
-                        <div className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xs self-start sm:self-auto">
-                            <button
-                                type="button"
-                                onClick={handlePrevMonth}
-                                className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 transition"
-                                title="Bulan Sebelumnya"
-                            >
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                                </svg>
-                            </button>
-
-                            <div className="px-3 text-center">
-                                <span className="block text-xs font-extrabold text-slate-900">
-                                    {MONTH_NAMES[currentMonth]} {currentYear}
+                        <div className="rounded-2xl border border-violet-100 bg-violet-50/30 p-4 shadow-2xs">
+                            <span className="block text-[10px] font-bold uppercase tracking-wider text-violet-700">
+                                Jadwal Hari Ini
+                            </span>
+                            <div className="mt-1 flex items-baseline gap-1.5">
+                                <span className="text-2xl font-black text-violet-700">
+                                    {todaySessionsCount}
                                 </span>
+                                <span className="text-xs text-violet-600 font-bold">Sesi</span>
                             </div>
+                            <p className="mt-1 text-[11px] text-violet-600 font-medium truncate">
+                                {todaySessionsCount > 0 ? 'Ada jadwal belajar hari ini!' : 'Tidak ada jadwal hari ini'}
+                            </p>
+                        </div>
 
-                            <button
-                                type="button"
-                                onClick={handleNextMonth}
-                                className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 transition"
-                                title="Bulan Berikutnya"
-                            >
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                                </svg>
-                            </button>
+                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/30 p-4 shadow-2xs">
+                            <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                                Sesi Terlaksana / Hadir
+                            </span>
+                            <div className="mt-1 flex items-baseline gap-1.5">
+                                <span className="text-2xl font-black text-emerald-700">
+                                    {completedSessionsCount}
+                                </span>
+                                <span className="text-xs text-emerald-600 font-bold">Selesai</span>
+                            </div>
+                            <p className="mt-1 text-[11px] text-emerald-600 font-medium truncate">
+                                Pertemuan sudah berlangsung
+                            </p>
+                        </div>
 
-                            <button
-                                type="button"
-                                onClick={handleResetMonth}
-                                className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-100 transition"
-                            >
-                                Hari Ini
-                            </button>
+                        <div className="rounded-2xl border border-sky-100 bg-sky-50/30 p-4 shadow-2xs">
+                            <span className="block text-[10px] font-bold uppercase tracking-wider text-sky-700">
+                                Sesi Mendatang
+                            </span>
+                            <div className="mt-1 flex items-baseline gap-1.5">
+                                <span className="text-2xl font-black text-sky-700">
+                                    {upcomingSessionsCount}
+                                </span>
+                                <span className="text-xs text-sky-600 font-medium">Agenda</span>
+                            </div>
+                            <p className="mt-1 text-[11px] text-sky-600 font-medium truncate">
+                                Siap diikuti ananda
+                            </p>
                         </div>
                     </div>
 
                     {/* Filter bar & View Mode */}
                     <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
-                            {/* Class selector */}
-                            {classes.length > 1 && (
-                                <select
-                                    value={filterClassId}
-                                    onChange={(e) => setFilterClassId(e.target.value)}
-                                    className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2 sm:py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
-                                >
-                                    <option value="">Semua Program / Kelas</option>
-                                    {classes.map((c) => (
-                                        <option key={c.id} value={c.id}>
-                                            {c.name} ({c.program_name})
-                                        </option>
-                                    ))}
-                                </select>
-                            )}
-
+                        <div className="flex items-center gap-2">
                             {/* Day filter */}
                             <select
                                 value={filterDay}
                                 onChange={(e) => setFilterDay(e.target.value)}
-                                className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2 sm:py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
+                                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
                             >
                                 <option value="">Semua Hari</option>
                                 {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'].map((d) => (
                                     <option key={d} value={d}>{d}</option>
                                 ))}
                             </select>
+
+                            {filterDay && (
+                                <button
+                                    type="button"
+                                    onClick={() => setFilterDay('')}
+                                    className="text-xs font-bold text-rose-600 hover:text-rose-700 inline-flex items-center gap-1 transition cursor-pointer"
+                                >
+                                    Reset Hari
+                                </button>
+                            )}
                         </div>
 
                         {/* View toggle */}
@@ -1085,7 +1405,7 @@ export default function Schedule() {
                             <button
                                 type="button"
                                 onClick={() => setViewMode('table')}
-                                className={`flex-1 sm:flex-initial text-center justify-center rounded-lg px-3 py-1.5 transition ${
+                                className={`flex-1 sm:flex-initial text-center justify-center rounded-lg px-3.5 py-1.5 transition cursor-pointer ${
                                     viewMode === 'table'
                                         ? 'bg-white text-slate-900 shadow-xs font-bold'
                                         : 'text-slate-500 hover:text-slate-800'
@@ -1096,7 +1416,7 @@ export default function Schedule() {
                             <button
                                 type="button"
                                 onClick={() => setViewMode('calendar')}
-                                className={`flex-1 sm:flex-initial text-center justify-center rounded-lg px-3 py-1.5 transition ${
+                                className={`flex-1 sm:flex-initial text-center justify-center rounded-lg px-3.5 py-1.5 transition cursor-pointer ${
                                     viewMode === 'calendar'
                                         ? 'bg-white text-slate-900 shadow-xs font-bold'
                                         : 'text-slate-500 hover:text-slate-800'
@@ -1154,12 +1474,20 @@ export default function Schedule() {
                                         >
                                             <div className="flex items-start justify-between gap-2">
                                                 <div>
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                                                        Sesi #{idx + 1} • {session.dayName}
-                                                    </span>
-                                                    <h3 className="font-bold text-slate-900 text-sm mt-0.5">
+                                                    <div className="flex items-center gap-1.5 mb-1">
+                                                        <span className="rounded-md bg-violet-50 px-2 py-0.5 text-[9px] font-black uppercase text-violet-700 border border-violet-100">
+                                                            {session.programName}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-slate-700">
+                                                            {session.className}
+                                                        </span>
+                                                    </div>
+                                                    <h3 className="font-bold text-slate-900 text-sm">
                                                         {session.formattedDate}
                                                     </h3>
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mt-0.5">
+                                                        Sesi #{idx + 1} • {session.dayName}
+                                                    </span>
                                                 </div>
                                                 {statusBadge}
                                             </div>
@@ -1389,22 +1717,33 @@ export default function Schedule() {
                                                             {daySessions.map((s, sIdx) => (
                                                                 <div
                                                                     key={sIdx}
-                                                                    className="rounded-xl bg-white p-1 text-[10px] shadow-2xs border border-violet-100"
+                                                                    className="rounded-xl bg-white p-1.5 text-[10px] shadow-2xs border border-violet-100 space-y-0.5"
                                                                 >
-                                                                    <p className="font-extrabold text-violet-900 truncate">
-                                                                        {s.startTime}
-                                                                    </p>
-                                                                    <p className="text-slate-500 truncate font-semibold">
+                                                                    <div className="flex items-center justify-between gap-1">
+                                                                        <span className="font-extrabold text-violet-900 truncate">
+                                                                            {s.startTime}
+                                                                        </span>
+                                                                        {s.programName && (
+                                                                            <span className="text-[8px] font-black uppercase text-violet-700 bg-violet-50 px-1 py-0.5 rounded truncate max-w-[70px]">
+                                                                                {s.programName}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="text-slate-700 truncate font-bold text-[10px]">
                                                                         {s.className}
                                                                     </p>
                                                                     {s.attendance && s.attendance.status && s.attendance.status !== 'belum_absen' ? (
-                                                                        <span className="font-bold text-emerald-600 capitalize">
-                                                                            {s.attendance.status}
+                                                                        <span className="inline-block font-extrabold text-emerald-600 capitalize text-[9px]">
+                                                                            ● {s.attendance.status}
                                                                         </span>
                                                                     ) : s.isToday ? (
-                                                                        <span className="font-bold text-violet-600">Hari Ini</span>
+                                                                        <span className="inline-block font-extrabold text-violet-600 text-[9px] animate-pulse">
+                                                                            ● Hari Ini
+                                                                        </span>
                                                                     ) : (
-                                                                        <span className="font-medium text-slate-400">Terjadwal</span>
+                                                                        <span className="inline-block font-medium text-slate-400 text-[9px]">
+                                                                            Terjadwal
+                                                                        </span>
                                                                     )}
                                                                 </div>
                                                             ))}
@@ -1420,6 +1759,8 @@ export default function Schedule() {
                     )}
                 </div>
             )}
-        </PortalLayout>
-    );
+        </div>
+    )}
+</PortalLayout>
+);
 }
