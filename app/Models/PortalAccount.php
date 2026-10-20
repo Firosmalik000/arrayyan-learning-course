@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Notifications\PortalResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
 class PortalAccount extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     public const TYPE_PARENT = 'parent';
 
@@ -72,5 +74,13 @@ class PortalAccount extends Authenticatable
     public function isTeacher(): bool
     {
         return $this->type === self::TYPE_TEACHER;
+    }
+
+    /**
+     * @param  string  $token
+     */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token)
+    {
+        $this->notify(new PortalResetPasswordNotification($token));
     }
 }

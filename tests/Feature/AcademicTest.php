@@ -417,9 +417,11 @@ class AcademicTest extends TestCase
     {
         $user = $this->actingAsAdmin();
         $program = $this->makeProgram();
+        $teacher = Teacher::create(['name' => 'Guru Kelas', 'is_active' => true]);
 
         $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.academic.classes.store'), [
             'program_id' => $program->id,
+            'teacher_id' => $teacher->id,
             'name' => 'Kelas Baru',
             'quota' => 15,
             'is_active' => true,
@@ -428,8 +430,29 @@ class AcademicTest extends TestCase
         $response->assertRedirect();
         $this->assertDatabaseHas('class_groups', [
             'program_id' => $program->id,
+            'teacher_id' => $teacher->id,
             'name' => 'Kelas Baru',
             'quota' => 15,
+        ]);
+    }
+
+    public function test_active_class_requires_a_teacher(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.academic.classes.store'), [
+            'program_id' => $program->id,
+            'name' => 'Kelas Tanpa Guru',
+            'quota' => 15,
+            'is_active' => true,
+        ]);
+
+        $response->assertSessionHasErrors([
+            'teacher_id' => 'Pengajar wajib dipilih untuk kelas aktif.',
+        ]);
+        $this->assertDatabaseMissing('class_groups', [
+            'name' => 'Kelas Tanpa Guru',
         ]);
     }
 
@@ -458,6 +481,7 @@ class AcademicTest extends TestCase
     {
         $user = $this->actingAsAdmin();
         $program = $this->makeProgram();
+        $teacher = Teacher::create(['name' => 'Guru Paket', 'is_active' => true]);
         $package = Package::create([
             'program_id' => $program->id,
             'name' => 'Paket SD 8 Sesi',
@@ -468,6 +492,7 @@ class AcademicTest extends TestCase
 
         $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(route('admin.academic.classes.store'), [
             'program_id' => $program->id,
+            'teacher_id' => $teacher->id,
             'level' => 'SD',
             'package_id' => $package->id,
             'name' => 'Kelas SD 8 Sesi',

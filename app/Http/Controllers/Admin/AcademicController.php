@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SaveClassGroupRequest;
 use App\Http\Requests\StoreAttendanceRequest;
 use App\Models\ActivityLog;
 use App\Models\Attendance;
@@ -107,18 +108,9 @@ class AcademicController extends Controller
         ]);
     }
 
-    public function storeClass(Request $request): RedirectResponse
+    public function storeClass(SaveClassGroupRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'program_id' => ['required', 'integer', 'exists:programs,id'],
-            'level' => ['nullable', 'string', 'max:50'],
-            'package_id' => ['nullable', 'integer', 'exists:packages,id'],
-            'total_sessions' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'teacher_id' => ['nullable', 'integer', 'exists:teachers,id'],
-            'name' => ['required', 'string', 'max:100'],
-            'quota' => ['nullable', 'integer', 'min:1', 'max:10000'],
-            'is_active' => ['nullable', 'boolean'],
-        ]);
+        $data = $request->validated();
 
         if (! empty($data['package_id'])) {
             $pkg = Package::find($data['package_id']);
@@ -138,18 +130,9 @@ class AcademicController extends Controller
         return back()->with('success', 'Kelas berhasil ditambahkan.');
     }
 
-    public function updateClass(Request $request, ClassGroup $classGroup): RedirectResponse
+    public function updateClass(SaveClassGroupRequest $request, ClassGroup $classGroup): RedirectResponse
     {
-        $data = $request->validate([
-            'program_id' => ['required', 'integer', 'exists:programs,id'],
-            'level' => ['nullable', 'string', 'max:50'],
-            'package_id' => ['nullable', 'integer', 'exists:packages,id'],
-            'total_sessions' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'teacher_id' => ['nullable', 'integer', 'exists:teachers,id'],
-            'name' => ['required', 'string', 'max:100'],
-            'quota' => ['nullable', 'integer', 'min:1', 'max:10000'],
-            'is_active' => ['nullable', 'boolean'],
-        ]);
+        $data = $request->validated();
 
         if (! empty($data['package_id'])) {
             $pkg = Package::find($data['package_id']);

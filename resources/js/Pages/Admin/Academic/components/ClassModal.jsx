@@ -133,9 +133,14 @@ export default function ClassModal({
                         value={form.data.teacher_id}
                         onChange={(v) => form.setData('teacher_id', v)}
                         options={[
-                            { value: '', label: 'Tanpa pengajar khusus' },
+                            {
+                                value: '',
+                                label: form.data.is_active ? 'Pilih pengajar' : 'Tanpa pengajar khusus',
+                            },
                             ...teachers.map((t) => ({ value: String(t.id), label: t.name })),
                         ]}
+                        required={form.data.is_active}
+                        error={form.errors.teacher_id}
                     />
                 </div>
 

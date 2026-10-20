@@ -26,6 +26,7 @@ use App\Http\Controllers\OlympiadRegistrationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Portal\PortalAuthController;
 use App\Http\Controllers\Portal\PortalController;
+use App\Http\Controllers\Portal\PortalPasswordResetController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\StatusCheckController;
@@ -225,6 +226,16 @@ Route::get('/portal/login', [PortalAuthController::class, 'create'])->name('port
 Route::post('/portal/login', [PortalAuthController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('portal.login.store');
+Route::get('/portal/lupa-password', [PortalPasswordResetController::class, 'create'])
+    ->name('portal.password.request');
+Route::post('/portal/lupa-password', [PortalPasswordResetController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('portal.password.email');
+Route::get('/portal/reset-password/{token}', [PortalPasswordResetController::class, 'edit'])
+    ->name('portal.password.reset');
+Route::post('/portal/reset-password', [PortalPasswordResetController::class, 'update'])
+    ->middleware('throttle:5,1')
+    ->name('portal.password.reset.update');
 
 Route::prefix('portal')->name('portal.')->middleware('auth:portal')->group(function () {
     Route::post('/logout', [PortalAuthController::class, 'destroy'])->name('logout');

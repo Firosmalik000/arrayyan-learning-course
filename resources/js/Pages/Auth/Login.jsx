@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AuthLayout from '../../Layouts/AuthLayout';
 
-export default function Login() {
+export default function Login({ context = 'public' }) {
     const [showPassword, setShowPassword] = useState(false);
+    const { flash = {} } = usePage().props;
 
     const form = useForm({
         identity: '',
@@ -43,6 +44,12 @@ export default function Login() {
                     </h1>
                 </div>
 
+                {flash.success && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs leading-relaxed text-emerald-700" role="status">
+                        {flash.success}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Identifier: Email / No. WhatsApp */}
                     <div className="space-y-1">
@@ -74,14 +81,23 @@ export default function Login() {
                             <label className="block text-xs font-semibold text-slate-700">
                                 Kata Sandi
                             </label>
-                            <a
-                                href="https://wa.me/6281234567890?text=Halo%20Admin%20ALC,%20saya%20butuh%20bantuan%20masuk%20ke%20akun"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-slate-400 hover:text-brand-primary transition"
-                            >
-                                Butuh bantuan?
-                            </a>
+                            {context === 'admin' ? (
+                                <a
+                                    href="https://wa.me/6281234567890?text=Halo%20Admin%20ALC,%20saya%20butuh%20bantuan%20masuk%20ke%20akun"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-slate-400 hover:text-brand-primary transition"
+                                >
+                                    Butuh bantuan?
+                                </a>
+                            ) : (
+                                <Link
+                                    href="/portal/lupa-password"
+                                    className="text-xs text-slate-400 hover:text-brand-primary transition"
+                                >
+                                    Lupa kata sandi?
+                                </Link>
+                            )}
                         </div>
                         <div className="relative">
                             <input

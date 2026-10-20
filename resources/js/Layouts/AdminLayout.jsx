@@ -507,10 +507,10 @@ export default function AdminLayout({ children }) {
     };
 
     return (
-        <div className="min-h-screen bg-brand-shell text-slate-900 w-full overflow-x-hidden">
+        <div className="min-h-screen bg-brand-shell text-slate-900 w-full">
             <div className="flex min-h-screen w-full">
-                {/* Desktop Sidebar */}
-                <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200/60 bg-white/90 backdrop-blur-xl md:flex h-screen sticky top-0">
+                {/* Desktop Sidebar (Fixed) */}
+                <aside className="hidden md:flex fixed inset-y-0 left-0 z-30 w-64 flex-col border-r border-slate-200/60 bg-white/95 backdrop-blur-xl h-screen">
                     {/* Sidebar Header */}
                     <div className="shrink-0 border-b border-slate-100 px-4 py-3.5">
                         <Link href="/admin" className="flex items-center gap-2.5 group">
@@ -647,9 +647,9 @@ export default function AdminLayout({ children }) {
                 </aside>
 
                 {/* Main Content Area */}
-                <div className="flex flex-1 flex-col min-w-0 w-full max-w-full overflow-x-hidden">
+                <div className="flex flex-1 flex-col min-w-0 w-full md:pl-64">
                     {/* Header / Appbar */}
-                    <header className="sticky top-0 z-30 w-full border-b border-slate-200/50 bg-white/80 backdrop-blur-xl">
+                    <header className="sticky top-0 z-20 w-full border-b border-slate-200/50 bg-white/90 backdrop-blur-xl">
                         {impersonation.active && (
                             <div className="border-b border-amber-100 bg-amber-50/80 text-[11px] text-amber-800 sm:text-xs">
                                 <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 sm:px-6 lg:px-8">
@@ -806,7 +806,7 @@ export default function AdminLayout({ children }) {
 
             {/* Mobile Sidebar Overlay */}
             <div
-                className={`fixed inset-0 z-40 transition-opacity duration-300 md:hidden ${
+                className={`fixed inset-0 z-50 transition-opacity duration-300 md:hidden ${
                     isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
                 }`}
             >

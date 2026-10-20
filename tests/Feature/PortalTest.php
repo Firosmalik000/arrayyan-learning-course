@@ -680,13 +680,15 @@ class PortalTest extends TestCase
         ]);
 
         // Teacher generates sessions with custom dates
+        $sessionDate1 = now()->addDays(10)->toDateString();
+        $sessionDate2 = now()->addDays(17)->toDateString();
         $genResponse = $this->actingAs($teacherAccount, 'portal')->post(
             route('portal.classes.sessions.generate', $class),
-            ['dates' => ['2026-10-18', '2026-10-25']]
+            ['dates' => [$sessionDate1, $sessionDate2]]
         );
         $genResponse->assertRedirect();
         $this->assertEquals(3, Attendance::query()->where('class_group_id', $class->id)->count());
-        $this->assertEquals('belum_absen', Attendance::query()->where('class_group_id', $class->id)->whereDate('date', '2026-10-18')->first()->status);
+        $this->assertEquals('belum_absen', Attendance::query()->where('class_group_id', $class->id)->whereDate('date', $sessionDate1)->first()->status);
     }
 
     public function test_parent_can_view_attendance_with_multiple_classes_and_programs(): void
