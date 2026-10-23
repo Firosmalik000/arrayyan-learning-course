@@ -1,842 +1,662 @@
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { useState, useMemo } from 'react';
-import {
-    ActionDropdown,
-    ConfirmModal,
-    FlashMessage,
-    FormInput,
-    FormSelect,
-    FormTextarea,
-    Modal,
-    PageHeader,
-    Pagination,
-} from '@/Components/Admin';
+import { Head, Link, router, useForm } from "@inertiajs/react";
+import { useMemo, useState } from "react";
 
-const normalizeModule = (item, index) => ({
-    id: item?.id ?? index + 1,
-    name: item?.name?.id ?? item?.name ?? '',
-    category: item?.category?.id ?? item?.category ?? '',
-    level: item?.level?.id ?? item?.level ?? '',
-    format: item?.format ?? '',
-    questions: item?.questions ?? 0,
-    slug: item?.slug ?? '',
-    description: item?.description?.id ?? item?.description ?? '',
-    tone: item?.tone ?? 'violet',
-    links: Array.isArray(item?.links) ? item.links : [],
-    image_url: item?.image_url ?? null,
-    is_active: item?.is_active ?? true,
-    has_passkey: !!item?.has_passkey,
-    view_count: item?.view_count ?? 0,
-    download_count: item?.download_count ?? 0,
+const text = (value) =>
+    typeof value === "object" && value
+        ? value.id || value.en || ""
+        : value || "";
+const emptyResource = () => ({
+    id: null,
+    label: "",
+    destination_url: "",
+    file: null,
+    file_name: "",
 });
 
-const fallbackLevelOptions = ['Pra TK', 'TK', 'SD', 'SMP', 'SMA'];
-const fallbackFormatOptions = ['Offline', 'Online', 'Hybrid'];
-const statusStyles = {
-    Aktif: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    Nonaktif: 'bg-slate-100 text-slate-600 border-slate-200',
-};
-const statusOptions = ['Aktif', 'Nonaktif'];
-
-// Icons
-const icons = {
-    plus: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-        </svg>
-    ),
-    edit: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-        </svg>
-    ),
-    trash: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-        </svg>
-    ),
-    eye: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-    ),
-    search: (
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-        </svg>
-    ),
-    file: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-        </svg>
-    ),
-};
-
-// Modal Component
-const getInitials = (value) => {
-    if (!value) {
-        return 'ALC';
-    }
-
-    const chars = value.trim().split(/\s+/).map((part) => part[0]).join('');
-
-    return chars.slice(0, 2).toUpperCase();
-};
-
-export default function BankSoal() {
-    const {
-        bankSoalItems: bankSoalData = [],
-        globalPasskey = '',
-        flash,
-        allowedActions = {},
-        errors = {},
-    } = usePage().props;
-    const modules = bankSoalData.map((item, index) => normalizeModule(item, index));
-    const [search, setSearch] = useState('');
-    const [filterLevel, setFilterLevel] = useState('');
-    const [filterCategory, setFilterCategory] = useState('');
-    const [filterFormat, setFilterFormat] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [perPage, setPerPage] = useState(10);
-
-    // Modal states
-    const [showModal, setShowModal] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [showDetailModal, setShowDetailModal] = useState(false);
-    const [showPasskeyModal, setShowPasskeyModal] = useState(false);
+export default function BankSoalAdmin({
+    globalPasskey = "",
+    bankSoalItems = [],
+    levels = [],
+    classes = [],
+    subjects = [],
+    allLevels = [],
+    selection = {},
+}) {
     const [editing, setEditing] = useState(null);
-    const [deleteTarget, setDeleteTarget] = useState(null);
-    const [detailTarget, setDetailTarget] = useState(null);
-    const [currentImageUrl, setCurrentImageUrl] = useState(null);
-    const passkeyForm = useForm({ passkey: globalPasskey });
-
-    // Form state
-    const createLinkRow = () => ({
-        id: Date.now() + Math.floor(Math.random() * 1000),
-        label: '',
-        link: '',
-    });
-
-    const [form, setForm] = useState({
-        name: '',
-        category: '',
-        level: '',
-        format: '',
-        slug: '',
-        description: '',
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const passkey = useForm({ passkey: globalPasskey });
+    const form = useForm({
+        education_level_id: selection.education_level_id || "",
+        education_class_id: selection.education_class_id || "",
+        subject_id: selection.subject_id || "",
+        name: "",
+        description: "",
+        format: "PDF",
+        questions: 0,
         image: null,
         is_active: true,
-        links: [createLinkRow()],
-        passkey: '',
-        passkey_clear: false,
+        resources: [emptyResource()],
     });
+    const selectedLevel = useMemo(
+        () =>
+            allLevels.find(
+                (item) =>
+                    Number(item.id) === Number(form.data.education_level_id),
+            ),
+        [allLevels, form.data.education_level_id],
+    );
+    const availableClasses = selectedLevel?.education_classes || [];
+    const availableSubjects = selectedLevel?.subjects || [];
 
-    // Filtered modules
-    const filteredModules = useMemo(() => {
-        return modules.filter((m) => {
-            const matchSearch =
-                m.name.toLowerCase().includes(search.toLowerCase()) ||
-                m.category.toLowerCase().includes(search.toLowerCase());
-            const matchLevel = !filterLevel || m.level === filterLevel;
-            const matchCategory = !filterCategory || m.category === filterCategory;
-            const matchFormat = !filterFormat || m.format === filterFormat;
-            return matchSearch && matchLevel && matchCategory && matchFormat;
-        });
-    }, [modules, search, filterLevel, filterCategory, filterFormat]);
-
-    const totalPages = Math.ceil(filteredModules.length / perPage) || 1;
-    const paginatedModules = useMemo(() => {
-        const start = (currentPage - 1) * perPage;
-        return filteredModules.slice(start, start + perPage);
-    }, [filteredModules, currentPage, perPage]);
-
-    // Stats
-    const stats = [
-        { label: 'Total Modul', value: modules.length, color: 'violet' },
-        { label: 'Kategori', value: new Set(modules.map((m) => m.category).filter(Boolean)).size, color: 'amber' },
-        { label: 'Total Link', value: modules.reduce((acc, item) => acc + (item.links?.length ?? 0), 0), color: 'emerald' },
-    ];
-
-    const levelOptions = Array.from(new Set(modules.map((m) => m.level).filter(Boolean)));
-    const categoryOptions = Array.from(new Set(modules.map((m) => m.category).filter(Boolean)));
-    const formatOptions = Array.from(new Set(modules.map((m) => m.format).filter(Boolean)));
-
-    const resolvedLevelOptions = levelOptions.length > 0 ? levelOptions : fallbackLevelOptions;
-    const resolvedFormatOptions = formatOptions.length > 0 ? formatOptions : fallbackFormatOptions;
-
-    const can = (action) => (allowedActions['bank-soal'] ?? []).includes(action);
-    const canCreate = can('create');
-    const canView = can('view');
-    const canEdit = can('edit');
-    const canDelete = can('delete');
-
-    // Handlers
-    const openModal = (item = null) => {
-        if (item) {
-            setEditing(item);
-            setForm({
-                name: item.name,
-                category: item.category,
-                level: item.level,
-                format: item.format,
-                slug: item.slug,
-                description: item.description,
-                image: null,
-                is_active: item.is_active ?? true,
-                links: item.links?.length
-                    ? item.links.map((link) => ({
-                        id: link.id ?? createLinkRow().id,
-                        label: link.label ?? '',
-                        link: link.link ?? '',
-                    }))
-                    : [createLinkRow()],
-                passkey: '',
-                passkey_clear: false,
-            });
-            setCurrentImageUrl(item.image_url ?? null);
-        } else {
-            setEditing(null);
-            setForm({
-                name: '',
-                category: '',
-                level: '',
-                format: '',
-                slug: '',
-                description: '',
-                image: null,
-                is_active: true,
-                links: [createLinkRow()],
-                passkey: '',
-                passkey_clear: false,
-            });
-            setCurrentImageUrl(null);
-        }
-        setShowModal(true);
-    };
-
-    const saveForm = () => {
-        const cleanedLinks = (form.links || [])
-            .map((link) => ({
-                id: Number(link.id) || createLinkRow().id,
-                label: link.label?.trim() ?? '',
-                link: link.link?.trim() ?? '',
-            }))
-            .filter((link) => link.label || link.link);
-
-        const data = {
-            ...form,
-            is_active: form.is_active ? 1 : 0,
-            links: cleanedLinks,
-            passkey: form.passkey?.trim() || null,
-            passkey_clear: editing ? !!form.passkey_clear : false,
-        };
-        if (editing) {
-            router.post(`/admin/bank-soal/${editing.id}`, { ...data, _method: 'put' }, {
-                preserveScroll: true,
-                forceFormData: true,
-                onSuccess: () => setShowModal(false),
-            });
-        } else {
-            router.post('/admin/bank-soal', data, {
-                preserveScroll: true,
-                forceFormData: true,
-                onSuccess: () => setShowModal(false),
-            });
-        }
-    };
-
-    const openDeleteModal = (item) => {
-        setDeleteTarget(item);
-        setShowDeleteModal(true);
-    };
-
-    const openDetailModal = (item) => {
-        setDetailTarget(item);
-        setShowDetailModal(true);
-    };
-
-    const updateLink = (index, field, value) => {
-        setForm((prev) => {
-            const nextLinks = [...prev.links];
-            nextLinks[index] = { ...nextLinks[index], [field]: value };
-            return { ...prev, links: nextLinks };
+    const openCreate = () => {
+        setEditing(null);
+        setIsModalOpen(true);
+        form.setData({
+            education_level_id: selection.education_level_id || "",
+            education_class_id: selection.education_class_id || "",
+            subject_id: selection.subject_id || "",
+            name: "",
+            description: "",
+            format: "PDF",
+            questions: 0,
+            image: null,
+            is_active: true,
+            resources: [emptyResource()],
         });
     };
-
-    const addLinkRow = () => {
-        setForm((prev) => ({
-            ...prev,
-            links: [...prev.links, createLinkRow()],
-        }));
-    };
-
-    const removeLinkRow = (index) => {
-        setForm((prev) => ({
-            ...prev,
-            links: prev.links.filter((_, i) => i !== index),
-        }));
-    };
-
-    const confirmDelete = () => {
-        router.delete(`/admin/bank-soal/${deleteTarget.id}`, {
-            preserveScroll: true,
-            onSuccess: () => setShowDeleteModal(false),
+    const openEdit = (item) => {
+        setEditing(item);
+        setIsModalOpen(true);
+        form.setData({
+            education_level_id: item.education_level_id || "",
+            education_class_id: item.education_class_id || "",
+            subject_id: item.subject_id || "",
+            name: text(item.name),
+            description: text(item.description),
+            format: item.format || "PDF",
+            questions: item.questions || 0,
+            image: null,
+            is_active: !!item.is_active,
+            resources: item.resources?.length
+                ? item.resources.map((resource) => ({
+                      ...emptyResource(),
+                      ...resource,
+                  }))
+                : [emptyResource()],
         });
     };
-
-    const saveGlobalPasskey = (event) => {
+    const closeModal = () => {
+        setEditing(null);
+        setIsModalOpen(false);
+        form.clearErrors();
+        form.transform((data) => data);
+    };
+    const submit = (event) => {
         event.preventDefault();
-        passkeyForm.put('/admin/bank-soal/passkey', {
+        const options = {
+            forceFormData: true,
             preserveScroll: true,
-            onSuccess: () => setShowPasskeyModal(false),
+            onSuccess: closeModal,
+        };
+        if (editing)
+            form.transform((data) => ({ ...data, _method: "put" })).post(
+                `/admin/bank-soal/${editing.id}`,
+                options,
+            );
+        else form.post("/admin/bank-soal", options);
+    };
+    const updateResource = (index, key, value) =>
+        form.setData(
+            "resources",
+            form.data.resources.map((resource, resourceIndex) =>
+                resourceIndex === index
+                    ? { ...resource, [key]: value }
+                    : resource,
+            ),
+        );
+    const breadcrumbs = [{ label: "Bank Soal", url: "/admin/bank-soal" }];
+    if (selection.education_level_id)
+        breadcrumbs.push({
+            label:
+                levels[0]?.name ||
+                allLevels.find((x) => x.id === selection.education_level_id)
+                    ?.name,
+            url: `/admin/bank-soal/${selection.education_level_id}`,
         });
-    };
-
-    const openPasskeyModal = () => {
-        passkeyForm.setData('passkey', globalPasskey);
-        passkeyForm.clearErrors();
-        setShowPasskeyModal(true);
-    };
-
-    const closePasskeyModal = () => {
-        if (passkeyForm.processing) {
-            return;
-        }
-
-        passkeyForm.clearErrors();
-        setShowPasskeyModal(false);
-    };
+    if (selection.education_class_id)
+        breadcrumbs.push({
+            label: classes[0]?.name || "Kelas",
+            url: `/admin/bank-soal/${selection.education_level_id}/${selection.education_class_id}`,
+        });
 
     return (
         <>
-            <Head title="Bank Soal" />
-
+            <Head title="Manajemen Bank Soal" />
             <div className="space-y-6">
-                {/* Flash */}
-                <FlashMessage flash={flash} />
-
-                {/* Header */}
-                <PageHeader
-                    title="Bank Soal"
-                    actions={canCreate && (
-                        <button
-                            type="button"
-                            onClick={() => openModal()}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                <div className="flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-violet-700 to-indigo-700 p-6 text-white sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-200">
+                            Master Data Akademik
+                        </p>
+                        <h1 className="mt-2 text-2xl font-black sm:text-3xl">
+                            Manajemen Bank Soal
+                        </h1>
+                        <p className="mt-2 text-sm text-violet-100">
+                            Jenjang → kelas → mata pelajaran → bank soal.
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <Link
+                            href="/admin/master-pendidikan"
+                            className="rounded-xl bg-white/15 px-4 py-2.5 text-sm font-bold hover:bg-white/25"
                         >
-                            {icons.plus}
-                            Tambah Modul
-                        </button>
-                    )}
-                />
+                            Kelola Master
+                        </Link>
+                        {selection.subject_id && (
+                            <button
+                                onClick={openCreate}
+                                className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-violet-700"
+                            >
+                                Tambah Bank Soal
+                            </button>
+                        )}
+                    </div>
+                </div>
 
-                {/* Stats */}
-                <div className="grid gap-4 sm:grid-cols-3">
-                    {stats.map((stat) => (
-                        <div key={stat.label} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                            <p className="text-sm font-medium text-slate-500">{stat.label}</p>
-                            <p className="mt-2 text-3xl font-bold text-slate-800">{stat.value}</p>
-                        </div>
+                <div className="flex flex-wrap gap-2 text-sm">
+                    {breadcrumbs.map((crumb, index) => (
+                        <span
+                            key={crumb.url}
+                            className="flex items-center gap-2"
+                        >
+                            {index > 0 && <span>/</span>}
+                            <Link
+                                href={crumb.url}
+                                className="font-semibold text-violet-700"
+                            >
+                                {crumb.label}
+                            </Link>
+                        </span>
                     ))}
                 </div>
 
-                <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <h2 className="text-sm font-semibold text-slate-800">Passkey Global</h2>
-                                <span
-                                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                        globalPasskey
-                                            ? 'bg-emerald-50 text-emerald-700'
-                                            : 'bg-slate-100 text-slate-500'
-                                    }`}
-                                >
-                                    {globalPasskey ? 'Aktif' : 'Nonaktif'}
-                                </span>
-                            </div>
-                            <div className="mt-3 max-w-full rounded-xl bg-slate-50 px-4 py-3">
-                                <code className="block break-all text-sm font-semibold text-slate-700">
-                                    {globalPasskey || 'Belum diatur'}
-                                </code>
-                            </div>
-                        </div>
-                        {canEdit && (
-                            <button
-                                type="button"
-                                onClick={openPasskeyModal}
-                                className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-violet-200 bg-white px-4 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-200"
-                            >
-                                {globalPasskey ? 'Ubah Passkey' : 'Atur Passkey'}
-                            </button>
-                        )}
-                    </div>
-                </section>
-
-                {/* Table */}
-                <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
-                    {/* Filters */}
-                    <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="relative flex-1 sm:max-w-xs">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icons.search}</span>
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(e) => {
-                                    setSearch(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                placeholder="Cari modul..."
-                                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                            />
-                        </div>
-                        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-                            <select
-                                value={filterLevel}
-                                onChange={(e) => {
-                                    setFilterLevel(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400 sm:w-auto"
-                            >
-                                <option value="">Semua Jenjang</option>
-                                {resolvedLevelOptions.map((opt) => (
-                                    <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                            </select>
-                            <select
-                                value={filterCategory}
-                                onChange={(e) => {
-                                    setFilterCategory(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400 sm:w-auto"
-                            >
-                                <option value="">Semua Kategori</option>
-                                {categoryOptions.map((opt) => (
-                                    <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                            </select>
-                            <select
-                                value={filterFormat}
-                                onChange={(e) => {
-                                    setFilterFormat(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-violet-400 sm:w-auto"
-                            >
-                                <option value="">Semua Format</option>
-                                {resolvedFormatOptions.map((opt) => (
-                                    <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[850px] text-left text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
-                                    <th className="w-12 px-4 py-3 text-center font-medium">No</th>
-                                    <th className="w-14 px-4 py-3 text-center font-medium">Aksi</th>
-                                    <th className="px-5 py-3 font-medium">Nama Modul</th>
-                                    <th className="px-5 py-3 font-medium">Kategori</th>
-                                    <th className="px-5 py-3 font-medium">Jenjang</th>
-                                    <th className="px-5 py-3 font-medium">Format</th>
-                                    <th className="px-5 py-3 font-medium">Links</th>
-                                    <th className="px-5 py-3 font-medium">Akses</th>
-                                    <th className="px-5 py-3 font-medium">Status</th>
-                                    <th className="px-5 py-3 font-medium">Slug</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {paginatedModules.map((item, idx) => {
-                                    const rowNum = (currentPage - 1) * perPage + idx + 1;
-                                    const statusLabel = item.is_active ? 'Aktif' : 'Nonaktif';
-                                    const actions = [
-                                        canView && {
-                                            label: 'Detail Modul',
-                                            icon: icons.eye,
-                                            onClick: () => openDetailModal(item),
-                                        },
-                                        canEdit && {
-                                            label: 'Edit Modul',
-                                            icon: icons.edit,
-                                            onClick: () => openModal(item),
-                                        },
-                                        item.slug && {
-                                            label: 'Buka Halaman Publik',
-                                            href: `/bank-soal/${item.slug}`,
-                                            external: true,
-                                        },
-                                        canDelete && {
-                                            label: 'Hapus Modul',
-                                            icon: icons.trash,
-                                            danger: true,
-                                            onClick: () => openDeleteModal(item),
-                                        },
-                                    ].filter(Boolean);
-
-                                    return (
-                                        <tr key={item.id} className="transition hover:bg-slate-50">
-                                            <td className="px-4 py-4 text-center font-semibold text-slate-400">
-                                                {rowNum}
-                                            </td>
-                                            <td className="px-4 py-4 text-center">
-                                                <ActionDropdown actions={actions} />
-                                            </td>
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    {item.image_url ? (
-                                                        <img
-                                                            src={item.image_url}
-                                                            alt={item.name}
-                                                            className="h-10 w-10 rounded-xl object-cover"
-                                                            loading="lazy"
-                                                        />
-                                                    ) : (
-                                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-                                                            {icons.file}
-                                                        </div>
-                                                    )}
-                                                    <span className="font-medium text-slate-800">{item.name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-4 text-slate-600">{item.category || '-'}</td>
-                                            <td className="px-5 py-4 text-slate-600">{item.level || '-'}</td>
-                                            <td className="px-5 py-4 text-slate-600">{item.format || '-'}</td>
-                                            <td className="px-5 py-4 text-slate-600">{item.links?.length ?? 0}</td>
-                                            <td className="px-5 py-4">
-                                                <div className="flex flex-col gap-1 text-xs">
-                                                    {item.has_passkey
-                                                        ? <span className="inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">🔒 Passkey</span>
-                                                        : <span className="inline-flex w-fit rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">Terbuka</span>}
-                                                    <span className="text-slate-400">{item.view_count ?? 0} dilihat • {item.download_count ?? 0} unduhan</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-4">
-                                                <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusStyles[statusLabel]}`}>
-                                                    {statusLabel}
-                                                </span>
-                                            </td>
-                                            <td className="px-5 py-4 text-slate-500">{item.slug || '-'}</td>
-                                        </tr>
-                                    );
-                                })}
-                                {filteredModules.length === 0 && (
-                                    <tr>
-                                        <td colSpan={10} className="px-5 py-12 text-center text-slate-500">
-                                            Tidak ada modul yang ditemukan
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {filteredModules.length > 0 && (
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            totalItems={filteredModules.length}
-                            perPage={perPage}
-                            onPageChange={setCurrentPage}
-                            onPerPageChange={(val) => {
-                                setPerPage(val);
-                                setCurrentPage(1);
-                            }}
+                {!selection.education_level_id && (
+                    <HierarchyGrid
+                        title="Pilih Jenjang"
+                        items={levels}
+                        href={(item) => `/admin/bank-soal/${item.id}`}
+                        countKey="education_classes_count"
+                    />
+                )}
+                {selection.education_level_id &&
+                    !selection.education_class_id && (
+                        <HierarchyGrid
+                            title="Pilih Kelas"
+                            items={classes}
+                            href={(item) =>
+                                `/admin/bank-soal/${selection.education_level_id}/${item.id}`
+                            }
+                            countKey="bank_soals_count"
                         />
                     )}
-                </div>
+                {selection.education_class_id && !selection.subject_id && (
+                    <HierarchyGrid
+                        title="Pilih Mata Pelajaran"
+                        items={subjects}
+                        href={(item) =>
+                            `/admin/bank-soal/${selection.education_level_id}/${selection.education_class_id}/${item.id}`
+                        }
+                        countKey="bank_soals_count"
+                    />
+                )}
+
+                {selection.subject_id && (
+                    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                        <div className="border-b border-slate-200 px-6 py-5">
+                            <h2 className="font-black text-slate-900">
+                                Daftar Bank Soal
+                            </h2>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                                    <tr>
+                                        <th className="px-6 py-3">Nama</th>
+                                        <th className="px-6 py-3">Format</th>
+                                        <th className="px-6 py-3">Sumber</th>
+                                        <th className="px-6 py-3">Status</th>
+                                        <th className="px-6 py-3 text-right">
+                                            Aksi
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {bankSoalItems.map((item) => (
+                                        <tr key={item.id}>
+                                            <td className="px-6 py-4 font-bold text-slate-900">
+                                                {text(item.name)}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {item.format}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {item.resources?.length || 0}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span
+                                                    className={`rounded-full px-2.5 py-1 text-xs font-bold ${item.is_active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
+                                                >
+                                                    {item.is_active
+                                                        ? "Aktif"
+                                                        : "Nonaktif"}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button
+                                                    onClick={() =>
+                                                        openEdit(item)
+                                                    }
+                                                    className="font-bold text-violet-700"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        window.confirm(
+                                                            "Hapus bank soal ini?",
+                                                        ) &&
+                                                        router.delete(
+                                                            `/admin/bank-soal/${item.id}`,
+                                                        )
+                                                    }
+                                                    className="ml-4 font-bold text-rose-600"
+                                                >
+                                                    Hapus
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {bankSoalItems.length === 0 && (
+                            <p className="p-10 text-center text-sm text-slate-500">
+                                Belum ada bank soal.
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {!selection.education_level_id && bankSoalItems.length > 0 && (
+                    <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
+                        <h2 className="font-black text-amber-950">
+                            Perlu Dilengkapi ({bankSoalItems.length})
+                        </h2>
+                        <p className="mt-1 text-sm text-amber-800">
+                            Data lama multi-kelas atau belum lengkap harus
+                            dipilih tepat satu kelas.
+                        </p>
+                        <div className="mt-4 grid gap-3">
+                            {bankSoalItems.map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => openEdit(item)}
+                                    className="rounded-2xl border border-amber-200 bg-white p-4 text-left font-bold text-slate-900"
+                                >
+                                    {text(item.name)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <form
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        passkey.put("/admin/bank-soal/passkey", {
+                            preserveScroll: true,
+                        });
+                    }}
+                    className="rounded-3xl border border-slate-200 bg-white p-6"
+                >
+                    <h2 className="font-black text-slate-900">
+                        Passkey Global
+                    </h2>
+                    <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                        <input
+                            type="text"
+                            value={passkey.data.passkey}
+                            onChange={(event) =>
+                                passkey.setData("passkey", event.target.value)
+                            }
+                            className="flex-1 rounded-xl border border-slate-300 px-4 py-3"
+                        />
+                        <button className="rounded-xl bg-slate-900 px-5 py-3 font-bold text-white">
+                            Simpan Passkey
+                        </button>
+                    </div>
+                </form>
             </div>
 
-            {/* Form Modal */}
-            <Modal
-                isOpen={showPasskeyModal}
-                onClose={closePasskeyModal}
-                title={globalPasskey ? 'Ubah Passkey Global' : 'Atur Passkey Global'}
-                size="sm"
-            >
-                <form onSubmit={saveGlobalPasskey} className="space-y-5">
-                    <div>
-                        <label
-                            htmlFor="global-bank-soal-passkey"
-                            className="mb-1.5 block text-sm font-medium text-slate-700"
-                        >
-                            Passkey
-                        </label>
-                        <input
-                            id="global-bank-soal-passkey"
-                            type="text"
-                            autoFocus
-                            value={passkeyForm.data.passkey}
-                            onChange={(event) => passkeyForm.setData('passkey', event.target.value)}
-                            placeholder="Masukkan passkey"
-                            disabled={passkeyForm.processing}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        />
-                        {passkeyForm.errors.passkey && (
-                            <p className="mt-1.5 text-xs font-medium text-rose-600">
-                                {passkeyForm.errors.passkey}
-                            </p>
-                        )}
-                    </div>
-                    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+            {isModalOpen && <BankSoalModal />}
+        </>
+    );
+
+    function BankSoalModal() {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+                <form
+                    onSubmit={submit}
+                    className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
+                >
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-black">
+                            {editing ? "Edit Bank Soal" : "Tambah Bank Soal"}
+                        </h2>
                         <button
                             type="button"
-                            onClick={closePasskeyModal}
-                            disabled={passkeyForm.processing}
-                            className="min-h-11 rounded-xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                            onClick={closeModal}
+                            className="rounded-lg px-3 py-2 text-slate-500"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                        <Field
+                            label="Jenjang"
+                            error={form.errors.education_level_id}
+                        >
+                            <select
+                                value={form.data.education_level_id}
+                                onChange={(event) =>
+                                    form.setData({
+                                        ...form.data,
+                                        education_level_id: Number(
+                                            event.target.value,
+                                        ),
+                                        education_class_id: "",
+                                        subject_id: "",
+                                    })
+                                }
+                                className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                            >
+                                <option value="">Pilih jenjang</option>
+                                {allLevels.map((level) => (
+                                    <option key={level.id} value={level.id}>
+                                        {level.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                        <Field
+                            label="Kelas"
+                            error={form.errors.education_class_id}
+                        >
+                            <select
+                                value={form.data.education_class_id}
+                                onChange={(event) =>
+                                    form.setData(
+                                        "education_class_id",
+                                        Number(event.target.value),
+                                    )
+                                }
+                                className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                            >
+                                <option value="">Pilih satu kelas</option>
+                                {availableClasses.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                        {item.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                        <Field
+                            label="Mata Pelajaran"
+                            error={form.errors.subject_id}
+                        >
+                            <select
+                                value={form.data.subject_id}
+                                onChange={(event) =>
+                                    form.setData(
+                                        "subject_id",
+                                        Number(event.target.value),
+                                    )
+                                }
+                                className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                            >
+                                <option value="">Pilih mapel</option>
+                                {availableSubjects.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                        {item.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                        <Field label="Nama Bank Soal" error={form.errors.name}>
+                            <input
+                                value={form.data.name}
+                                onChange={(event) =>
+                                    form.setData("name", event.target.value)
+                                }
+                                className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                            />
+                        </Field>
+                        <Field label="Format">
+                            <input
+                                value={form.data.format}
+                                onChange={(event) =>
+                                    form.setData("format", event.target.value)
+                                }
+                                className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                            />
+                        </Field>
+                        <Field label="Jumlah Soal">
+                            <input
+                                type="number"
+                                min="0"
+                                value={form.data.questions}
+                                onChange={(event) =>
+                                    form.setData(
+                                        "questions",
+                                        event.target.value,
+                                    )
+                                }
+                                className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                            />
+                        </Field>
+                        <div className="sm:col-span-2">
+                            <Field label="Deskripsi">
+                                <textarea
+                                    value={form.data.description}
+                                    onChange={(event) =>
+                                        form.setData(
+                                            "description",
+                                            event.target.value,
+                                        )
+                                    }
+                                    rows="3"
+                                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                                />
+                            </Field>
+                        </div>
+                        <div className="sm:col-span-2">
+                            <Field label="Gambar Sampul">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(event) =>
+                                        form.setData(
+                                            "image",
+                                            event.target.files[0],
+                                        )
+                                    }
+                                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                                />
+                            </Field>
+                        </div>
+                    </div>
+                    <div className="mt-6">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-black">
+                                File & Link Destinasi
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    form.setData("resources", [
+                                        ...form.data.resources,
+                                        emptyResource(),
+                                    ])
+                                }
+                                className="text-sm font-bold text-violet-700"
+                            >
+                                + Tambah Sumber
+                            </button>
+                        </div>
+                        <div className="mt-3 grid gap-3">
+                            {form.data.resources.map((resource, index) => (
+                                <div
+                                    key={resource.id || index}
+                                    className="rounded-2xl border border-slate-200 p-4"
+                                >
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <input
+                                            placeholder="Label sumber"
+                                            value={resource.label}
+                                            onChange={(event) =>
+                                                updateResource(
+                                                    index,
+                                                    "label",
+                                                    event.target.value,
+                                                )
+                                            }
+                                            className="rounded-xl border border-slate-300 px-3 py-2.5"
+                                        />
+                                        <input
+                                            placeholder="https://..."
+                                            value={
+                                                resource.destination_url || ""
+                                            }
+                                            onChange={(event) =>
+                                                updateResource(
+                                                    index,
+                                                    "destination_url",
+                                                    event.target.value,
+                                                )
+                                            }
+                                            className="rounded-xl border border-slate-300 px-3 py-2.5"
+                                        />
+                                        <input
+                                            type="file"
+                                            onChange={(event) =>
+                                                updateResource(
+                                                    index,
+                                                    "file",
+                                                    event.target.files[0],
+                                                )
+                                            }
+                                            className="sm:col-span-2 rounded-xl border border-slate-300 px-3 py-2.5"
+                                        />
+                                        {resource.file_name && (
+                                            <p className="text-xs text-slate-500">
+                                                File saat ini:{" "}
+                                                {resource.file_name}
+                                            </p>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                form.setData(
+                                                    "resources",
+                                                    form.data.resources.filter(
+                                                        (_, i) => i !== index,
+                                                    ),
+                                                )
+                                            }
+                                            className="text-left text-xs font-bold text-rose-600"
+                                        >
+                                            Hapus sumber
+                                        </button>
+                                    </div>
+                                    {form.errors[`resources.${index}.file`] && (
+                                        <p className="mt-2 text-xs font-bold text-rose-600">
+                                            {
+                                                form.errors[
+                                                    `resources.${index}.file`
+                                                ]
+                                            }
+                                        </p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <label className="mt-5 flex items-center gap-2 text-sm font-semibold">
+                        <input
+                            type="checkbox"
+                            checked={form.data.is_active}
+                            onChange={(event) =>
+                                form.setData("is_active", event.target.checked)
+                            }
+                        />{" "}
+                        Aktif
+                    </label>
+                    <div className="mt-6 flex justify-end gap-3">
+                        <button
+                            type="button"
+                            onClick={closeModal}
+                            className="rounded-xl border border-slate-300 px-5 py-2.5 font-bold"
                         >
                             Batal
                         </button>
                         <button
-                            type="submit"
-                            disabled={passkeyForm.processing}
-                            className="min-h-11 rounded-xl bg-brand-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={form.processing}
+                            className="rounded-xl bg-violet-600 px-5 py-2.5 font-bold text-white disabled:opacity-60"
                         >
-                            {passkeyForm.processing ? 'Menyimpan...' : 'Simpan'}
+                            Simpan
                         </button>
                     </div>
                 </form>
-            </Modal>
+            </div>
+        );
+    }
+}
 
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Modul' : 'Tambah Modul Baru'} size="lg">
-                <form onSubmit={(e) => { e.preventDefault(); saveForm(); }} className="space-y-4">
-                    <FormInput
-                        label="Nama Modul"
-                        value={form.name}
-                        onChange={(v) => setForm({ ...form, name: v })}
-                        placeholder="contoh: Matematika SD - Paket 1"
-                        required
-                    />
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormInput
-                            label="Kategori"
-                            value={form.category}
-                            onChange={(v) => setForm({ ...form, category: v })}
-                            placeholder="contoh: Matematika"
-                            required
-                        />
-                        <FormSelect
-                            label="Jenjang"
-                            value={form.level}
-                            onChange={(v) => setForm({ ...form, level: v })}
-                            options={resolvedLevelOptions}
-                            required
-                        />
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormSelect
-                            label="Format"
-                            value={form.format}
-                            onChange={(v) => setForm({ ...form, format: v })}
-                            options={resolvedFormatOptions}
-                            required
-                        />
-                        <FormInput
-                            label="Slug"
-                            value={form.slug}
-                            onChange={(v) => setForm({ ...form, slug: v })}
-                            placeholder="contoh: matematika-sd-paket-1"
-                        />
-                    </div>
-                    <FormTextarea
-                        label="Deskripsi"
-                        value={form.description}
-                        onChange={(v) => setForm({ ...form, description: v })}
-                        placeholder="Deskripsi modul..."
-                    />
-                    <div>
-                        <label className="mb-1.5 block text-sm font-medium text-slate-700">Upload Foto</label>
-                        <input
-                            type="file"
-                            accept=".jpg,.jpeg,.png,.webp"
-                            onChange={(e) => setForm({ ...form, image: e.target.files?.[0] ?? null })}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:text-sm file:font-medium file:text-slate-600 hover:file:bg-slate-200"
-                        />
-                        {currentImageUrl && (
-                            <p className="mt-2 text-xs text-slate-500">
-                                Foto saat ini:{' '}
-                                <a href={currentImageUrl} target="_blank" rel="noreferrer" className="font-medium text-violet-600 underline">
-                                    Lihat
-                                </a>
-                            </p>
-                        )}
-                        {errors.image && <p className="mt-1 text-xs text-rose-500">{errors.image}</p>}
-                    </div>
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-700">Link Modul</label>
-                        <div className="space-y-2">
-                            {form.links.map((link, index) => (
-                                <div key={link.id} className="grid gap-2 sm:grid-cols-[120px_1fr_1fr_auto]">
-                                    <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
-                                        ID #{link.id}
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={link.label}
-                                        onChange={(e) => updateLink(index, 'label', e.target.value)}
-                                        placeholder="Label (contoh: Kelas 1)"
-                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                                    />
-                                    <input
-                                        type="text"
-                                        value={link.link}
-                                        onChange={(e) => updateLink(index, 'link', e.target.value)}
-                                        placeholder="Link (contoh: https://...)"
-                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeLinkRow(index)}
-                                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50"
-                                    >
-                                        Hapus
-                                    </button>
-                                </div>
-                            ))}
-                            <button
-                                type="button"
-                                onClick={addLinkRow}
-                                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
-                            >
-                                {icons.plus} Tambah Link
-                            </button>
-                        </div>
-                    </div>
-                    <FormSelect
-                        label="Status"
-                        value={form.is_active ? 'Aktif' : 'Nonaktif'}
-                        onChange={(v) => setForm({ ...form, is_active: v === 'Aktif' })}
-                        options={statusOptions}
-                    />
-                    <div>
-                        <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                            Passkey Modul
-                        </label>
-                        <input
-                            type="text"
-                            value={form.passkey}
-                            onChange={(e) => setForm({ ...form, passkey: e.target.value })}
-                            placeholder={editing?.has_passkey ? 'Terpasang — isi untuk mengganti' : 'cth: SOAL2026'}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                        />
-                        {editing?.has_passkey && (
-                            <label className="mt-2 flex items-center gap-2 text-xs text-slate-600">
-                                <input
-                                    type="checkbox"
-                                    checked={!!form.passkey_clear}
-                                    onChange={(e) => setForm({ ...form, passkey_clear: e.target.checked })}
-                                    className="h-4 w-4 rounded border-slate-300"
-                                />
-                                Hapus passkey modul ini
-                            </label>
-                        )}
-                    </div>
-                    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
-                        <button type="button" onClick={() => setShowModal(false)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
-                            Batal
-                        </button>
-                        <button type="submit" className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90">
-                            {editing ? 'Simpan Perubahan' : 'Tambah Modul'}
-                        </button>
-                    </div>
-                </form>
-            </Modal>
+function HierarchyGrid({ title, items, href, countKey }) {
+    return (
+        <div>
+            <h2 className="mb-4 text-xl font-black text-slate-900">{title}</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {items.map((item) => (
+                    <Link
+                        key={item.id}
+                        href={href(item)}
+                        className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-violet-300 hover:shadow-lg"
+                    >
+                        <h3 className="text-lg font-black text-slate-900">
+                            {item.name}
+                        </h3>
+                        <p className="mt-2 text-sm text-slate-500">
+                            {item[countKey] || 0} data
+                        </p>
+                    </Link>
+                ))}
+            </div>
+            {items.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-500">
+                    Belum ada data.
+                </p>
+            )}
+        </div>
+    );
+}
 
-            {/* Detail Modal */}
-            <Modal isOpen={showDetailModal} onClose={() => setShowDetailModal(false)} title="Detail Modul" size="lg">
-                {detailTarget && (
-                    <div className="space-y-4">
-                        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
-                            {detailTarget.image_url ? (
-                                <img
-                                    src={detailTarget.image_url}
-                                    alt={detailTarget.name}
-                                    className="h-56 w-full object-cover"
-                                    loading="lazy"
-                                />
-                            ) : (
-                                <div className="flex h-56 items-center justify-center bg-gradient-to-br from-slate-100 via-white to-violet-50">
-                                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white text-base font-semibold text-violet-600 shadow-sm">
-                                        {getInitials(detailTarget.name)}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusStyles[detailTarget.is_active ? 'Aktif' : 'Nonaktif']}`}>
-                                {detailTarget.is_active ? 'Aktif' : 'Nonaktif'}
-                            </span>
-                        </div>
-                        <div>
-                            <h4 className="text-lg font-semibold text-slate-800">{detailTarget.name}</h4>
-                            <p className="text-sm text-slate-500">{detailTarget.category || '-'}</p>
-                        </div>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Jenjang</p>
-                                <p className="mt-1 text-sm font-medium text-slate-800">{detailTarget.level || '-'}</p>
-                            </div>
-                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Format</p>
-                                <p className="mt-1 text-sm font-medium text-slate-800">{detailTarget.format || '-'}</p>
-                            </div>
-                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 sm:col-span-2">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Slug</p>
-                                <p className="mt-1 text-sm font-medium text-slate-800">{detailTarget.slug || '-'}</p>
-                            </div>
-                        </div>
-                        <div className="rounded-xl border border-slate-100 bg-white p-4">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Deskripsi</p>
-                            <p className="mt-2 text-sm text-slate-600">{detailTarget.description || '-'}</p>
-                        </div>
-                        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Link Modul</p>
-                            {detailTarget.links?.length ? (
-                                <div className="mt-2 space-y-2">
-                                    {detailTarget.links.map((link) => (
-                                        <div key={`${link.id}-${link.label}`} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2">
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-700">{link.label || `Link ${link.id}`}</p>
-                                                <p className="text-xs text-slate-500">{link.link}</p>
-                                            </div>
-                                            {link.link && (
-                                                <a
-                                                    href={link.link}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="text-xs font-semibold text-violet-600 hover:text-violet-700"
-                                                >
-                                                    Buka
-                                                </a>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="mt-2 text-sm text-slate-500">Belum ada link modul.</p>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </Modal>
-
-            {/* Delete Modal */}
-            <ConfirmModal
-                isOpen={showDeleteModal}
-                onClose={() => setShowDeleteModal(false)}
-                title="Konfirmasi Hapus"
-                message={(
-                    <>
-                        Apakah Anda yakin ingin menghapus <span className="font-semibold text-slate-800">{deleteTarget?.name}</span>?
-                    </>
-                )}
-                onConfirm={confirmDelete}
-            />
-        </>
+function Field({ label, error, children }) {
+    return (
+        <label className="grid gap-1.5 text-sm font-bold text-slate-700">
+            <span>{label}</span>
+            {children}
+            {error && <span className="text-xs text-rose-600">{error}</span>}
+        </label>
     );
 }

@@ -1,334 +1,372 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '@/Components/Admin';
 import { todayStr } from './AttendanceModal';
 
 const DAYS_ABBR = ['', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
-export default function GenerateSessionsModal({
-    show,
-    onClose,
-    selectedClass,
-    onSubmit,
-}) {
-    const schedules = selectedClass?.schedules || [];
+const dateParts = (isoDate) => {
+    const [year, month, day] = isoDate.split('-').map(Number);
+    return { year, month, day };
+};
 
-    // Distinct dates that ALREADY exist in this class (from attendances)
-    const existingDates = useMemo(() => {
-        const set = new Set();
-        (selectedClass?.attendances || []).forEach((a) => {
-            if (a.date) set.add(a.date.slice(0, 10));
+const monthEndDate = (monthValue) => {
+    const [year, month] = monthValue.split('-').map(Number);
+    const lastDay = new Date(year, month, 0).getDate();
+    return `${monthValue}-${String(lastDay).padStart(2, '0')}`;
+};
+
+const shiftMonth = (monthValue, offset) => {
+    const [year, month] = monthValue.split('-').map(Number);
+    const shifted = new Date(year, month - 1 + offset, 1);
+
+    return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, '0')}`;
+};
+
+export default function GenerateSessionsModal({ show, onClose, selectedClass, onSubmit }) {
+    const schedules = useMemo(() => selectedClass?.schedules ?? [], [selectedClass?.schedules]);
+    const allExistingDates = useMemo(() => {
+        const dates = new Set();
+
+        (selectedClass?.attendances ?? []).forEach((attendance) => {
+            if (attendance.date) dates.add(attendance.date.slice(0, 10));
         });
-        return Array.from(set).sort();
+
+        return Array.from(dates).sort();
     }, [selectedClass?.attendances]);
 
-    // Map dates that have actual student attendances (hadir, izin, sakit, alpa)
     const attendedStatusMap = useMemo(() => {
-        const map = {};
-        (selectedClass?.attendances || []).forEach((a) => {
-            const d = a.date ? a.date.slice(0, 10) : '';
-            if (d && a.status && a.status !== 'belum_absen') {
-                map[d] = a.status;
+        const statuses = {};
+
+        (selectedClass?.attendances ?? []).forEach((attendance) => {
+            const date = attendance.date?.slice(0, 10);
+            if (date && attendance.status && attendance.status !== 'belum_absen') {
+                statuses[date] = attendance.status;
             }
         });
-        return map;
+
+        return statuses;
     }, [selectedClass?.attendances]);
 
-    const defaultCount = selectedClass?.total_sessions || Math.max(existingDates.length, 8);
-    const defaultStart = existingDates.length > 0 ? existingDates[0] : todayStr();
-
-    const [startDate, setStartDate] = useState(defaultStart);
-    const [count, setCount] = useState(defaultCount);
+    const currentMonth = todayStr().slice(0, 7);
+    const [selectedMonth, setSelectedMonth] = useState(currentMonth);
     const [customDates, setCustomDates] = useState([]);
     const [editingIndex, setEditingIndex] = useState(null);
     const [editDateValue, setEditDateValue] = useState('');
+    const [newDateValue, setNewDateValue] = useState('');
+    const [pendingDateForAnotherMonth, setPendingDateForAnotherMonth] = useState('');
+    const [validationMessage, setValidationMessage] = useState('');
 
-    // Generate sessions helper starting from a given date, skipping any that are in existing
-    const generateFromSchedule = (fromStart, targetTotal, existingArray = []) => {
-        const scheduledDays = schedules.map((s) => Number(s.day_of_week));
-        if (scheduledDays.length === 0) return existingArray;
+    const existingDatesInMonth = useMemo(
+        () => allExistingDates.filter((date) => date.startsWith(`${selectedMonth}-`)),
+        [allExistingDates, selectedMonth],
+    );
 
-        const result = [...existingArray];
-        const dateSet = new Set(result);
+    const generateDatesForMonth = (monthValue) => {
+        const scheduledDays = new Set(schedules.map((schedule) => Number(schedule.day_of_week)));
+        if (scheduledDays.size === 0) return [];
 
-        let cursor;
-        if (result.length > 0) {
-            const lastDate = result[result.length - 1];
-            cursor = new Date(lastDate);
-            cursor.setDate(cursor.getDate() + 1);
-        } else {
-            cursor = new Date(fromStart);
-        }
+        const [year, month] = monthValue.split('-').map(Number);
+        const cursor = new Date(year, month - 1, 1);
+        const dates = [];
 
-        let safety = 0;
-        while (result.length < targetTotal && safety < 365) {
-            const jsDay = cursor.getDay();
-            const isoDay = jsDay === 0 ? 7 : jsDay;
-            if (scheduledDays.includes(isoDay)) {
-                const y = cursor.getFullYear();
-                const m = String(cursor.getMonth() + 1).padStart(2, '0');
-                const d = String(cursor.getDate()).padStart(2, '0');
-                const dateStr = `${y}-${m}-${d}`;
-                if (!dateSet.has(dateStr)) {
-                    dateSet.add(dateStr);
-                    result.push(dateStr);
-                }
+        while (cursor.getMonth() === month - 1) {
+            const isoDay = cursor.getDay() === 0 ? 7 : cursor.getDay();
+            if (scheduledDays.has(isoDay)) {
+                dates.push(
+                    `${year}-${String(month).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`,
+                );
             }
             cursor.setDate(cursor.getDate() + 1);
-            safety++;
         }
-        return result.sort();
+
+        return dates;
     };
 
-    // When modal opens: initialize with existing class session dates if any, or generate fresh
     useEffect(() => {
         if (!show) return;
 
-        const initialTargetCount = selectedClass?.total_sessions || Math.max(existingDates.length, 8);
-        const initialStartDate = existingDates.length > 0 ? existingDates[0] : todayStr();
+        const hasCurrentMonthSchedule = allExistingDates.some((date) => date.startsWith(`${currentMonth}-`));
+        const nextScheduledDate = allExistingDates.find((date) => date >= todayStr());
+        const initialMonth = hasCurrentMonthSchedule
+            ? currentMonth
+            : (nextScheduledDate?.slice(0, 7) ?? currentMonth);
 
-        setStartDate(initialStartDate);
-        setCount(initialTargetCount);
+        setSelectedMonth(initialMonth);
+    }, [show, selectedClass?.id]);
+
+    useEffect(() => {
+        if (!show || !selectedMonth) return;
+
+        const existing = allExistingDates.filter((date) => date.startsWith(`${selectedMonth}-`));
+        const initialDates = existing.length > 0 ? existing : generateDatesForMonth(selectedMonth);
+        const pendingDate = pendingDateForAnotherMonth.startsWith(`${selectedMonth}-`)
+            ? pendingDateForAnotherMonth
+            : '';
+        const dates = pendingDate
+            ? Array.from(new Set([...initialDates, pendingDate])).sort()
+            : initialDates;
+
+        setCustomDates(dates);
         setEditingIndex(null);
         setEditDateValue('');
+        setNewDateValue(pendingDate || `${selectedMonth}-01`);
+        if (pendingDate) setPendingDateForAnotherMonth('');
+        setValidationMessage('');
+    }, [show, selectedClass?.id, selectedMonth, allExistingDates, schedules]);
 
-        if (existingDates.length > 0) {
-            if (existingDates.length >= initialTargetCount) {
-                setCustomDates([...existingDates]);
-            } else {
-                const filled = generateFromSchedule(initialStartDate, initialTargetCount, existingDates);
-                setCustomDates(filled);
-            }
-        } else {
-            const fresh = generateFromSchedule(initialStartDate, initialTargetCount, []);
-            setCustomDates(fresh);
-        }
-    }, [show, selectedClass?.id, existingDates]);
-
-    // When count input changes
-    const handleCountChange = (newCountStr) => {
-        setCount(newCountStr);
-        const target = Math.min(50, Math.max(1, Number(newCountStr) || 8));
-
-        if (customDates.length < target) {
-            const updated = generateFromSchedule(startDate, target, customDates);
-            setCustomDates(updated);
-        } else if (customDates.length > target) {
-            setCustomDates(customDates.slice(0, target));
-        }
-    };
-
-    // Button to regenerate all sessions according to routine weekly schedule
     const handleRegenerateFromRoutine = () => {
-        const target = Math.min(50, Math.max(1, Number(count) || 8));
-        const attendedDates = existingDates.filter((d) => attendedStatusMap[d]);
-        const fresh = generateFromSchedule(startDate, target, attendedDates);
-        setCustomDates(fresh);
+        const recordedDates = existingDatesInMonth.filter((date) => attendedStatusMap[date]);
+        const routineDates = generateDatesForMonth(selectedMonth);
+
+        setCustomDates(Array.from(new Set([...routineDates, ...recordedDates])).sort());
         setEditingIndex(null);
+        setValidationMessage('');
     };
 
-    // Open edit mode for a specific pill
     const handleStartEdit = (index) => {
+        const date = customDates[index];
+        if (attendedStatusMap[date]) return;
+
         setEditingIndex(index);
-        setEditDateValue(customDates[index] || todayStr());
+        setEditDateValue(date);
+        setValidationMessage('');
     };
 
-    // Commit date change from the edit input
-    const handleApplyEdit = (e) => {
-        if (e) e.preventDefault();
+    const validateDate = (date, ignoredIndex = null) => {
+        if (!date.startsWith(`${selectedMonth}-`)) {
+            return 'Tanggal harus berada pada bulan yang sedang dikelola.';
+        }
+
+        if (customDates.some((existingDate, index) => existingDate === date && index !== ignoredIndex)) {
+            return 'Tanggal tersebut sudah ada di daftar pertemuan.';
+        }
+
+        return '';
+    };
+
+    const handleApplyEdit = () => {
         if (!editDateValue || editingIndex === null) return;
 
-        const updated = [...customDates];
-        updated[editingIndex] = editDateValue;
-        updated.sort();
-        setCustomDates(updated);
+        const message = validateDate(editDateValue, editingIndex);
+        if (message) {
+            setValidationMessage(message);
+            return;
+        }
+
+        const updatedDates = [...customDates];
+        updatedDates[editingIndex] = editDateValue;
+        setCustomDates(updatedDates.sort());
         setEditingIndex(null);
         setEditDateValue('');
+        setValidationMessage('');
     };
 
-    const handleFormSubmit = (e) => {
-        e.preventDefault();
-        onSubmit(startDate, Number(count) || 8, customDates);
-        onClose();
+    const handleAddDate = () => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateValue)) {
+            setValidationMessage('Pilih tanggal yang ingin ditambahkan.');
+            return;
+        }
+
+        const targetMonth = newDateValue.slice(0, 7);
+        if (targetMonth !== selectedMonth) {
+            setPendingDateForAnotherMonth(newDateValue);
+            setSelectedMonth(targetMonth);
+            return;
+        }
+
+        const message = validateDate(newDateValue);
+        if (message) {
+            setValidationMessage(message);
+            return;
+        }
+
+        setCustomDates([...customDates, newDateValue].sort());
+        setValidationMessage('');
     };
 
-    const formatPillDate = (isoStr) => {
-        if (!isoStr) return { dateDisplay: '-', dayAbbr: '' };
-        const parts = isoStr.split('-');
-        if (parts.length !== 3) return { dateDisplay: isoStr, dayAbbr: '' };
-        const dObj = new Date(isoStr);
-        const jsDay = dObj.getDay();
-        const isoDay = jsDay === 0 ? 7 : jsDay;
-        const dayAbbr = DAYS_ABBR[isoDay] || '';
+    const handleRemoveDate = (date) => {
+        if (attendedStatusMap[date]) return;
+
+        setCustomDates(customDates.filter((existingDate) => existingDate !== date));
+        setEditingIndex(null);
+        setValidationMessage('');
+    };
+
+    const handleFormSubmit = (event) => {
+        event.preventDefault();
+        onSubmit(selectedMonth, customDates, { onSuccess: onClose });
+    };
+
+    const formatPillDate = (isoDate) => {
+        const { year, month, day } = dateParts(isoDate);
+        const date = new Date(year, month - 1, day);
+        const isoDay = date.getDay() === 0 ? 7 : date.getDay();
+
         return {
-            dateDisplay: `${parts[2]}/${parts[1]}/${parts[0]}`,
-            dayAbbr,
+            dateDisplay: `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`,
+            dayAbbr: DAYS_ABBR[isoDay] ?? '',
         };
     };
 
     return (
-        <Modal
-            isOpen={show}
-            onClose={onClose}
-            title="Kelola Jadwal Pertemuan Kelas"
-            maxWidth="max-w-lg"
-        >
+        <Modal isOpen={show} onClose={onClose} title="Kelola Jadwal Pertemuan Bulanan" maxWidth="max-w-2xl">
             <form onSubmit={handleFormSubmit} className="space-y-4">
-                {/* Info weekly schedules */}
                 {schedules.length > 0 ? (
-                    <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-violet-50/70 border border-violet-100 px-3 py-2 text-xs text-violet-800">
-                        <span className="font-bold text-violet-900 mr-1">Jadwal:</span>
-                        {schedules.map((s, idx) => (
-                            <span key={s.id} className="inline-flex items-center gap-1 font-medium">
-                                {idx > 0 && <span className="text-violet-300">•</span>}
-                                <span>{s.day} ({s.start_time} - {s.end_time})</span>
+                    <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-violet-100 bg-violet-50/70 px-3 py-2 text-xs text-violet-800">
+                        <span className="mr-1 font-bold text-violet-900">Jadwal mingguan:</span>
+                        {schedules.map((schedule, index) => (
+                            <span key={schedule.id} className="inline-flex items-center gap-1 font-medium">
+                                {index > 0 && <span className="text-violet-300">•</span>}
+                                <span>{schedule.day} ({schedule.start_time} - {schedule.end_time})</span>
                             </span>
                         ))}
                     </div>
                 ) : (
-                    <div className="rounded-xl bg-rose-50 border border-rose-100 p-2.5 text-xs text-rose-700 font-semibold">
-                        Kelas belum memiliki jadwal mingguan. Tambahkan jadwal mingguan terlebih dahulu.
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
+                        Kelas belum memiliki jadwal mingguan. Anda masih dapat menambahkan tanggal secara manual.
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
                     <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                            Tanggal Mulai
-                        </label>
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-violet-500 shadow-2xs cursor-pointer"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                            Jumlah Pertemuan
-                        </label>
-                        <input
-                            type="number"
-                            min="1"
-                            max="50"
-                            value={count}
-                            onChange={(e) => handleCountChange(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 outline-none focus:border-violet-500 shadow-2xs"
-                            required
-                        />
-                    </div>
-                </div>
-
-                {/* Live Preview of Generated Dates with Editable Pills */}
-                {customDates.length > 0 && (
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 space-y-2.5">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-700">
-                                {customDates.length} Sesi Pertemuan:
-                            </span>
+                        <label className="mb-1 block text-xs font-bold text-slate-700">Bulan yang Dikelola</label>
+                        <div className="flex items-center gap-2">
                             <button
                                 type="button"
-                                onClick={handleRegenerateFromRoutine}
-                                className="text-[11px] font-semibold text-violet-700 hover:text-violet-900 transition cursor-pointer"
+                                onClick={() => setSelectedMonth(shiftMonth(selectedMonth, -1))}
+                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:border-violet-300 hover:text-violet-700"
+                                title="Bulan sebelumnya"
+                                aria-label="Bulan sebelumnya"
                             >
-                                🔄 Hitung Ulang Rutin
+                                ←
+                            </button>
+                            <input
+                                type="month"
+                                value={selectedMonth}
+                                onChange={(event) => setSelectedMonth(event.target.value)}
+                                className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-800 shadow-2xs outline-none focus:border-violet-500"
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setSelectedMonth(shiftMonth(selectedMonth, 1))}
+                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:border-violet-300 hover:text-violet-700"
+                                title="Bulan berikutnya"
+                                aria-label="Bulan berikutnya"
+                            >
+                                →
                             </button>
                         </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handleRegenerateFromRoutine}
+                        disabled={schedules.length === 0}
+                        className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        Isi Sesuai Jadwal Mingguan
+                    </button>
+                </div>
 
-                        {/* Interactive pills container */}
-                        <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1.5 bg-white rounded-xl border border-slate-200/80 shadow-2xs">
-                            {customDates.map((dateStr, i) => {
-                                const { dateDisplay, dayAbbr } = formatPillDate(dateStr);
-                                const isEditing = editingIndex === i;
-                                const attendedStatus = attendedStatusMap[dateStr];
+                <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/60 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <p className="text-xs font-bold text-slate-700">{customDates.length} pertemuan pada bulan ini</p>
+                        </div>
+                        {existingDatesInMonth.length > 0 && (
+                            <span className="rounded-full bg-sky-100 px-2.5 py-1 text-[10px] font-bold text-sky-700">Mode edit jadwal</span>
+                        )}
+                    </div>
 
-                                let statusBadge = null;
-                                if (attendedStatus === 'hadir') {
-                                    statusBadge = <span className="rounded bg-emerald-100 text-emerald-800 px-1 py-0.2 text-[9px] font-bold">H</span>;
-                                } else if (attendedStatus === 'izin') {
-                                    statusBadge = <span className="rounded bg-amber-100 text-amber-800 px-1 py-0.2 text-[9px] font-bold">I</span>;
-                                } else if (attendedStatus === 'sakit') {
-                                    statusBadge = <span className="rounded bg-sky-100 text-sky-800 px-1 py-0.2 text-[9px] font-bold">S</span>;
-                                } else if (attendedStatus === 'alpa') {
-                                    statusBadge = <span className="rounded bg-rose-100 text-rose-800 px-1 py-0.2 text-[9px] font-bold">A</span>;
-                                }
+                    {customDates.length > 0 ? (
+                        <div className="flex max-h-48 flex-wrap gap-1.5 overflow-y-auto rounded-xl border border-slate-200/80 bg-white p-2 shadow-2xs">
+                            {customDates.map((date, index) => {
+                                const { dateDisplay, dayAbbr } = formatPillDate(date);
+                                const isRecorded = Boolean(attendedStatusMap[date]);
+                                const isEditing = editingIndex === index;
 
                                 return (
-                                    <button
-                                        key={i}
-                                        type="button"
-                                        onClick={() => handleStartEdit(i)}
-                                        className={`group inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs transition cursor-pointer ${
-                                            isEditing
-                                                ? 'border-violet-600 bg-violet-100 text-violet-900 ring-2 ring-violet-500 shadow-xs'
-                                                : 'border-slate-200 bg-slate-50 hover:bg-violet-50 hover:border-violet-300 text-slate-700'
+                                    <div
+                                        key={date}
+                                        className={`inline-flex items-center overflow-hidden rounded-lg border text-xs transition ${
+                                            isRecorded
+                                                ? 'border-emerald-200 bg-emerald-50'
+                                                : isEditing
+                                                    ? 'border-violet-500 bg-violet-100 ring-2 ring-violet-200'
+                                                    : 'border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50'
                                         }`}
-                                        title={`Klik untuk ubah tanggal pertemuan ke-${i + 1}`}
                                     >
-                                        <span className="font-extrabold text-violet-600">P{i + 1}:</span>
-                                        <span className="font-mono font-semibold text-slate-800">{dateDisplay}</span>
-                                        <span className="text-[10px] text-slate-400 font-medium">({dayAbbr})</span>
-                                        {statusBadge}
-                                    </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleStartEdit(index)}
+                                            disabled={isRecorded}
+                                            className="inline-flex items-center gap-1 px-2 py-1.5 disabled:cursor-not-allowed"
+                                            title={isRecorded ? 'Absensi sudah terisi dan harus diedit dari tabel tracking' : `Ubah pertemuan ke-${index + 1}`}
+                                        >
+                                            <span className="font-extrabold text-violet-600">P{index + 1}</span>
+                                            <span className="font-mono font-semibold text-slate-800">{dateDisplay}</span>
+                                            <span className="text-[10px] font-medium text-slate-400">({dayAbbr})</span>
+                                            {isRecorded && <span className="rounded bg-emerald-100 px-1 text-[9px] font-bold text-emerald-700">Terisi</span>}
+                                        </button>
+                                        {!isRecorded && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveDate(date)}
+                                                className="border-l border-slate-200 px-2 py-1.5 font-bold text-slate-500 transition hover:text-rose-600"
+                                                title="Hapus tanggal ini"
+                                            >
+                                                ×
+                                            </button>
+                                        )}
+                                    </div>
                                 );
                             })}
                         </div>
+                    ) : (
+                        <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-xs text-slate-500">
+                            Belum ada pertemuan pada bulan ini.
+                        </div>
+                    )}
 
-                        {/* Dedicated Date Editor Panel */}
-                        {editingIndex !== null && (
-                            <div className="rounded-xl border border-violet-200 bg-violet-50 p-2.5 flex items-center justify-between gap-2 animate-in fade-in duration-150">
-                                <span className="text-xs font-bold text-violet-900 shrink-0">
-                                    Ubah P{editingIndex + 1}:
-                                </span>
-                                <div className="flex items-center gap-1.5 flex-1 justify-end">
-                                    <input
-                                        type="date"
-                                        value={editDateValue}
-                                        onChange={(e) => setEditDateValue(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                handleApplyEdit();
-                                            }
-                                        }}
-                                        className="rounded-lg border border-violet-300 bg-white px-2.5 py-1 text-xs text-slate-800 font-semibold shadow-xs outline-none focus:border-violet-600 cursor-pointer"
-                                        autoFocus
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={handleApplyEdit}
-                                        className="rounded-lg bg-violet-600 px-3 py-1 text-xs font-bold text-white shadow-xs hover:bg-violet-700 transition cursor-pointer"
-                                    >
-                                        Simpan
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setEditingIndex(null)}
-                                        className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
-                                    >
-                                        ✕
-                                    </button>
-                                </div>
+                    {editingIndex !== null && (
+                        <div className="flex flex-wrap items-end gap-2 rounded-xl border border-violet-200 bg-violet-50 p-2.5">
+                            <div className="min-w-48 flex-1">
+                                <label className="mb-1 block text-xs font-bold text-violet-900">Ubah tanggal pertemuan</label>
+                                <input
+                                    type="date"
+                                    min={`${selectedMonth}-01`}
+                                    max={monthEndDate(selectedMonth)}
+                                    value={editDateValue}
+                                    onChange={(event) => setEditDateValue(event.target.value)}
+                                    className="w-full rounded-lg border border-violet-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 outline-none focus:border-violet-600"
+                                    autoFocus
+                                />
                             </div>
-                        )}
-                    </div>
-                )}
+                            <button type="button" onClick={handleApplyEdit} className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-violet-700">Terapkan</button>
+                            <button type="button" onClick={() => setEditingIndex(null)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+                        </div>
+                    )}
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-2xs hover:bg-slate-50 transition cursor-pointer"
-                    >
-                        Batal
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={customDates.length === 0}
-                        className="rounded-xl bg-violet-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-violet-700 disabled:opacity-50 transition cursor-pointer"
-                    >
-                        Simpan Jadwal Pertemuan
+                    <div className="flex flex-wrap items-end gap-2 border-t border-slate-200 pt-3">
+                        <div className="min-w-48 flex-1">
+                            <label className="mb-1 block text-xs font-bold text-slate-700">Tambah tanggal manual</label>
+                            <input
+                                type="date"
+                                value={newDateValue}
+                                onChange={(event) => setNewDateValue(event.target.value)}
+                                className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 outline-none focus:border-violet-500"
+                            />
+                        </div>
+                        <button type="button" onClick={handleAddDate} className="rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-xs font-bold text-violet-700 hover:bg-violet-50">+ Tambah Tanggal</button>
+                    </div>
+
+                    {validationMessage && <p className="text-xs font-semibold text-rose-600">{validationMessage}</p>}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+                    <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-2xs hover:bg-slate-50">Batal</button>
+                    <button type="submit" className="rounded-xl bg-violet-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-violet-700">
+                        {existingDatesInMonth.length > 0 ? 'Simpan Perubahan Bulan Ini' : 'Buat Jadwal Bulan Ini'}
                     </button>
                 </div>
             </form>

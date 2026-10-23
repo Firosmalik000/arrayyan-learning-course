@@ -195,9 +195,6 @@ export const bankSoalContent = {
     },
 };
 
-// Single passkey for accessing all Bank Soal (for subscribers)
-export const bankSoalPasskey = 'ALCBANKSOAL2024';
-
 export const bankSoalPageContent = {
     id: {
         title: 'Bank Soal',

@@ -85,6 +85,12 @@ class PermissionCatalog
             'section' => 'Master Data',
         ],
         [
+            'id' => 'kritik-saran',
+            'label' => 'Kritik & Saran',
+            'description' => 'Evaluasi masukan dari orang tua.',
+            'section' => 'Master Data',
+        ],
+        [
             'id' => 'akses-menu',
             'label' => 'Akses Menu',
             'description' => 'Pengaturan akses role.',

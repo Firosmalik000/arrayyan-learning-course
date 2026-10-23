@@ -78,7 +78,7 @@ class PortalPasswordResetTest extends TestCase
             'password_confirmation' => 'kata-sandi-baru',
         ]);
 
-        $response->assertRedirect(route('portal.login'));
+        $response->assertRedirect(route('login'));
         $response->assertSessionHas('success');
 
         $account->refresh();

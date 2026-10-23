@@ -11,6 +11,8 @@ const UNDERSTANDING_LABELS = {
     5: 'Sangat Baik & Mandiri',
 };
 
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
 const STATUS_CONFIG = {
     hadir: {
         label: 'Hadir',
@@ -28,10 +30,23 @@ const STATUS_CONFIG = {
         dot: 'bg-sky-500',
     },
     alpa: {
-        label: 'Alpa / Tidak Hadir',
+        label: 'Alpa',
         badge: 'bg-rose-50 text-rose-700 border-rose-200/80',
         dot: 'bg-rose-500',
     },
+    terjadwal: {
+        label: 'Terjadwal',
+        badge: 'bg-slate-100 text-slate-700 border-slate-200',
+        dot: 'bg-slate-400',
+    },
+};
+
+const getRecordStatusConfig = (record) => {
+    const isFuture = record?.date && record.date.slice(0, 10) > todayIso();
+    if (isFuture) {
+        return STATUS_CONFIG.terjadwal;
+    }
+    return STATUS_CONFIG[record?.status] || STATUS_CONFIG.terjadwal;
 };
 
 const formatDate = (value) => {
@@ -177,12 +192,13 @@ export default function Attendance() {
         });
     }, [records, selectedClassId, selectedMonth, selectedStatus, searchQuery]);
 
-    // Statistics based on filtered records
-    const totalRecords = filteredRecords.length;
-    const hadirCount = filteredRecords.filter((r) => r.status === 'hadir').length;
-    const izinCount = filteredRecords.filter((r) => r.status === 'izin').length;
-    const sakitCount = filteredRecords.filter((r) => r.status === 'sakit').length;
-    const alpaCount = filteredRecords.filter((r) => r.status === 'alpa').length;
+    // Statistics based on filtered records (only count sessions that have passed or are today)
+    const passedRecords = filteredRecords.filter((r) => !r.date || r.date.slice(0, 10) <= todayIso());
+    const totalRecords = passedRecords.length;
+    const hadirCount = passedRecords.filter((r) => r.status === 'hadir').length;
+    const izinCount = passedRecords.filter((r) => r.status === 'izin').length;
+    const sakitCount = passedRecords.filter((r) => r.status === 'sakit').length;
+    const alpaCount = passedRecords.filter((r) => r.status === 'alpa').length;
     const attendanceRate = totalRecords > 0 ? Math.round((hadirCount / totalRecords) * 100) : null;
 
     const scoredRecords = filteredRecords.filter((r) => r.understanding_score);
@@ -191,8 +207,9 @@ export default function Attendance() {
         : null;
 
     // Overall summary for Level 1 (Catalog View)
-    const overallHadirCount = records.filter((r) => r.status === 'hadir').length;
-    const overallRate = records.length > 0 ? Math.round((overallHadirCount / records.length) * 100) : null;
+    const overallPassed = records.filter((r) => !r.date || r.date.slice(0, 10) <= todayIso());
+    const overallHadirCount = overallPassed.filter((r) => r.status === 'hadir').length;
+    const overallRate = overallPassed.length > 0 ? Math.round((overallHadirCount / overallPassed.length) * 100) : null;
     const overallScored = records.filter((r) => r.understanding_score);
     const overallAvgScore = overallScored.length > 0
         ? (overallScored.reduce((sum, r) => sum + Number(r.understanding_score), 0) / overallScored.length).toFixed(1)
@@ -249,7 +266,7 @@ export default function Attendance() {
                                 </h1>
                                 <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium max-w-2xl">
                                     {selectedStudent
-                                        ? `Berikut adalah program bimbingan belajar yang sedang diikuti oleh ananda ${selectedStudent.name}. Pilih salah satu kelas di bawah untuk melihat rekap absensi, materi, dan evaluasi pengajar.`
+                                        ? `Program bimbingan belajar yang aktif diikuti oleh ananda ${selectedStudent.name}.`
                                         : 'Daftar program bimbingan belajar yang sedang aktif diikuti.'}
                                 </p>
                             </div>
@@ -354,7 +371,7 @@ export default function Attendance() {
                                 Pilih Program atau Kelas Ananda
                             </h2>
                             <p className="text-xs text-slate-500 font-medium">
-                                Klik salah satu kartu kelas di bawah untuk membuka rekap absensi dan catatan perkembangan guru.
+                                Rekap absensi dan catatan evaluasi perkembangan belajar.
                             </p>
                         </div>
 
@@ -562,8 +579,8 @@ export default function Attendance() {
                                 </h1>
                                 <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
                                     {activeClass
-                                        ? `Pengajar: Kak ${activeClass.teacher_name || '-'} • Riwayat sesi kehadiran dan evaluasi ananda ${selectedStudent?.name || ''}.`
-                                        : `Menampilkan seluruh riwayat sesi kehadiran ananda ${selectedStudent?.name || ''} dari seluruh kelas.`}
+                                        ? `Pengajar: Kak ${activeClass.teacher_name || '-'}`
+                                        : 'Seluruh riwayat sesi kehadiran dan evaluasi bimbingan belajar.'}
                                 </p>
                             </div>
 
@@ -776,7 +793,7 @@ export default function Attendance() {
                             {/* Mobile Cards List (< md) */}
                             <div className="block md:hidden divide-y divide-slate-100">
                                 {displayedRecords.map((record, index) => {
-                                    const statusCfg = STATUS_CONFIG[record.status] || STATUS_CONFIG.hadir;
+                                    const statusCfg = getRecordStatusConfig(record);
                                     return (
                                         <article
                                             key={`mob-${record.class}-${record.date}-${index}`}
@@ -870,7 +887,7 @@ export default function Attendance() {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {displayedRecords.map((record, index) => {
-                                            const statusCfg = STATUS_CONFIG[record.status] || STATUS_CONFIG.hadir;
+                                            const statusCfg = getRecordStatusConfig(record);
                                             return (
                                                 <tr
                                                     key={`tbl-${record.class}-${record.date}-${index}`}
@@ -1015,9 +1032,9 @@ export default function Attendance() {
                                         Status Kehadiran
                                     </span>
                                     <span className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-extrabold uppercase border ${
-                                        (STATUS_CONFIG[activeDetailRecord.status] || STATUS_CONFIG.hadir).badge
+                                        getRecordStatusConfig(activeDetailRecord).badge
                                     }`}>
-                                        {(STATUS_CONFIG[activeDetailRecord.status] || STATUS_CONFIG.hadir).label}
+                                        {getRecordStatusConfig(activeDetailRecord).label}
                                     </span>
                                 </div>
                                 <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3">

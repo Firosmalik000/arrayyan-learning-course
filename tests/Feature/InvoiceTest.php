@@ -2,16 +2,22 @@
 
 namespace Tests\Feature;
 
+use App\Models\ClassGroup;
+use App\Models\ClassMember;
 use App\Models\Invoice;
 use App\Models\NotificationLog;
+use App\Models\Package;
 use App\Models\Payment;
 use App\Models\Program;
 use App\Models\Role;
+use App\Models\Student;
 use App\Models\StudentRegistration;
 use App\Models\User;
+use App\Support\AcademicService;
 use App\Support\PermissionCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -51,6 +57,49 @@ class InvoiceTest extends TestCase
             'status' => 'approved',
             'approved_at' => now(),
         ]);
+    }
+
+    /**
+     * @return array{program: Program, package: Package, student: Student, class: ClassGroup, member: ClassMember}
+     */
+    private function monthlyBillingFixture(bool $isScholarship = false, string $studentName = 'Anak Bulanan'): array
+    {
+        $program = Program::create([
+            'name' => 'Program Bulanan '.$studentName,
+            'level' => 'SMP',
+            'price' => 425000,
+            'is_active' => true,
+        ]);
+        $package = Package::create([
+            'program_id' => $program->id,
+            'name' => 'Paket Bulanan '.$studentName,
+            'price' => 375000,
+            'is_active' => true,
+        ]);
+        $student = Student::create([
+            'name' => $studentName,
+            'program_id' => $program->id,
+            'package_id' => $package->id,
+            'program' => $program->name,
+            'package' => $package->name,
+            'parent_contact' => '081234567890',
+            'is_active' => true,
+        ]);
+        $class = ClassGroup::create([
+            'program_id' => $program->id,
+            'package_id' => $package->id,
+            'name' => 'Kelas Bulanan '.$studentName,
+            'is_active' => true,
+        ]);
+        $member = ClassMember::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'status' => ClassMember::STATUS_ACTIVE,
+            'joined_at' => now()->toDateString(),
+            'is_scholarship' => $isScholarship,
+        ]);
+
+        return compact('program', 'package', 'student', 'class', 'member');
     }
 
     public function test_approve_creates_exactly_one_invoice(): void
@@ -288,7 +337,8 @@ class InvoiceTest extends TestCase
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
             ->component('Admin/Invoices', false)
-            ->has('invoices.data', 1)
+            ->has('students.data', 0)
+            ->has('unlinked_invoices', 1)
             ->where('stats.unpaid', 1)
         );
 
@@ -299,8 +349,346 @@ class InvoiceTest extends TestCase
         $filtered->assertSuccessful();
         $filtered->assertInertia(fn ($page) => $page
             ->component('Admin/Invoices', false)
-            ->has('invoices.data', 0)
+            ->has('students.data', 0)
+            ->has('unlinked_invoices', 0)
         );
+    }
+
+    public function test_admin_can_create_an_idempotent_monthly_invoice_for_a_class_member(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-23 10:00:00'));
+        $user = $this->actingAsAdmin();
+        $fixture = $this->monthlyBillingFixture();
+        $payload = [
+            'billing_month' => '2026-10',
+            'due_date' => '2026-10-28',
+            'notes' => 'Tagihan Oktober',
+        ];
+
+        $first = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.store', $fixture['member']),
+            $payload,
+        );
+        $first->assertSessionHas('success');
+
+        $second = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.store', $fixture['member']),
+            $payload,
+        );
+
+        $second->assertSessionHas('error');
+        $this->assertDatabaseCount('invoices', 1);
+        $this->assertDatabaseHas('invoices', [
+            'student_id' => $fixture['student']->id,
+            'class_member_id' => $fixture['member']->id,
+            'class_group_id' => $fixture['class']->id,
+            'billing_type' => 'monthly',
+            'billing_month' => '2026-10-01 00:00:00',
+            'amount' => 375000,
+            'status' => Invoice::STATUS_UNPAID,
+        ]);
+    }
+
+    public function test_admin_can_create_a_monthly_invoice_for_a_future_month(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-23 10:00:00'));
+        $user = $this->actingAsAdmin();
+        $fixture = $this->monthlyBillingFixture();
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.store', $fixture['member']),
+            ['billing_month' => '2026-11', 'due_date' => '2026-11-10'],
+        );
+
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('invoices', [
+            'class_member_id' => $fixture['member']->id,
+            'billing_month' => '2026-11-01 00:00:00',
+            'status' => Invoice::STATUS_UNPAID,
+        ]);
+    }
+
+    public function test_completion_month_is_billable_but_following_month_is_not(): void
+    {
+        $this->travelTo(Carbon::parse('2026-09-01 10:00:00'));
+        $user = $this->actingAsAdmin();
+        $fixture = $this->monthlyBillingFixture();
+
+        $this->travelTo(Carbon::parse('2026-10-18 10:00:00'));
+        AcademicService::completeMember($fixture['member'], false, $user->id);
+
+        $completionMonth = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.store', $fixture['member']),
+            ['billing_month' => '2026-10', 'due_date' => '2026-10-28'],
+        );
+        $completionMonth->assertSessionHas('success');
+
+        $this->travelTo(Carbon::parse('2026-11-10 10:00:00'));
+        $followingMonth = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.store', $fixture['member']),
+            ['billing_month' => '2026-11', 'due_date' => '2026-11-28'],
+        );
+
+        $followingMonth->assertSessionHas('error');
+        $this->assertDatabaseCount('invoices', 1);
+    }
+
+    public function test_reactivation_does_not_make_inactive_gap_billable(): void
+    {
+        $this->travelTo(Carbon::parse('2026-05-01 10:00:00'));
+        $user = $this->actingAsAdmin();
+        $fixture = $this->monthlyBillingFixture();
+
+        $this->travelTo(Carbon::parse('2026-06-15 10:00:00'));
+        AcademicService::setClassActiveStatus($fixture['class'], false);
+        $this->travelTo(Carbon::parse('2026-09-01 10:00:00'));
+        AcademicService::setClassActiveStatus($fixture['class']->fresh(), true);
+
+        $gap = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.store', $fixture['member']),
+            ['billing_month' => '2026-07', 'due_date' => '2026-09-10'],
+        );
+        $gap->assertSessionHas('error');
+
+        $activeAgain = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.store', $fixture['member']),
+            ['billing_month' => '2026-09', 'due_date' => '2026-09-10'],
+        );
+
+        $activeAgain->assertSessionHas('success');
+        $this->assertDatabaseCount('invoices', 1);
+    }
+
+    public function test_bulk_monthly_billing_skips_scholarships_and_is_idempotent(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-23 10:00:00'));
+        $user = $this->actingAsAdmin();
+        $paying = $this->monthlyBillingFixture(false, 'Murid Bayar');
+        $scholarshipStudent = Student::create([
+            'name' => 'Murid Beasiswa',
+            'program_id' => $paying['program']->id,
+            'package_id' => $paying['package']->id,
+            'parent_contact' => '081200000002',
+            'is_active' => true,
+        ]);
+        ClassMember::create([
+            'class_group_id' => $paying['class']->id,
+            'student_id' => $scholarshipStudent->id,
+            'status' => ClassMember::STATUS_ACTIVE,
+            'joined_at' => now()->toDateString(),
+            'is_scholarship' => true,
+        ]);
+        $payload = ['billing_month' => '2026-10', 'due_date' => '2026-10-28'];
+
+        $first = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.bulk-store', $paying['class']),
+            $payload,
+        );
+        $first->assertSessionHas('success', fn (string $message): bool => str_contains($message, '1 tagihan dibuat'));
+
+        $second = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.bulk-store', $paying['class']),
+            $payload,
+        );
+
+        $second->assertSessionHas('success', fn (string $message): bool => str_contains($message, '1 sudah tersedia'));
+        $this->assertDatabaseCount('invoices', 1);
+    }
+
+    public function test_admin_can_create_monthly_invoices_for_selected_class_members_only(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-23 10:00:00'));
+        $user = $this->actingAsAdmin();
+        $first = $this->monthlyBillingFixture(false, 'Murid Pertama');
+        $second = $this->monthlyBillingFixture(false, 'Murid Kedua');
+        $payload = [
+            'member_ids' => [$first['member']->id],
+            'billing_month' => '2026-11',
+            'due_date' => '2026-11-10',
+        ];
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.selected-store'),
+            $payload,
+        );
+
+        $response->assertSessionHas('success', fn (string $message): bool => str_contains($message, '1 tagihan dibuat'));
+        $this->assertDatabaseCount('invoices', 1);
+        $this->assertDatabaseHas('invoices', [
+            'class_member_id' => $first['member']->id,
+            'billing_month' => '2026-11-01 00:00:00',
+            'amount' => 375000,
+        ]);
+        $this->assertDatabaseMissing('invoices', [
+            'class_member_id' => $second['member']->id,
+            'billing_month' => '2026-11-01 00:00:00',
+        ]);
+
+        $repeated = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.selected-store'),
+            [...$payload, 'member_ids' => [$first['member']->id, $second['member']->id]],
+        );
+
+        $repeated->assertSessionHas('success', fn (string $message): bool => str_contains($message, '1 sudah tersedia'));
+        $this->assertDatabaseCount('invoices', 2);
+    }
+
+    public function test_selected_monthly_billing_requires_at_least_one_member(): void
+    {
+        $user = $this->actingAsAdmin();
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.selected-store'),
+            [
+                'member_ids' => [],
+                'billing_month' => '2026-11',
+                'due_date' => '2026-11-10',
+            ],
+        );
+
+        $response->assertSessionHasErrors('member_ids');
+        $this->assertDatabaseCount('invoices', 0);
+    }
+
+    public function test_collective_billing_list_keeps_one_row_per_class_membership(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-23 10:00:00'));
+        $user = $this->actingAsAdmin();
+        $fixture = $this->monthlyBillingFixture(false, 'Murid Dua Kelas');
+        $secondClass = ClassGroup::create([
+            'program_id' => $fixture['program']->id,
+            'package_id' => $fixture['package']->id,
+            'name' => 'Kelas Kedua Murid Dua Kelas',
+            'is_active' => true,
+        ]);
+        ClassMember::create([
+            'class_group_id' => $secondClass->id,
+            'student_id' => $fixture['student']->id,
+            'status' => ClassMember::STATUS_ACTIVE,
+            'joined_at' => '2026-10-15',
+            'is_scholarship' => false,
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->get(route('admin.keuangan'));
+
+        $response->assertInertia(fn ($page) => $page
+            ->has('billing_members', 2)
+            ->where('billing_members.0.student_name', 'Murid Dua Kelas')
+            ->where('billing_members.1.student_name', 'Murid Dua Kelas')
+            ->where('billing_members.1.joined_at', '2026-10-15')
+        );
+    }
+
+    public function test_finance_index_groups_monthly_history_by_student_and_class(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-23 10:00:00'));
+        $user = $this->actingAsAdmin();
+        $fixture = $this->monthlyBillingFixture();
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.store', $fixture['member']),
+            ['billing_month' => '2026-10', 'due_date' => '2026-10-28'],
+        );
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->get(route('admin.keuangan', [
+            'class_group_id' => $fixture['class']->id,
+            'year' => '2026',
+        ]));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Admin/Invoices', false)
+            ->has('students.data', 1)
+            ->where('students.data.0.name', $fixture['student']->name)
+            ->where('students.data.0.classes.0.name', $fixture['class']->name)
+            ->where('students.data.0.classes.0.invoices.0.billing_month', '2026-10')
+            ->where('stats.total', 1)
+        );
+    }
+
+    public function test_admin_can_open_student_finance_detail_as_a_separate_page(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-23 10:00:00'));
+        $user = $this->actingAsAdmin();
+        $fixture = $this->monthlyBillingFixture();
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.keuangan.monthly.store', $fixture['member']),
+            ['billing_month' => '2026-10', 'due_date' => '2026-10-28'],
+        );
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->get(
+            route('admin.keuangan.show', $fixture['student']),
+        );
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Admin/Invoices/Show', false)
+            ->where('student.name', $fixture['student']->name)
+            ->has('student.classes', 1)
+            ->where('student.classes.0.name', $fixture['class']->name)
+            ->where('student.classes.0.invoices.0.billing_month', '2026-10')
+        );
+    }
+
+    public function test_initial_paid_invoice_is_linked_to_the_first_class_month(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-19 10:00:00'));
+        $user = $this->actingAsAdmin();
+        $program = Program::create([
+            'name' => 'Privat',
+            'level' => 'SD',
+            'price' => 400000,
+            'is_active' => true,
+        ]);
+        $package = Package::create([
+            'program_id' => $program->id,
+            'name' => 'Paket Privat',
+            'price' => 400000,
+            'is_active' => true,
+        ]);
+        $student = Student::create([
+            'name' => 'Murid Tagihan Awal',
+            'program_id' => $program->id,
+            'package_id' => $package->id,
+            'parent_contact' => '081234567899',
+            'is_active' => true,
+        ]);
+        $class = ClassGroup::create([
+            'program_id' => $program->id,
+            'package_id' => $package->id,
+            'name' => 'Kelas Privat',
+            'is_active' => true,
+        ]);
+        $invoice = Invoice::create([
+            'invoice_no' => 'INV-2026-INITIAL',
+            'student_id' => $student->id,
+            'program_id' => $program->id,
+            'package_id' => $package->id,
+            'billing_type' => 'registration',
+            'amount' => 400000,
+            'status' => Invoice::STATUS_PAID,
+            'paid_at' => now(),
+        ]);
+
+        $member = AcademicService::addMember($class, $student->id);
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'class_member_id' => $member->id,
+            'class_group_id' => $class->id,
+            'billing_month' => '2026-10-01 00:00:00',
+            'status' => Invoice::STATUS_PAID,
+        ]);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)
+            ->get(route('admin.keuangan.show', $student))
+            ->assertInertia(fn ($page) => $page
+                ->where('student.classes.0.invoices.0.invoice_no', 'INV-2026-INITIAL')
+                ->where('student.classes.0.invoices.0.status', Invoice::STATUS_PAID)
+                ->where('student.classes.0.invoices.0.billing_month', '2026-10')
+                ->has('student.classes.0.lifecycles', 1)
+            );
     }
 
     public function test_status_check_includes_invoices(): void

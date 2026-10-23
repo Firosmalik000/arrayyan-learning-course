@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Support\EducationCatalog;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreOlympiadRequest extends FormRequest
 {
@@ -15,7 +17,11 @@ class StoreOlympiadRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'level' => ['required', 'string', 'max:100'],
+            'level' => ['nullable', 'string', 'max:100'],
+            'education_levels' => ['required', 'array', 'min:1'],
+            'education_levels.*' => ['required', 'string', 'distinct', Rule::in(EducationCatalog::levels())],
+            'grades' => ['nullable', 'array'],
+            'grades.*' => ['required', 'string', 'distinct', Rule::in(EducationCatalog::gradesFor((array) $this->input('education_levels', [])))],
             'schedule' => ['nullable', 'date'],
             'selection_system' => ['nullable', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:free,paid'],
@@ -35,11 +41,24 @@ class StoreOlympiadRequest extends FormRequest
     {
         return [
             'name.required' => 'Nama olimpiade wajib diisi.',
-            'level.required' => 'Jenjang wajib dipilih.',
+            'education_levels.required' => 'Pilih minimal satu jenjang.',
+            'education_levels.min' => 'Pilih minimal satu jenjang.',
+            'education_levels.*.in' => 'Jenjang yang dipilih tidak valid.',
+            'grades.*.in' => 'Kelas harus sesuai dengan jenjang yang dipilih.',
             'category.required' => 'Kategori wajib dipilih.',
             'category.in' => 'Kategori harus gratis atau berbayar.',
             'image.mimes' => 'Format gambar harus JPG, PNG, atau WEBP.',
             'image.max' => 'Ukuran gambar maksimal 4MB.',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('education_levels')) {
+            $this->merge([
+                'education_levels' => EducationCatalog::extractLevels($this->input('level')),
+                'grades' => $this->input('grades', []),
+            ]);
+        }
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Http\Controllers\Admin\SeoController;
+use App\Models\FeedbackSubmission;
 use App\Models\PageContent;
 use App\Models\StudentRegistration;
 use App\Models\TeacherRegistration;
@@ -66,6 +67,7 @@ class HandleInertiaRequests extends Middleware
             'appLogo' => fn () => $this->getLogoUrl(),
             'pendingRegistrationCount' => fn () => $this->getPendingRegistrationCount($request),
             'pendingRegistrationCounts' => fn () => $this->getPendingRegistrationCounts($request),
+            'pendingFeedbackCount' => fn () => $this->getPendingFeedbackCount($request),
             'allowedMenus' => fn () => $this->getAllowedMenuIds($request),
             'allowedActions' => fn () => $this->getAllowedActions($request),
             'impersonation' => fn () => $this->getImpersonationState($request),
@@ -96,6 +98,9 @@ class HandleInertiaRequests extends Middleware
                 'contact' => $user->contact,
                 'email' => $user->email,
                 'type' => 'teacher',
+                'photo_url' => $user->teacher?->photo_path
+                    ? Storage::disk('public')->url($user->teacher->photo_path)
+                    : null,
             ];
         }
 
@@ -120,6 +125,7 @@ class HandleInertiaRequests extends Middleware
             'students' => $students->map(fn ($s) => [
                 'id' => $s->id,
                 'name' => $s->name,
+                'photo_url' => $s->photo_path ? Storage::disk('public')->url($s->photo_path) : null,
                 'level' => $s->level,
                 'school_name' => $s->school_name,
                 'program' => $s->program,
@@ -150,6 +156,20 @@ class HandleInertiaRequests extends Middleware
         $counts = $this->getPendingRegistrationCounts($request);
 
         return $counts['total'] ?? 0;
+    }
+
+    private function getPendingFeedbackCount(Request $request): int
+    {
+        if ((! $request->is('admin/*') && ! $request->is('admin')) || ! $request->user('admin')) {
+            return 0;
+        }
+
+        return FeedbackSubmission::query()
+            ->where(function ($query): void {
+                $query->whereNull('admin_reply')
+                    ->orWhere('admin_reply', '');
+            })
+            ->count();
     }
 
     /**

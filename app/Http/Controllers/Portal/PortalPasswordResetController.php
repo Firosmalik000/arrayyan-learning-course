@@ -63,7 +63,7 @@ class PortalPasswordResetController extends Controller
         );
 
         if ($status === Password::PASSWORD_RESET) {
-            return redirect()->route('portal.login')
+            return redirect()->route('login')
                 ->with('success', 'Kata sandi berhasil diperbarui. Silakan masuk menggunakan kata sandi baru.');
         }
 

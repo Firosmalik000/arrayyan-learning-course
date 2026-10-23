@@ -85,7 +85,7 @@ class TeacherRegistrationEmailService
                 subjects: $registration->subjects ?? 'Semua Mata Pelajaran',
                 loginEmail: $recipient,
                 temporaryPassword: $temporaryPassword,
-                portalUrl: route('portal.login'),
+                portalUrl: route('login'),
             ));
 
             $log->update(['status' => 'sent']);
@@ -129,7 +129,7 @@ class TeacherRegistrationEmailService
                 teacherName: $registration->name,
                 subjects: $registration->subjects ?? 'Semua Mata Pelajaran',
                 loginEmail: $recipient,
-                portalUrl: route('portal.login'),
+                portalUrl: route('login'),
             ));
 
             $log->update(['status' => 'sent']);

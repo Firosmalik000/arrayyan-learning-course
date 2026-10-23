@@ -240,7 +240,7 @@ class PortalTest extends TestCase
         ]);
 
         // Login using email
-        $response = $this->post(route('portal.login.store'), [
+        $response = $this->post(route('login.store'), [
             'contact' => 'parent@example.com',
             'password' => 'secret123',
         ]);
@@ -257,7 +257,7 @@ class PortalTest extends TestCase
     {
         $this->makeAccount();
 
-        $response = $this->post(route('portal.login.store'), [
+        $response = $this->post(route('login.store'), [
             'contact' => '0812-3456-7890',
             'password' => 'password123',
         ]);
@@ -274,14 +274,14 @@ class PortalTest extends TestCase
         $this->makeAccount();
         $this->makeAccount('student', ['contact' => '089999999999', 'is_active' => false]);
 
-        $bad = $this->post(route('portal.login.store'), [
+        $bad = $this->post(route('login.store'), [
             'contact' => '081234567890',
             'password' => 'salah',
         ]);
         $bad->assertSessionHasErrors('contact');
         $this->assertGuest('portal');
 
-        $inactive = $this->post(route('portal.login.store'), [
+        $inactive = $this->post(route('login.store'), [
             'contact' => '089999999999',
             'password' => 'password123',
         ]);
@@ -318,7 +318,16 @@ class PortalTest extends TestCase
         $program = Program::create(['name' => 'Reguler', 'level' => 'SMP', 'is_active' => true]);
         $studentA = Student::create(['name' => 'Murid A', 'program_id' => $program->id, 'parent_contact' => '081111111111', 'is_active' => true]);
         $studentB = Student::create(['name' => 'Murid B', 'program_id' => $program->id, 'parent_contact' => '082222222222', 'is_active' => true]);
-        Invoice::create(['invoice_no' => 'INV-A', 'student_id' => $studentA->id, 'amount' => 100000, 'status' => 'unpaid']);
+        $class = ClassGroup::create(['program_id' => $program->id, 'name' => 'Kelas Portal', 'is_active' => true]);
+        Invoice::create([
+            'invoice_no' => 'INV-A',
+            'student_id' => $studentA->id,
+            'class_group_id' => $class->id,
+            'billing_type' => 'monthly',
+            'billing_month' => '2026-10-01',
+            'amount' => 100000,
+            'status' => 'unpaid',
+        ]);
         Invoice::create(['invoice_no' => 'INV-B', 'student_id' => $studentB->id, 'amount' => 200000, 'status' => 'unpaid']);
 
         $accountA = $this->makeAccount('student', [
@@ -333,6 +342,8 @@ class PortalTest extends TestCase
             ->component('Portal/Invoices', false)
             ->has('invoices', 1)
             ->where('invoices.0.invoice_no', 'INV-A')
+            ->where('invoices.0.class_name', 'Kelas Portal')
+            ->where('invoices.0.billing_month', '2026-10')
         );
     }
 
@@ -396,14 +407,14 @@ class PortalTest extends TestCase
 
         $response = $this->actingAs($admin, PermissionCatalog::GUARD)->get(route('portal.dashboard'));
 
-        $response->assertRedirect(route('portal.login'));
+        $response->assertRedirect(route('login'));
     }
 
-    public function test_portal_guest_redirects_to_portal_login(): void
+    public function test_portal_guest_redirects_to_unified_login(): void
     {
         $response = $this->get(route('portal.dashboard'));
 
-        $response->assertRedirect(route('portal.login'));
+        $response->assertRedirect(route('login'));
     }
 
     public function test_unified_login_page_authenticates_admin_user(): void
@@ -766,5 +777,252 @@ class PortalTest extends TestCase
             ->where('classes.1.program_name', 'Olimpiade Matematika')
             ->has('records', 2)
         );
+    }
+
+    public function test_parent_dashboard_includes_comprehensive_statistics_and_agenda(): void
+    {
+        $program = Program::create(['name' => 'Reguler SMP', 'level' => 'SMP', 'is_active' => true]);
+        $teacher = Teacher::create(['name' => 'Ustadz Ahmad', 'contact' => '081234567890', 'is_active' => true]);
+        $student = Student::create([
+            'name' => 'Fulan bin Fulan',
+            'level' => 'SMP',
+            'parent_contact' => '081299998888',
+            'is_active' => true,
+        ]);
+        $class = ClassGroup::create([
+            'program_id' => $program->id,
+            'teacher_id' => $teacher->id,
+            'name' => 'Kelas 7 Reguler',
+            'total_sessions' => 12,
+            'is_active' => true,
+        ]);
+        $class->students()->attach($student->id, ['status' => 'active', 'joined_at' => now()]);
+
+        // Add weekly schedule
+        $class->schedules()->create([
+            'day_of_week' => 3, // Wednesday
+            'start_time' => '15:30',
+            'end_time' => '17:00',
+            'room' => 'Ruang 1',
+        ]);
+
+        // Add attendance
+        Attendance::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'date' => '2026-10-14',
+            'status' => 'hadir',
+            'subject' => 'Matematika',
+            'material' => 'Operasi Aljabar',
+            'understanding_score' => 5,
+            'evaluation' => 'Siswa sangat aktif bertanya dan menguasai konsep.',
+        ]);
+
+        $parent = $this->makeAccount('parent', [
+            'contact' => '081299998888',
+            'student_id' => $student->id,
+        ]);
+
+        $response = $this->actingAs($parent, 'portal')->get(route('portal.dashboard'));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Portal/Dashboard', false)
+            ->where('account_type', 'parent')
+            ->where('selected_student.name', 'Fulan bin Fulan')
+            ->has('summary.stats')
+            ->where('summary.stats.total_classes', 1)
+            ->where('summary.stats.hadir_count', 1)
+            ->where('summary.stats.attendance_rate', 100)
+            ->where('summary.stats.average_understanding', 5)
+            ->has('summary.upcoming_schedules', 1)
+            ->where('summary.upcoming_schedules.0.teacher_name', 'Ustadz Ahmad')
+            ->has('summary.latest_evaluation')
+            ->where('summary.latest_evaluation.teacher_name', 'Ustadz Ahmad')
+            ->where('summary.latest_evaluation.material', 'Operasi Aljabar')
+            ->has('summary.classes_detailed', 1)
+        );
+    }
+
+    public function test_teacher_dashboard_includes_comprehensive_statistics_and_weekly_agenda(): void
+    {
+        $program = Program::create(['name' => 'Olimpiade Sains', 'level' => 'SMA', 'is_active' => true]);
+        $teacher = Teacher::create(['name' => 'Guru Juara', 'contact' => '081277776666', 'is_active' => true]);
+        $student = Student::create([
+            'name' => 'Siswa Berprestasi',
+            'level' => 'SMA',
+            'is_active' => true,
+        ]);
+
+        $class = ClassGroup::create([
+            'program_id' => $program->id,
+            'teacher_id' => $teacher->id,
+            'name' => 'Olimpiade Fisika',
+            'quota' => 10,
+            'total_sessions' => 16,
+            'is_active' => true,
+        ]);
+        $class->students()->attach($student->id, ['status' => 'active', 'joined_at' => now()]);
+
+        $class->schedules()->create([
+            'day_of_week' => 1,
+            'start_time' => '16:00',
+            'end_time' => '17:30',
+            'room' => 'Lab Fisika',
+        ]);
+
+        Attendance::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'date' => '2026-10-19',
+            'status' => 'hadir',
+            'subject' => 'Kinematika',
+            'material' => 'Gerak Lurus Beraturan',
+            'understanding_score' => 5,
+        ]);
+
+        $teacherAccount = $this->makeAccount('teacher', [
+            'contact' => '081277776666',
+            'teacher_id' => $teacher->id,
+        ]);
+
+        $response = $this->actingAs($teacherAccount, 'portal')->get(route('portal.dashboard'));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Portal/Dashboard', false)
+            ->where('account_type', 'teacher')
+            ->has('summary.stats')
+            ->where('summary.stats.total_classes', 1)
+            ->where('summary.stats.total_students', 1)
+            ->where('summary.stats.overall_attendance_rate', 100)
+            ->has('summary.weekly_schedule', 7)
+            ->has('summary.recent_activities', 1)
+            ->has('summary.classes_detailed', 1)
+            ->where('summary.classes_detailed.0.name', 'Olimpiade Fisika')
+        );
+    }
+
+    public function test_teacher_can_view_inactive_class_history_but_cannot_manage_it(): void
+    {
+        $program = Program::create(['name' => 'Reguler', 'level' => 'SMP', 'is_active' => true]);
+        $teacher = Teacher::create(['name' => 'Guru Riwayat', 'contact' => '081277771111', 'is_active' => true]);
+        $student = Student::create([
+            'name' => 'Murid Riwayat',
+            'program_id' => $program->id,
+            'parent_contact' => '081288881111',
+            'is_active' => true,
+        ]);
+        $class = ClassGroup::create([
+            'program_id' => $program->id,
+            'teacher_id' => $teacher->id,
+            'name' => 'Kelas Selesai',
+            'is_active' => false,
+        ]);
+        $class->students()->attach($student->id, ['status' => 'active', 'joined_at' => now()]);
+        Attendance::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'date' => now()->subWeek()->toDateString(),
+            'status' => 'hadir',
+        ]);
+
+        $teacherAccount = $this->makeAccount('teacher', [
+            'contact' => '081277771111',
+            'teacher_id' => $teacher->id,
+        ]);
+
+        $this->actingAs($teacherAccount, 'portal')
+            ->get(route('portal.schedule'))
+            ->assertInertia(fn ($page) => $page
+                ->has('classes', 1)
+                ->where('classes.0.name', 'Kelas Selesai')
+                ->where('classes.0.is_active', false)
+                ->has('classes.0.attendances', 1)
+            );
+
+        $this->actingAs($teacherAccount, 'portal')->post(
+            route('portal.classes.schedules.store', $class),
+            ['day_of_week' => 1, 'start_time' => '15:00', 'end_time' => '16:00'],
+        )->assertSessionHas('error');
+
+        $this->actingAs($teacherAccount, 'portal')->post(
+            route('portal.classes.attendance.store', $class),
+            [
+                'date' => now()->toDateString(),
+                'subject' => 'Matematika',
+                'material' => 'Aljabar',
+                'rows' => [[
+                    'student_id' => $student->id,
+                    'status' => 'hadir',
+                    'understanding_score' => 4,
+                    'evaluation' => 'Baik',
+                ]],
+            ],
+        )->assertSessionHas('error');
+
+        $this->assertDatabaseCount('schedules', 0);
+        $this->assertDatabaseCount('attendances', 1);
+    }
+
+    public function test_parent_keeps_inactive_class_history_without_future_schedule(): void
+    {
+        $program = Program::create(['name' => 'Reguler', 'level' => 'SMP', 'is_active' => true]);
+        $teacher = Teacher::create(['name' => 'Guru Lama', 'contact' => '081277772222', 'is_active' => true]);
+        $student = Student::create([
+            'name' => 'Murid Lama',
+            'program_id' => $program->id,
+            'parent_contact' => '081288882222',
+            'is_active' => true,
+        ]);
+        $class = ClassGroup::create([
+            'program_id' => $program->id,
+            'teacher_id' => $teacher->id,
+            'name' => 'Kelas Riwayat',
+            'is_active' => false,
+        ]);
+        $class->students()->attach($student->id, ['status' => 'active', 'joined_at' => now()]);
+        $class->schedules()->create([
+            'day_of_week' => 1,
+            'start_time' => '15:00',
+            'end_time' => '16:00',
+        ]);
+        Attendance::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'date' => now()->subWeek()->toDateString(),
+            'status' => 'hadir',
+        ]);
+        Attendance::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'date' => now()->addWeek()->toDateString(),
+            'status' => 'belum_absen',
+        ]);
+
+        $parent = $this->makeAccount('parent', [
+            'contact' => '081288882222',
+            'student_id' => $student->id,
+        ]);
+
+        $this->actingAs($parent, 'portal')
+            ->get(route('portal.schedule'))
+            ->assertInertia(fn ($page) => $page
+                ->has('classes', 1)
+                ->where('classes.0.name', 'Kelas Riwayat')
+                ->where('classes.0.is_active', false)
+                ->has('classes.0.attendances', 1)
+                ->has('schedules', 0)
+            );
+
+        $this->actingAs($parent, 'portal')
+            ->get(route('portal.dashboard'))
+            ->assertInertia(fn ($page) => $page
+                ->has('summary.classes', 0)
+                ->has('summary.upcoming_schedules', 0)
+                ->has('summary.classes_detailed', 1)
+                ->where('summary.classes_detailed.0.is_active', false)
+                ->where('summary.stats.hadir_count', 1)
+            );
     }
 }

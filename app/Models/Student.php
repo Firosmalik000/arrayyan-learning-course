@@ -14,6 +14,7 @@ class Student extends Model
 
     protected $fillable = [
         'name',
+        'photo_path',
         'address',
         'school_name',
         'level',
@@ -75,10 +76,20 @@ class Student extends Model
         return $this->hasMany(ClassMember::class, 'student_id');
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function feedbackSubmissions(): HasMany
+    {
+        return $this->hasMany(FeedbackSubmission::class);
+    }
+
     public function classGroups(): BelongsToMany
     {
         return $this->belongsToMany(ClassGroup::class, 'class_members', 'student_id', 'class_group_id')
-            ->withPivot(['status', 'joined_at', 'is_scholarship', 'notes'])
+            ->withPivot(['status', 'joined_at', 'ended_at', 'is_scholarship', 'notes'])
             ->withTimestamps();
     }
 }

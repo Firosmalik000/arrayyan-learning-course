@@ -33,8 +33,12 @@ class Invoice extends Model
         'invoice_no',
         'student_registration_id',
         'student_id',
+        'class_member_id',
+        'class_group_id',
         'program_id',
         'package_id',
+        'billing_type',
+        'billing_month',
         'amount',
         'status',
         'due_date',
@@ -46,6 +50,7 @@ class Invoice extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'billing_month' => 'date',
             'due_date' => 'date',
             'paid_at' => 'datetime',
         ];
@@ -68,6 +73,16 @@ class Invoice extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class, 'student_id');
+    }
+
+    public function classMember(): BelongsTo
+    {
+        return $this->belongsTo(ClassMember::class);
+    }
+
+    public function classGroup(): BelongsTo
+    {
+        return $this->belongsTo(ClassGroup::class);
     }
 
     public function program(): BelongsTo

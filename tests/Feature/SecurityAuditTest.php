@@ -54,7 +54,7 @@ class SecurityAuditTest extends TestCase
             'olympiad.register.store',
             'banksoal.unlock',
             'bayar.upload',
-            'portal.login.store',
+            'login.store',
         ];
 
         $missing = [];

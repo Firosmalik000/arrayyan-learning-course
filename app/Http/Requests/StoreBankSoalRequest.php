@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\EducationClass;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreBankSoalRequest extends FormRequest
 {
@@ -24,18 +26,17 @@ class StoreBankSoalRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'category' => ['required', 'string', 'max:255'],
-            'level' => ['required', 'string', 'max:100'],
+            'education_level_id' => ['required', 'integer', 'exists:education_levels,id'],
+            'education_class_id' => ['required', 'integer', 'exists:education_classes,id'],
+            'subject_id' => ['required', 'integer', 'exists:subjects,id'],
             'format' => ['required', 'string', 'max:100'],
             'questions' => ['nullable', 'integer', 'min:0'],
-            'slug' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'links' => ['nullable', 'array'],
-            'links.*.id' => ['nullable', 'integer', 'min:1'],
-            'links.*.label' => ['nullable', 'string', 'max:255'],
-            'links.*.link' => ['nullable', 'string', 'max:500'],
-            'passkey' => ['nullable', 'string', 'max:100'],
+            'resources' => ['required', 'array', 'min:1'],
+            'resources.*.label' => ['nullable', 'string', 'max:255'],
+            'resources.*.destination_url' => ['nullable', 'url', 'max:500'],
+            'resources.*.file' => ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,zip,jpg,jpeg,png,webp', 'max:20480'],
             'is_active' => ['boolean'],
         ];
     }
@@ -44,14 +45,34 @@ class StoreBankSoalRequest extends FormRequest
     {
         return [
             'name.required' => 'Nama modul wajib diisi.',
-            'category.required' => 'Kategori wajib diisi.',
-            'level.required' => 'Jenjang wajib dipilih.',
+            'education_level_id.required' => 'Pilih jenjang.',
+            'education_class_id.required' => 'Pilih satu kelas.',
+            'subject_id.required' => 'Pilih mata pelajaran.',
             'format.required' => 'Format wajib diisi.',
             'image.mimes' => 'Format gambar harus JPG, PNG, atau WEBP.',
             'image.max' => 'Ukuran gambar maksimal 4MB.',
-            'links.*.id.integer' => 'ID link harus berupa angka.',
-            'links.*.label.string' => 'Label link harus berupa teks.',
-            'links.*.link.string' => 'Link harus berupa teks.',
+            'resources.required' => 'Tambahkan minimal satu file atau link soal.',
+            'resources.*.destination_url.url' => 'Link destinasi harus berupa URL yang valid.',
+            'resources.*.file.mimes' => 'File modul harus berupa PDF, Word, Excel, PowerPoint, ZIP, JPG, PNG, atau WEBP.',
+            'resources.*.file.max' => 'Ukuran file modul maksimal 20MB.',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $class = EducationClass::query()->find($this->integer('education_class_id'));
+            if ($class && $class->education_level_id !== $this->integer('education_level_id')) {
+                $validator->errors()->add('education_class_id', 'Kelas harus berasal dari jenjang yang dipilih.');
+            }
+            if ($class && ! $class->educationLevel->subjects()->whereKey($this->integer('subject_id'))->exists()) {
+                $validator->errors()->add('subject_id', 'Mata pelajaran belum tersedia untuk jenjang yang dipilih.');
+            }
+            foreach ((array) $this->input('resources', []) as $index => $resource) {
+                if (! $this->hasFile("resources.{$index}.file") && blank($resource['destination_url'] ?? null)) {
+                    $validator->errors()->add("resources.{$index}.file", 'Isi file atau link destinasi.');
+                }
+            }
+        });
     }
 }

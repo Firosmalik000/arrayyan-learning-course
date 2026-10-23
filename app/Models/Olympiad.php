@@ -15,6 +15,8 @@ class Olympiad extends Model
         'name',
         'slug',
         'level',
+        'education_levels',
+        'grades',
         'schedule',
         'selection_system',
         'category',
@@ -32,6 +34,8 @@ class Olympiad extends Model
     {
         return [
             'fee' => 'decimal:2',
+            'education_levels' => 'array',
+            'grades' => 'array',
             'quota' => 'integer',
             'registration_deadline' => 'date',
             'winners' => 'array',

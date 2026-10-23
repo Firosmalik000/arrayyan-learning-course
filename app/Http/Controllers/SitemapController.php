@@ -68,14 +68,15 @@ class SitemapController extends Controller
         });
 
         // Dynamic: Bank Soal
-        BankSoal::where('is_active', true)->whereNotNull('slug')->each(function (BankSoal $item) use ($urls) {
-            $urls->push([
-                'url' => route('banksoal.detail', $item->slug),
-                'lastmod' => $item->updated_at->toDateString(),
-                'changefreq' => 'monthly',
-                'priority' => '0.6',
-            ]);
-        });
+        BankSoal::query()->with(['educationClass.educationLevel', 'subject'])
+            ->where('is_active', true)->where('classification_status', 'ready')->each(function (BankSoal $item) use ($urls) {
+                $urls->push([
+                    'url' => route('banksoal.detail', [$item->educationClass->educationLevel, $item->educationClass, $item->subject, $item]),
+                    'lastmod' => $item->updated_at->toDateString(),
+                    'changefreq' => 'monthly',
+                    'priority' => '0.6',
+                ]);
+            });
 
         // Dynamic: Programs
         Program::where('is_active', true)->each(function (Program $item) use ($urls) {

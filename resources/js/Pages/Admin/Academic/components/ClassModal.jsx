@@ -164,14 +164,15 @@ export default function ClassModal({
                         />
                 </div>
 
-                {/* Status Kelas Aktif */}
-                <div>
-                    <FormCheckbox
-                        label="Kelas aktif"
-                        checked={form.data.is_active}
-                        onChange={(v) => form.setData('is_active', v)}
-                    />
-                </div>
+                {!editingClass && (
+                    <div>
+                        <FormCheckbox
+                            label="Kelas aktif"
+                            checked={form.data.is_active}
+                            onChange={(v) => form.setData('is_active', v)}
+                        />
+                    </div>
+                )}
 
                 <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
                     <button

@@ -16,11 +16,14 @@ class OlympiadFactory extends Factory
     public function definition(): array
     {
         $name = fake()->sentence(3);
+        $level = fake()->randomElement(['SD', 'SMP', 'SMA']);
 
         return [
             'name' => $name,
             'slug' => Str::slug($name),
-            'level' => fake()->randomElement(['SD', 'SMP', 'SMA']),
+            'level' => $level,
+            'education_levels' => [$level],
+            'grades' => [],
             'schedule' => fake()->date(),
             'selection_system' => fake()->sentence(2),
             'category' => fake()->randomElement(['free', 'paid']),

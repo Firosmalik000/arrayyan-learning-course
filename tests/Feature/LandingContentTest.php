@@ -61,4 +61,19 @@ class LandingContentTest extends TestCase
             ->where('auth.portal', null)
         );
     }
+
+    public function test_home_page_does_not_inject_dummy_testimonials_when_none_exist(): void
+    {
+        $response = $this->get(route('home'));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Public/Home', false)
+            ->where('landingContent.testimonials.id', [])
+            ->where('landingContent.testimonials.en', [])
+        );
+        $response->assertDontSee('Ibu Nuraeni');
+        $response->assertDontSee('Bapak Hendra');
+        $response->assertDontSee('Siti Rahmawati');
+    }
 }

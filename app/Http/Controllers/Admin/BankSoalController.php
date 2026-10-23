@@ -8,12 +8,14 @@ use App\Http\Requests\UpdateBankSoalPasskeyRequest;
 use App\Http\Requests\UpdateBankSoalRequest;
 use App\Models\ActivityLog;
 use App\Models\BankSoal;
+use App\Models\BankSoalResource;
 use App\Models\PageContent;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class BankSoalController extends Controller
 {
@@ -22,18 +24,10 @@ class BankSoalController extends Controller
         $pageContent = PageContent::query()->firstOrNew(['slug' => 'bank-soal']);
         $content = is_array($pageContent->content) ? $pageContent->content : [];
         $content['bankSoalPasskey'] = trim((string) ($request->validated('passkey') ?? ''));
-
         $pageContent->content = $content;
         $pageContent->save();
-
         Cache::forget('landing-content');
-
-        ActivityLog::record(
-            'bank-soal.passkey.ubah',
-            filled($content['bankSoalPasskey'])
-                ? 'Passkey global Bank Soal diperbarui.'
-                : 'Passkey global Bank Soal dinonaktifkan.',
-        );
+        ActivityLog::record('bank-soal.passkey.ubah', filled($content['bankSoalPasskey']) ? 'Passkey global Bank Soal diperbarui.' : 'Passkey global Bank Soal dinonaktifkan.');
 
         return back()->with('success', 'Passkey global Bank Soal berhasil disimpan.');
     }
@@ -41,107 +35,137 @@ class BankSoalController extends Controller
     public function store(StoreBankSoalRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('bank-soals', 'public');
+        $storedPaths = [];
+        try {
+            DB::transaction(function () use ($request, $data, &$storedPaths): void {
+                $bankSoal = BankSoal::query()->create($this->bankSoalPayload($request, $data));
+                $this->createResources($bankSoal, $data['resources'], $storedPaths);
+            });
+        } catch (\Throwable $exception) {
+            Storage::disk('public')->delete($storedPaths);
+            throw $exception;
         }
-        unset($data['image']);
-        $data = $this->normalizePayload($data);
 
-        if (! empty($data['passkey'])) {
-            $data['passkey'] = Hash::make(trim($data['passkey']));
-        } else {
-            unset($data['passkey']);
-        }
-
-        BankSoal::create($data);
-
-        return back()->with('success', 'Modul berhasil ditambahkan.');
+        return back()->with('success', 'Bank soal berhasil ditambahkan.');
     }
 
     public function update(UpdateBankSoalRequest $request, BankSoal $bankSoal): RedirectResponse
     {
         $data = $request->validated();
-        if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('bank-soals', 'public');
+        $storedPaths = [];
+        $pathsToDelete = [];
+        try {
+            DB::transaction(function () use ($request, $data, $bankSoal, &$storedPaths, &$pathsToDelete): void {
+                $bankSoal->update($this->bankSoalPayload($request, $data, $bankSoal));
+                $existing = $bankSoal->resources()->get()->keyBy('id');
+                $retainedIds = [];
+                foreach ($data['resources'] as $index => $resourceData) {
+                    $resource = isset($resourceData['id']) ? $existing->get((int) $resourceData['id']) : null;
+                    abort_if(isset($resourceData['id']) && ! $resource, 422, 'Resource tidak termasuk bank soal ini.');
+                    $resource ??= new BankSoalResource(['bank_soal_id' => $bankSoal->id]);
+                    $payload = $this->resourcePayload($resourceData, $index);
+                    $file = Arr::get($resourceData, 'file');
+                    if ($file instanceof UploadedFile) {
+                        if ($resource->file_path) {
+                            $pathsToDelete[] = $resource->file_path;
+                        }
+                        $payload['file_path'] = $file->store('bank-soals/files', 'public');
+                        $payload['file_name'] = $file->getClientOriginalName();
+                        $storedPaths[] = $payload['file_path'];
+                    }
+                    $resource->fill($payload);
+                    $resource->bank_soal_id = $bankSoal->id;
+                    $resource->save();
+                    $retainedIds[] = $resource->id;
+                }
+                $removed = $existing->except($retainedIds);
+                $pathsToDelete = array_merge($pathsToDelete, $removed->pluck('file_path')->filter()->all());
+                BankSoalResource::query()->whereIn('id', $removed->keys())->delete();
+            });
+        } catch (\Throwable $exception) {
+            Storage::disk('public')->delete($storedPaths);
+            throw $exception;
         }
-        unset($data['image']);
-        $data = $this->normalizePayload($data);
+        $this->deleteUnreferencedResourceFiles($pathsToDelete);
 
-        if (filter_var($data['passkey_clear'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
-            $data['passkey'] = null;
-        } elseif (! empty($data['passkey'])) {
-            $data['passkey'] = Hash::make(trim($data['passkey']));
-        } else {
-            unset($data['passkey']);
-        }
-        unset($data['passkey_clear']);
-
-        $bankSoal->update($data);
-
-        return back()->with('success', 'Modul berhasil diperbarui.');
+        return back()->with('success', 'Bank soal berhasil diperbarui.');
     }
 
     public function destroy(BankSoal $bankSoal): RedirectResponse
     {
+        $paths = $bankSoal->resources()->pluck('file_path')->filter()->all();
+        $imagePath = $bankSoal->image_path;
         $bankSoal->delete();
+        $this->deleteUnreferencedResourceFiles($paths);
 
-        return back()->with('success', 'Modul berhasil dihapus.');
+        if ($imagePath && ! BankSoal::query()->where('image_path', $imagePath)->exists()) {
+            Storage::disk('public')->delete($imagePath);
+        }
+
+        return back()->with('success', 'Bank soal berhasil dihapus.');
     }
 
-    private function normalizePayload(array $data): array
+    /** @param array<string, mixed> $data */
+    private function bankSoalPayload(StoreBankSoalRequest|UpdateBankSoalRequest $request, array $data, ?BankSoal $existing = null): array
     {
-        $data['slug'] = $data['slug'] ?? null;
-        $data['slug'] = $data['slug'] ?: Str::slug($data['name']);
-        $data['name'] = ['id' => $data['name'], 'en' => $data['name']];
-        $data['category'] = ['id' => $data['category'], 'en' => $data['category']];
-        $data['level'] = ['id' => $data['level'], 'en' => $data['level']];
-        $description = $data['description'] ?? '';
-        $data['description'] = ['id' => $description, 'en' => $description];
+        $payload = [
+            'education_class_id' => $data['education_class_id'],
+            'subject_id' => $data['subject_id'],
+            'classification_status' => 'ready',
+            'name' => ['id' => $data['name'], 'en' => $data['name']],
+            'format' => $data['format'],
+            'questions' => $data['questions'] ?? 0,
+            'description' => ['id' => $data['description'] ?? '', 'en' => $data['description'] ?? ''],
+            'is_active' => filter_var($data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN),
+        ];
+        if ($request->hasFile('image')) {
+            $payload['image_path'] = $request->file('image')->store('bank-soals', 'public');
+            if ($existing?->image_path && ! BankSoal::query()
+                ->where('id', '!=', $existing->id)
+                ->where('image_path', $existing->image_path)
+                ->exists()) {
+                Storage::disk('public')->delete($existing->image_path);
+            }
+        }
 
-        $links = collect($data['links'] ?? [])
-            ->filter(fn ($link) => is_array($link) && (filled($link['label'] ?? null) || filled($link['link'] ?? null)))
-            ->values()
-            ->map(function (array $link) {
-                return [
-                    'id' => Arr::get($link, 'id'),
-                    'label' => $link['label'] ?? '',
-                    'link' => $link['link'] ?? '',
-                ];
-            })
+        return $payload;
+    }
+
+    /** @param array<int, array<string, mixed>> $resources */
+    private function createResources(BankSoal $bankSoal, array $resources, array &$storedPaths): void
+    {
+        foreach ($resources as $index => $resourceData) {
+            $payload = $this->resourcePayload($resourceData, $index);
+            $file = Arr::get($resourceData, 'file');
+            if ($file instanceof UploadedFile) {
+                $payload['file_path'] = $file->store('bank-soals/files', 'public');
+                $payload['file_name'] = $file->getClientOriginalName();
+                $storedPaths[] = $payload['file_path'];
+            }
+            $bankSoal->resources()->create($payload);
+        }
+    }
+
+    /** @param array<string, mixed> $resource */
+    private function resourcePayload(array $resource, int $index): array
+    {
+        return [
+            'label' => $resource['label'] ?? null,
+            'destination_url' => $resource['destination_url'] ?? null,
+            'sort_order' => ($index + 1) * 10,
+        ];
+    }
+
+    /** @param array<int, string> $paths */
+    private function deleteUnreferencedResourceFiles(array $paths): void
+    {
+        $unreferencedPaths = collect($paths)
+            ->filter()
+            ->unique()
+            ->reject(fn (string $path): bool => BankSoalResource::query()->where('file_path', $path)->exists())
             ->values()
             ->all();
 
-        $usedIds = [];
-        $links = collect($links)->map(function (array $link, int $index) use (&$usedIds) {
-            $id = (int) ($link['id'] ?? 0);
-            if ($id <= 0 || in_array($id, $usedIds, true)) {
-                $id = $this->generateLinkId($usedIds, $index);
-            }
-
-            $usedIds[] = $id;
-
-            return [
-                'id' => $id,
-                'label' => $link['label'] ?? '',
-                'link' => $link['link'] ?? '',
-            ];
-        })->values()->all();
-
-        $data['links'] = $links;
-        $data['is_active'] = filter_var($data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
-
-        return $data;
-    }
-
-    /**
-     * @param  array<int, int>  $usedIds
-     */
-    private function generateLinkId(array $usedIds, int $index): int
-    {
-        do {
-            $id = (int) (microtime(true) * 1000) + random_int(0, 999) + $index;
-        } while (in_array($id, $usedIds, true));
-
-        return $id;
+        Storage::disk('public')->delete($unreferencedPaths);
     }
 }

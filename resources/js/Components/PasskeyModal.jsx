@@ -29,6 +29,7 @@ export default function PasskeyModal({
     onClose,
     targetUrl,
     correctPasskey,
+    verificationUrl,
     language = 'id',
     onSuccess,
 }) {
@@ -45,6 +46,30 @@ export default function PasskeyModal({
         setError(false);
 
         const cleanInput = passkey.trim();
+
+        if (verificationUrl) {
+            router.post(
+                verificationUrl,
+                { passkey: cleanInput },
+                {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        onSuccess?.();
+
+                        if (targetUrl && !window.location.href.includes(targetUrl.split('?')[0])) {
+                            router.visit(targetUrl);
+                        }
+
+                        handleClose();
+                    },
+                    onError: () => setError(true),
+                    onFinish: () => setIsLoading(false),
+                }
+            );
+
+            return;
+        }
+
         const cleanCorrect = String(correctPasskey || '').trim();
 
         if (cleanInput === cleanCorrect) {

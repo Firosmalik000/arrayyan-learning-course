@@ -1,6 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const DAYS_ABBR = ['', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+
+const currentMonthValue = () => {
+    const now = new Date();
+
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+};
 
 export default function TrackingAttendanceTable({
     selectedClass,
@@ -11,15 +17,40 @@ export default function TrackingAttendanceTable({
     onOpenGenerateModal,
 }) {
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedMonth, setSelectedMonth] = useState(currentMonthValue());
 
-    // Extract all distinct dates recorded in attendances (sorted ascending)
-    const recordedDates = useMemo(() => {
+    const allRecordedDates = useMemo(() => {
         const set = new Set();
         (attendances || []).forEach((a) => {
             if (a.date) set.add(a.date.slice(0, 10));
         });
         return Array.from(set).sort();
     }, [attendances]);
+
+    const availableMonths = useMemo(
+        () => Array.from(new Set(allRecordedDates.map((date) => date.slice(0, 7)))).sort(),
+        [allRecordedDates],
+    );
+
+    useEffect(() => {
+        const currentMonth = currentMonthValue();
+        setSelectedMonth(
+            availableMonths.includes(currentMonth)
+                ? currentMonth
+                : (availableMonths.at(-1) ?? currentMonth),
+        );
+        setSearchTerm('');
+    }, [selectedClass?.id]);
+
+    const visibleAttendances = useMemo(
+        () => (attendances || []).filter((attendance) => attendance.date?.startsWith(`${selectedMonth}-`)),
+        [attendances, selectedMonth],
+    );
+
+    const recordedDates = useMemo(
+        () => allRecordedDates.filter((date) => date.startsWith(`${selectedMonth}-`)),
+        [allRecordedDates, selectedMonth],
+    );
 
     // Build the list of session columns:
     // If we have recorded dates, use them. If we have weekly schedules and total_sessions,
@@ -44,43 +75,38 @@ export default function TrackingAttendanceTable({
             });
         }
 
-        // If no recorded dates yet, project based on weekly schedules
         const schedules = selectedClass?.schedules || [];
         if (schedules.length === 0) return [];
 
         const scheduledDays = schedules.map((s) => Number(s.day_of_week));
-        const targetCount = selectedClass?.total_sessions || 8;
         const projected = [];
-        const cursor = new Date();
-        let safety = 0;
+        const [year, month] = selectedMonth.split('-').map(Number);
+        const cursor = new Date(year, month - 1, 1);
 
-        while (projected.length < targetCount && safety < 365) {
+        while (cursor.getMonth() === month - 1) {
             const jsDay = cursor.getDay();
             const isoDay = jsDay === 0 ? 7 : jsDay;
             if (scheduledDays.includes(isoDay)) {
-                const y = cursor.getFullYear();
-                const m = String(cursor.getMonth() + 1).padStart(2, '0');
                 const d = String(cursor.getDate()).padStart(2, '0');
-                const dateStr = `${y}-${m}-${d}`;
+                const dateStr = `${selectedMonth}-${d}`;
                 projected.push({
                     index: projected.length + 1,
                     dateStr,
                     dayAbbr: DAYS_ABBR[isoDay] || '',
-                    displayDate: `${d}/${m}`,
+                    displayDate: `${d}/${String(month).padStart(2, '0')}`,
                     isRecorded: false,
                 });
             }
             cursor.setDate(cursor.getDate() + 1);
-            safety++;
         }
 
         return projected;
-    }, [recordedDates, selectedClass]);
+    }, [recordedDates, selectedClass, selectedMonth]);
 
     // Build attendance matrix map: student_id -> dateStr -> status
     const attendanceMatrix = useMemo(() => {
         const matrix = {};
-        (attendances || []).forEach((a) => {
+        visibleAttendances.forEach((a) => {
             const dateStr = a.date ? a.date.slice(0, 10) : '';
             if (!matrix[a.student_id]) {
                 matrix[a.student_id] = {};
@@ -88,7 +114,7 @@ export default function TrackingAttendanceTable({
             matrix[a.student_id][dateStr] = a.status;
         });
         return matrix;
-    }, [attendances]);
+    }, [visibleAttendances]);
 
     // Compute student stats
     const studentStats = useMemo(() => {
@@ -148,10 +174,6 @@ export default function TrackingAttendanceTable({
                             {selectedClass?.total_sessions ? ` / ${selectedClass.total_sessions} Target` : ''}
                         </span>
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                        Rekap absensi murid berdasarkan jadwal hari pertemuan kelas.
-                        Tingkat kehadiran rata-rata: <strong className="text-slate-700">{overallAttendanceRate}%</strong>
-                    </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -184,24 +206,35 @@ export default function TrackingAttendanceTable({
                 </div>
             </div>
 
-            {/* Filter / Search input if many students */}
-            {members.length > 5 && (
-                <div className="w-full sm:w-72">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <label className="w-full sm:w-48">
+                    <span className="mb-1 block text-xs font-bold text-slate-700">Filter Bulan</span>
                     <input
-                        type="text"
-                        placeholder="Cari murid dalam tabel..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-violet-500 shadow-2xs"
+                        type="month"
+                        value={selectedMonth}
+                        onChange={(event) => setSelectedMonth(event.target.value)}
+                        className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-800 outline-none shadow-2xs focus:border-violet-500"
+                        required
                     />
+                </label>
+                <div className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700">
+                    Kehadiran {overallAttendanceRate}%
                 </div>
-            )}
+                {members.length > 5 && (
+                    <div className="w-full sm:w-72">
+                        <input
+                            type="text"
+                            placeholder="Cari murid dalam tabel..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-violet-500 shadow-2xs"
+                        />
+                    </div>
+                )}
+            </div>
 
             {/* Matrix Attendance Table */}
             <div className="space-y-1">
-                <div className="block sm:hidden text-center text-[11px] text-slate-400">
-                    👈 Geser tabel ke samping untuk melihat seluruh pertemuan 👉
-                </div>
                 <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-2xs w-full max-w-full">
                     <table className="w-full min-w-[700px] text-left text-xs">
                         <thead>
@@ -381,7 +414,7 @@ export default function TrackingAttendanceTable({
                                     className="px-6 py-10 text-center text-xs text-slate-400"
                                 >
                                     {members.length === 0
-                                        ? 'Belum ada murid yang terdaftar di kelas ini. Klik tab "Anggota Murid" untuk menambahkan murid.'
+                                        ? 'Belum ada murid di kelas ini.'
                                         : 'Tidak ada murid yang sesuai dengan pencarian.'}
                                 </td>
                             </tr>
@@ -417,9 +450,6 @@ export default function TrackingAttendanceTable({
                     </span>
                 </div>
 
-                <div className="text-[11px] text-slate-400 italic">
-                    * Klik header kolom tanggal atau sel murid untuk mencatat atau mengubah absensi.
-                </div>
             </div>
         </div>
     );

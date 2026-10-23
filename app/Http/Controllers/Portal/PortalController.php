@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Portal;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAttendanceRequest;
 use App\Http\Requests\StorePortalProgramEnrollmentRequest;
+use App\Http\Requests\SyncAttendanceSessionsRequest;
+use App\Http\Requests\UpdatePortalProfileRequest;
+use App\Http\Requests\UpdatePortalStudentRequest;
 use App\Jobs\SendRegistrationNotification;
 use App\Models\ActivityLog;
 use App\Models\Attendance;
@@ -263,20 +266,34 @@ class PortalController extends Controller
             $attendances = $attQuery->get();
         }
 
-        $classesData = $classes->map(function (ClassGroup $cls) use ($attendances): array {
+        $todayStr = Carbon::now('Asia/Jakarta')->toDateString();
+
+        $classesData = $classes->map(function (ClassGroup $cls) use ($attendances, $todayStr): array {
             $clsAttendances = $attendances
                 ->where('class_group_id', $cls->id)
-                ->map(fn (Attendance $a) => [
-                    'id' => $a->id,
-                    'student_id' => $a->student_id,
-                    'date' => $a->date?->format('Y-m-d') ?? substr((string) $a->date, 0, 10),
-                    'status' => $a->status,
-                    'subject' => $a->subject,
-                    'material' => $a->material,
-                    'understanding_score' => $a->understanding_score,
-                    'evaluation' => $a->evaluation,
-                    'note' => $a->note,
-                ])
+                ->filter(function (Attendance $attendance) use ($cls, $todayStr): bool {
+                    $date = $attendance->date?->format('Y-m-d') ?? substr((string) $attendance->date, 0, 10);
+
+                    return $cls->is_active
+                        || $date <= $todayStr
+                        || $attendance->status !== 'belum_absen';
+                })
+                ->map(function (Attendance $a) use ($todayStr): array {
+                    $dateStr = $a->date?->format('Y-m-d') ?? substr((string) $a->date, 0, 10);
+                    $isFuture = $dateStr > $todayStr;
+
+                    return [
+                        'id' => $a->id,
+                        'student_id' => $a->student_id,
+                        'date' => $dateStr,
+                        'status' => $isFuture ? 'terjadwal' : $a->status,
+                        'subject' => $a->subject,
+                        'material' => $a->material,
+                        'understanding_score' => $a->understanding_score,
+                        'evaluation' => $a->evaluation,
+                        'note' => $a->note,
+                    ];
+                })
                 ->values()
                 ->all();
 
@@ -320,6 +337,7 @@ class PortalController extends Controller
                 'teacher_name' => $cls->teacher?->name,
                 'teacher_contact' => $cls->teacher?->contact,
                 'quota' => $cls->quota,
+                'is_active' => $cls->is_active,
                 'filled' => $cls->activeMembers()->count(),
                 'members_count' => $cls->activeMembers()->count(),
                 'members' => $classMembers,
@@ -328,9 +346,10 @@ class PortalController extends Controller
             ];
         })->values()->all();
 
+        $activeClassIds = $classes->where('is_active', true)->pluck('id');
         $items = Schedule::query()
             ->with('classGroup:id,name,program_id,teacher_id')
-            ->whereIn('class_group_id', $classes->pluck('id'))
+            ->whereIn('class_group_id', $activeClassIds)
             ->orderBy('day_of_week')
             ->orderBy('start_time')
             ->get()
@@ -406,15 +425,19 @@ class PortalController extends Controller
             }
         }
 
-        $classesData = $allClassGroups->values()->map(function (ClassGroup $cls) use ($rawRecords): array {
+        $nowJakarta = Carbon::now('Asia/Jakarta');
+        $todayStr = $nowJakarta->toDateString();
+
+        $classesData = $allClassGroups->values()->map(function (ClassGroup $cls) use ($rawRecords, $todayStr): array {
             $classRecords = $rawRecords->where('class_group_id', $cls->id);
-            $totalRecorded = $classRecords->count();
-            $hadirCount = $classRecords->where('status', 'hadir')->count();
-            $scored = $classRecords->whereNotNull('understanding_score');
+            $pastRecords = $classRecords->filter(fn ($a) => ($a->date?->format('Y-m-d') ?? substr((string) $a->date, 0, 10)) <= $todayStr);
+            $totalRecorded = $pastRecords->count();
+            $hadirCount = $pastRecords->where('status', 'hadir')->count();
+            $scored = $pastRecords->whereNotNull('understanding_score');
             $avgScore = $scored->count() > 0 ? round((float) $scored->avg('understanding_score'), 1) : null;
             $rate = $totalRecorded > 0 ? round(($hadirCount / $totalRecorded) * 100) : null;
 
-            $lastRecord = $classRecords->sortByDesc('date')->first();
+            $lastRecord = $pastRecords->sortByDesc('date')->first() ?? $classRecords->sortByDesc('date')->first();
             $lastDate = $lastRecord ? ($lastRecord->date?->format('Y-m-d') ?? substr((string) $lastRecord->date, 0, 10)) : null;
 
             return [
@@ -439,9 +462,14 @@ class PortalController extends Controller
         $meetingNumbers = [];
         $records = $rawRecords
             ->sortBy('date')
-            ->map(function (Attendance $attendance) use (&$meetingNumbers): array {
+            ->map(function (Attendance $attendance) use (&$meetingNumbers, $todayStr): array {
                 $classKey = (string) $attendance->class_group_id;
                 $meetingNumbers[$classKey] = ($meetingNumbers[$classKey] ?? 0) + 1;
+                $recDate = $attendance->date?->format('Y-m-d') ?? substr((string) $attendance->date, 0, 10);
+                $status = $attendance->status;
+                if ($recDate > $todayStr && ($status === 'alpa' || $status === 'belum_absen')) {
+                    $status = 'terjadwal';
+                }
 
                 return [
                     'id' => $attendance->id,
@@ -452,8 +480,8 @@ class PortalController extends Controller
                     'total_sessions' => $attendance->classGroup?->total_sessions ?? $attendance->classGroup?->package?->sessions,
                     'teacher' => $attendance->classGroup?->teacher?->name ?? '-',
                     'meeting_number' => $meetingNumbers[$classKey],
-                    'date' => $attendance->date?->format('Y-m-d') ?? substr((string) $attendance->date, 0, 10),
-                    'status' => $attendance->status,
+                    'date' => $recDate,
+                    'status' => $status,
                     'subject' => $attendance->subject,
                     'material' => $attendance->material,
                     'understanding_score' => $attendance->understanding_score,
@@ -465,8 +493,9 @@ class PortalController extends Controller
             ->values()
             ->all();
 
-        $total = count($records);
-        $present = count(array_filter($records, fn (array $row) => $row['status'] === 'hadir'));
+        $pastRecords = array_filter($records, fn (array $row) => $row['date'] <= $todayStr);
+        $total = count($pastRecords);
+        $present = count(array_filter($pastRecords, fn (array $row) => $row['status'] === 'hadir'));
 
         return Inertia::render('Portal/Attendance', [
             'account_type' => 'parent',
@@ -550,6 +579,8 @@ class PortalController extends Controller
         $query = Invoice::query()->with([
             'program:id,name',
             'student:id,name',
+            'registration:id,student_name',
+            'classGroup:id,name',
             'payments' => fn ($q) => $q->latest(),
         ]);
 
@@ -575,10 +606,15 @@ class PortalController extends Controller
                     'invoice_no' => $invoice->invoice_no,
                     'student_name' => $invoice->student?->name ?? $invoice->registration?->student_name ?? '-',
                     'program' => $invoice->program?->name ?? '-',
+                    'class_group_id' => $invoice->class_group_id,
+                    'class_name' => $invoice->classGroup?->name ?? 'Tagihan Awal / Umum',
+                    'billing_type' => $invoice->billing_type ?? 'registration',
+                    'billing_month' => $invoice->billing_month?->format('Y-m'),
                     'amount' => $invoice->amount,
                     'status' => $invoice->status,
                     'due_date' => $invoice->due_date,
                     'paid_at' => $invoice->paid_at,
+                    'created_at' => $invoice->created_at,
                     'latest_payment' => $latestPayment ? [
                         'id' => $latestPayment->id,
                         'status' => $latestPayment->status,
@@ -703,6 +739,7 @@ class PortalController extends Controller
             'class' => [
                 'id' => $classGroup->id,
                 'name' => $classGroup->name,
+                'is_active' => $classGroup->is_active,
                 'program' => $classGroup->program?->name ?? '-',
                 'quota' => $classGroup->quota,
                 'filled' => $classGroup->activeMembers()->count(),
@@ -750,6 +787,12 @@ class PortalController extends Controller
     {
         $this->authorizeTeacherClass($classGroup);
 
+        try {
+            AcademicService::assertClassActive($classGroup);
+        } catch (RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
         $data = $request->validate([
             'day_of_week' => ['required', 'integer', 'min:1', 'max:7'],
             'start_time' => ['required', 'date_format:H:i'],
@@ -776,6 +819,12 @@ class PortalController extends Controller
     public function updateClassSchedule(Request $request, Schedule $schedule): RedirectResponse
     {
         $this->authorizeTeacherClass($schedule->classGroup);
+
+        try {
+            AcademicService::assertClassActive($schedule->classGroup);
+        } catch (RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
 
         $data = $request->validate([
             'day_of_week' => ['required', 'integer', 'min:1', 'max:7'],
@@ -805,21 +854,37 @@ class PortalController extends Controller
     {
         $this->authorizeTeacherClass($schedule->classGroup);
 
+        try {
+            AcademicService::assertClassActive($schedule->classGroup);
+        } catch (RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
         $schedule->delete();
 
         return back()->with('success', 'Jadwal dihapus.');
     }
 
-    public function generateClassSessions(Request $request, ClassGroup $classGroup): RedirectResponse
+    public function generateClassSessions(SyncAttendanceSessionsRequest $request, ClassGroup $classGroup): RedirectResponse
     {
         $this->authorizeTeacherClass($classGroup);
 
-        $data = $request->validate([
-            'dates' => ['nullable', 'array'],
-            'dates.*' => ['required', 'date'],
-            'start_date' => ['nullable', 'date'],
-            'count' => ['nullable', 'integer', 'min:1', 'max:50'],
-        ]);
+        $data = $request->validated();
+
+        try {
+            AcademicService::assertClassActive($classGroup);
+        } catch (RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        if (! empty($data['month'])) {
+            $result = AcademicService::syncAttendanceSessions($classGroup, $data['month'], $data['dates']);
+
+            return back()->with(
+                'success',
+                "Jadwal {$data['month']} diperbarui: {$result['created_dates']} tanggal ditambahkan, {$result['removed_dates']} tanggal kosong dihapus, dan {$result['protected_dates']} tanggal berisi absensi dipertahankan."
+            );
+        }
 
         $schedules = $classGroup->schedules()->orderBy('day_of_week')->orderBy('start_time')->get();
 
@@ -949,15 +1014,24 @@ class PortalController extends Controller
     public function profile(): Response
     {
         $account = $this->account();
-        $account->load(['teacher:id,name,education,subjects']);
+        $account->load('teacher');
 
         $students = $this->parentStudents($account)->map(fn ($s) => [
             'id' => $s->id,
             'name' => $s->name,
+            'photo_url' => $s->photo_path ? Storage::disk('public')->url($s->photo_path) : null,
+            'address' => $s->address,
             'program' => $s->program,
+            'package' => $s->package,
             'level' => $s->level,
+            'class_level' => $s->class_level,
             'school_name' => $s->school_name,
+            'subjects' => $s->subjects,
+            'preferred_mode' => $s->preferred_mode,
+            'notes' => $s->notes,
         ])->values()->all();
+
+        $teacher = $account->teacher;
 
         return Inertia::render('Portal/Profile', [
             'account_type' => $account->isTeacher() ? 'teacher' : 'parent',
@@ -969,8 +1043,100 @@ class PortalController extends Controller
                 'last_login_at' => $account->last_login_at,
             ],
             'students' => $students,
-            'linked' => $account->isTeacher() ? $account->teacher : ($students[0] ?? null),
+            'linked' => $account->isTeacher() && $teacher ? [
+                'name' => $teacher->name,
+                'photo_url' => $teacher->photo_path ? Storage::disk('public')->url($teacher->photo_path) : null,
+                'email' => $teacher->email,
+                'contact' => $teacher->contact,
+                'address' => $teacher->address,
+                'city' => $teacher->city,
+                'district' => $teacher->district,
+                'teacher_role' => $teacher->teacher_role,
+                'education' => $teacher->education,
+                'subjects' => $teacher->subjects,
+                'experience' => $teacher->experience,
+                'notes' => $teacher->notes,
+                'cv_url' => $teacher->cv_path ? Storage::disk('public')->url($teacher->cv_path) : null,
+            ] : null,
         ]);
+    }
+
+    public function updateProfile(UpdatePortalProfileRequest $request): RedirectResponse
+    {
+        $account = $this->account();
+        $data = $request->validated();
+        $teacher = $account->isTeacher() ? $account->teacher : null;
+        $oldPhotoPath = $teacher?->photo_path;
+        $newPhotoPath = $account->isTeacher() && $request->hasFile('photo')
+            ? $request->file('photo')->store('profile-photos/teachers', 'public')
+            : null;
+
+        try {
+            DB::transaction(function () use ($account, $data, $teacher, $newPhotoPath): void {
+                $account->update([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'contact' => $data['contact'],
+                ]);
+
+                if ($account->isTeacher()) {
+                    abort_unless($teacher, 404, 'Data pengajar tidak ditemukan.');
+                    $teacher->update(collect($data)->except(['name', 'email', 'contact', 'photo'])->merge([
+                        'name' => $data['name'],
+                        'email' => $data['email'],
+                        'contact' => $data['contact'],
+                        ...($newPhotoPath ? ['photo_path' => $newPhotoPath] : []),
+                    ])->all());
+
+                    return;
+                }
+
+                $this->parentStudents($account)->each->update([
+                    'parent_email' => $data['email'],
+                    'parent_contact' => $data['contact'],
+                ]);
+            });
+        } catch (\Throwable $exception) {
+            if ($newPhotoPath) {
+                Storage::disk('public')->delete($newPhotoPath);
+            }
+
+            throw $exception;
+        }
+
+        if ($newPhotoPath && $oldPhotoPath) {
+            Storage::disk('public')->delete($oldPhotoPath);
+        }
+
+        return back()->with('success', 'Profil berhasil diperbarui.');
+    }
+
+    public function updateStudentProfile(UpdatePortalStudentRequest $request, Student $student): RedirectResponse
+    {
+        $data = $request->validated();
+        $oldPhotoPath = $student->photo_path;
+        $newPhotoPath = $request->hasFile('photo')
+            ? $request->file('photo')->store('profile-photos/students', 'public')
+            : null;
+
+        try {
+            $student->update([
+                ...collect($data)->except('photo')->all(),
+                ...($newPhotoPath ? ['photo_path' => $newPhotoPath] : []),
+            ]);
+        } catch (\Throwable $exception) {
+            if ($newPhotoPath) {
+                Storage::disk('public')->delete($newPhotoPath);
+            }
+
+            throw $exception;
+        }
+
+        if ($newPhotoPath && $oldPhotoPath) {
+            Storage::disk('public')->delete($oldPhotoPath);
+        }
+
+        return back()->with('success', "Profil {$student->name} berhasil diperbarui.");
     }
 
     public function password(): Response
@@ -1019,7 +1185,6 @@ class PortalController extends Controller
             $studentId = $student?->id ?? $account->student_id;
             if ($studentId) {
                 return ClassGroup::query()
-                    ->where('is_active', true)
                     ->whereHas('activeMembers', fn ($query) => $query->where('student_id', $studentId))
                     ->with('program:id,name')
                     ->get();
@@ -1028,7 +1193,6 @@ class PortalController extends Controller
 
         if ($account->isTeacher() && $account->teacher_id) {
             return ClassGroup::query()
-                ->where('is_active', true)
                 ->where('teacher_id', $account->teacher_id)
                 ->with('program:id,name')
                 ->get();
@@ -1053,10 +1217,32 @@ class PortalController extends Controller
                 'contact' => $account->contact,
                 'recent_attendance' => [],
                 'recent_grades' => [],
+                'stats' => [
+                    'total_classes' => 0,
+                    'total_recorded_meetings' => 0,
+                    'hadir_count' => 0,
+                    'izin_count' => 0,
+                    'sakit_count' => 0,
+                    'alpa_count' => 0,
+                    'attendance_rate' => null,
+                    'average_score' => null,
+                    'average_understanding' => null,
+                    'highest_score' => null,
+                    'completed_sessions' => 0,
+                    'total_sessions_target' => 0,
+                    'progress_percent' => 0,
+                ],
+                'upcoming_schedules' => [],
+                'latest_evaluation' => null,
+                'attendance_trend' => [],
+                'grade_by_subject' => [],
+                'classes_detailed' => [],
             ];
         }
 
         $classes = $this->accountClasses($account, $student);
+        $classes->load(['program:id,name,level', 'teacher:id,name,contact', 'schedules', 'package:id,name,sessions']);
+        $activeClasses = $classes->where('is_active', true)->values();
 
         $unpaid = Invoice::query()
             ->where('student_id', $studentId)
@@ -1064,18 +1250,17 @@ class PortalController extends Controller
             ->orderBy('due_date')
             ->get();
 
-        $attendances = Attendance::query()
+        $allAttendances = Attendance::query()
             ->where('student_id', $studentId)
-            ->latest('date')
-            ->limit(5)
-            ->with('classGroup:id,name')
+            ->where('status', '!=', 'belum_absen')
+            ->with(['classGroup.teacher:id,name', 'classGroup.program:id,name'])
+            ->orderByDesc('date')
             ->get();
 
-        $grades = Grade::query()
+        $allGrades = Grade::query()
             ->where('student_id', $studentId)
-            ->latest()
-            ->limit(5)
             ->with('classGroup:id,name')
+            ->orderByDesc('created_at')
             ->get();
 
         $pendingRegistrations = StudentRegistration::query()
@@ -1096,9 +1281,131 @@ class PortalController extends Controller
             ->latest()
             ->get();
 
+        $nowJakarta = Carbon::now('Asia/Jakarta');
+        $todayStr = $nowJakarta->toDateString();
+        $todayIso = (int) $nowJakarta->dayOfWeekIso;
+
+        $pastAttendances = $allAttendances->filter(fn ($a) => ($a->date?->format('Y-m-d') ?? substr((string) $a->date, 0, 10)) <= $todayStr);
+        $totalRecorded = $pastAttendances->count();
+        $hadirCount = $pastAttendances->where('status', 'hadir')->count();
+        $izinCount = $pastAttendances->where('status', 'izin')->count();
+        $sakitCount = $pastAttendances->where('status', 'sakit')->count();
+        $alpaCount = $pastAttendances->where('status', 'alpa')->count();
+        $attendanceRate = $totalRecorded > 0 ? round(($hadirCount / $totalRecorded) * 100) : null;
+
+        $scoredAttendances = $pastAttendances->whereNotNull('understanding_score');
+        $avgUnderstanding = $scoredAttendances->count() > 0 ? round((float) $scoredAttendances->avg('understanding_score'), 1) : null;
+
+        $avgScore = $allGrades->count() > 0 ? round((float) $allGrades->avg('score'), 1) : null;
+        $highestScore = $allGrades->count() > 0 ? (float) $allGrades->max('score') : null;
+
+        $totalSessionsTarget = (int) $activeClasses->sum(fn ($c) => $c->total_sessions ?? $c->package?->sessions ?? 8);
+        $progressPercent = $totalSessionsTarget > 0 ? min(100, round(($hadirCount / $totalSessionsTarget) * 100)) : 0;
+
+        $upcomingList = [];
+        foreach ($activeClasses as $cls) {
+            foreach ($cls->schedules as $sch) {
+                $daysUntil = ($sch->day_of_week - $todayIso + 7) % 7;
+                $upcomingList[] = [
+                    'id' => $sch->id,
+                    'class_id' => $cls->id,
+                    'class_name' => $cls->name,
+                    'program_name' => $cls->program?->name ?? 'Program Belajar',
+                    'teacher_name' => $cls->teacher?->name ?? 'Tutor ALC',
+                    'day_of_week' => $sch->day_of_week,
+                    'day' => $sch->dayLabel(),
+                    'start_time' => substr((string) $sch->start_time, 0, 5),
+                    'end_time' => substr((string) $sch->end_time, 0, 5),
+                    'room' => $sch->room,
+                    'is_today' => $sch->day_of_week === $todayIso,
+                    'days_until' => $daysUntil,
+                ];
+            }
+        }
+        usort($upcomingList, function ($a, $b) {
+            if ($a['days_until'] === $b['days_until']) {
+                return strcmp($a['start_time'], $b['start_time']);
+            }
+
+            return $a['days_until'] <=> $b['days_until'];
+        });
+
+        $latestEval = $allAttendances
+            ->first(fn ($a) => ! empty($a->evaluation) || ! empty($a->material));
+
+        $latestEvalData = $latestEval ? [
+            'date' => $latestEval->date?->format('Y-m-d') ?? substr((string) $latestEval->date, 0, 10),
+            'formatted_date' => $latestEval->date ? Carbon::parse($latestEval->date)->locale('id')->translatedFormat('d F Y') : null,
+            'subject' => $latestEval->subject ?? 'Materi Belajar',
+            'material' => $latestEval->material,
+            'evaluation' => $latestEval->evaluation,
+            'understanding_score' => $latestEval->understanding_score,
+            'teacher_name' => $latestEval->classGroup?->teacher?->name ?? 'Tutor ALC',
+            'class_name' => $latestEval->classGroup?->name ?? 'Kelas',
+        ] : null;
+
+        $attendanceTrend = $allAttendances->take(8)->map(function ($a) use ($todayStr) {
+            $recDate = $a->date?->format('Y-m-d') ?? substr((string) $a->date, 0, 10);
+            $status = $a->status;
+            if ($recDate > $todayStr && ($status === 'alpa' || $status === 'belum_absen')) {
+                $status = 'terjadwal';
+            }
+
+            return [
+                'date' => $a->date ? Carbon::parse($a->date)->locale('id')->translatedFormat('d M') : substr((string) $a->date, 5, 5),
+                'full_date' => $recDate,
+                'status' => $status,
+                'subject' => $a->subject,
+                'material' => $a->material,
+                'score' => $a->understanding_score,
+            ];
+        })->reverse()->values()->all();
+
+        $gradeBySubject = $allGrades->groupBy('subject')->map(function ($subjectGrades, $subject) {
+            return [
+                'subject' => $subject,
+                'average' => round((float) $subjectGrades->avg('score'), 1),
+                'highest' => (float) $subjectGrades->max('score'),
+                'count' => $subjectGrades->count(),
+                'latest_score' => (float) $subjectGrades->first()?->score,
+            ];
+        })->values()->all();
+
+        $classesDetailed = $classes->map(function (ClassGroup $c) use ($allAttendances, $todayStr) {
+            $clsAtt = $allAttendances->where('class_group_id', $c->id);
+            $clsPast = $clsAtt->filter(fn ($a) => ($a->date?->format('Y-m-d') ?? substr((string) $a->date, 0, 10)) <= $todayStr);
+            $clsHeld = $clsPast->count();
+            $clsHadir = $clsPast->where('status', 'hadir')->count();
+            $target = $c->total_sessions ?? $c->package?->sessions ?? 8;
+            $scored = $clsPast->whereNotNull('understanding_score');
+            $avgUnd = $scored->count() > 0 ? round((float) $scored->avg('understanding_score'), 1) : null;
+
+            return [
+                'id' => $c->id,
+                'name' => $c->name,
+                'program_name' => $c->program?->name ?? 'Program Belajar',
+                'level' => $c->level ?? $c->program?->level,
+                'teacher_name' => $c->teacher?->name,
+                'teacher_contact' => $c->teacher?->contact,
+                'is_active' => $c->is_active,
+                'total_sessions' => $target,
+                'attended_sessions' => $clsHadir,
+                'total_held' => $clsHeld,
+                'progress_percent' => $target > 0 ? min(100, round(($clsHadir / $target) * 100)) : 0,
+                'attendance_rate' => $clsHeld > 0 ? round(($clsHadir / $clsHeld) * 100) : null,
+                'average_understanding' => $avgUnd,
+                'schedules' => $c->schedules->map(fn ($s) => [
+                    'day' => $s->dayLabel(),
+                    'start_time' => substr((string) $s->start_time, 0, 5),
+                    'end_time' => substr((string) $s->end_time, 0, 5),
+                    'room' => $s->room,
+                ])->values()->all(),
+            ];
+        })->values()->all();
+
         return [
             'student_name' => $student?->name ?? 'Anak',
-            'classes' => $classes->map(fn (ClassGroup $class) => [
+            'classes' => $activeClasses->map(fn (ClassGroup $class) => [
                 'id' => $class->id,
                 'name' => $class->name,
                 'program' => $class->program?->name ?? '-',
@@ -1115,17 +1422,48 @@ class PortalController extends Controller
             'unpaid_count' => $unpaid->count(),
             'unpaid_total' => (float) $unpaid->sum('amount'),
             'contact' => $account->contact,
-            'recent_attendance' => $attendances->map(fn (Attendance $attendance) => [
-                'class' => $attendance->classGroup?->name ?? '-',
-                'date' => $attendance->date,
-                'status' => $attendance->status,
-            ])->values()->all(),
-            'recent_grades' => $grades->map(fn (Grade $grade) => [
+            'recent_attendance' => $allAttendances->take(5)->map(function (Attendance $attendance) use ($todayStr) {
+                $recDate = $attendance->date?->format('Y-m-d') ?? substr((string) $attendance->date, 0, 10);
+                $status = $attendance->status;
+                if ($recDate > $todayStr && ($status === 'alpa' || $status === 'belum_absen')) {
+                    $status = 'terjadwal';
+                }
+
+                return [
+                    'class' => $attendance->classGroup?->name ?? '-',
+                    'date' => $attendance->date,
+                    'status' => $status,
+                    'subject' => $attendance->subject,
+                    'material' => $attendance->material,
+                    'understanding_score' => $attendance->understanding_score,
+                ];
+            })->values()->all(),
+            'recent_grades' => $allGrades->take(5)->map(fn (Grade $grade) => [
                 'class' => $grade->classGroup?->name ?? '-',
                 'subject' => $grade->subject,
                 'term' => $grade->term,
                 'score' => $grade->score,
             ])->values()->all(),
+            'stats' => [
+                'total_classes' => $activeClasses->count(),
+                'total_recorded_meetings' => $totalRecorded,
+                'hadir_count' => $hadirCount,
+                'izin_count' => $izinCount,
+                'sakit_count' => $sakitCount,
+                'alpa_count' => $alpaCount,
+                'attendance_rate' => $attendanceRate,
+                'average_score' => $avgScore,
+                'average_understanding' => $avgUnderstanding,
+                'highest_score' => $highestScore,
+                'completed_sessions' => $hadirCount,
+                'total_sessions_target' => $totalSessionsTarget,
+                'progress_percent' => $progressPercent,
+            ],
+            'upcoming_schedules' => $upcomingList,
+            'latest_evaluation' => $latestEvalData,
+            'attendance_trend' => $attendanceTrend,
+            'grade_by_subject' => $gradeBySubject,
+            'classes_detailed' => $classesDetailed,
         ];
     }
 
@@ -1137,10 +1475,148 @@ class PortalController extends Controller
         $classes = ClassGroup::query()
             ->where('is_active', true)
             ->where('teacher_id', $account->teacher_id)
-            ->with('program:id,name')
+            ->with([
+                'program:id,name,level',
+                'package:id,name,sessions',
+                'schedules',
+                'members.student:id,name,level,class_level',
+            ])
             ->withCount('activeMembers')
-            ->with('schedules')
             ->get();
+
+        $nowJakarta = Carbon::now('Asia/Jakarta');
+        $todayIso = (int) $nowJakarta->dayOfWeekIso;
+        $todayDate = $nowJakarta->toDateString();
+
+        $classIds = $classes->pluck('id');
+        $allAttendances = Attendance::query()
+            ->whereIn('class_group_id', $classIds)
+            ->with('classGroup:id,name')
+            ->orderByDesc('date')
+            ->get();
+
+        $recordedAttendances = $allAttendances->where('status', '!=', 'belum_absen');
+        $totalRecorded = $recordedAttendances->count();
+        $hadirCount = $recordedAttendances->where('status', 'hadir')->count();
+        $izinCount = $recordedAttendances->where('status', 'izin')->count();
+        $sakitCount = $recordedAttendances->where('status', 'sakit')->count();
+        $alpaCount = $recordedAttendances->where('status', 'alpa')->count();
+        $pendingSessions = $allAttendances->where('status', 'belum_absen')->count();
+        $overallAttendanceRate = $totalRecorded > 0 ? round(($hadirCount / $totalRecorded) * 100) : null;
+
+        $allMembers = $classes->flatMap(fn ($c) => $c->members->where('status', 'active'));
+        $uniqueStudentCount = $allMembers->pluck('student_id')->unique()->count();
+
+        $todayAgenda = [];
+        foreach ($classes as $c) {
+            foreach ($c->schedules as $s) {
+                if ($s->day_of_week === $todayIso) {
+                    $hasAttendanceToday = $allAttendances
+                        ->where('class_group_id', $c->id)
+                        ->where('status', '!=', 'belum_absen')
+                        ->filter(fn ($a) => ($a->date?->format('Y-m-d') ?? substr((string) $a->date, 0, 10)) === $todayDate)
+                        ->isNotEmpty();
+
+                    $todayAgenda[] = [
+                        'schedule_id' => $s->id,
+                        'class_id' => $c->id,
+                        'class_name' => $c->name,
+                        'program_name' => $c->program?->name ?? 'Program',
+                        'level' => $c->level ?? $c->program?->level,
+                        'start_time' => substr((string) $s->start_time, 0, 5),
+                        'end_time' => substr((string) $s->end_time, 0, 5),
+                        'room' => $s->room,
+                        'student_count' => $c->active_members_count,
+                        'has_attendance_today' => $hasAttendanceToday,
+                    ];
+                }
+            }
+        }
+        usort($todayAgenda, fn ($a, $b) => strcmp($a['start_time'], $b['start_time']));
+
+        $weeklySchedule = [];
+        for ($d = 1; $d <= 7; $d++) {
+            $dayLabel = Schedule::DAYS[$d] ?? "Hari $d";
+            $daySchedules = [];
+            foreach ($classes as $c) {
+                foreach ($c->schedules as $s) {
+                    if ($s->day_of_week === $d) {
+                        $daySchedules[] = [
+                            'class_id' => $c->id,
+                            'class_name' => $c->name,
+                            'program' => $c->program?->name ?? 'Program',
+                            'level' => $c->level ?? $c->program?->level,
+                            'start_time' => substr((string) $s->start_time, 0, 5),
+                            'end_time' => substr((string) $s->end_time, 0, 5),
+                            'room' => $s->room,
+                            'student_count' => $c->active_members_count,
+                        ];
+                    }
+                }
+            }
+            usort($daySchedules, fn ($a, $b) => strcmp($a['start_time'], $b['start_time']));
+            $weeklySchedule[] = [
+                'day_of_week' => $d,
+                'day' => $dayLabel,
+                'is_today' => $d === $todayIso,
+                'count' => count($daySchedules),
+                'schedules' => $daySchedules,
+            ];
+        }
+
+        $recentActivities = $recordedAttendances
+            ->groupBy(fn ($a) => $a->class_group_id.'_'.($a->date?->format('Y-m-d') ?? substr((string) $a->date, 0, 10)))
+            ->take(5)
+            ->map(function ($group) {
+                $first = $group->first();
+                $presentCount = $group->where('status', 'hadir')->count();
+                $totalCount = $group->count();
+
+                return [
+                    'class_id' => $first->class_group_id,
+                    'class_name' => $first->classGroup?->name ?? 'Kelas',
+                    'date' => $first->date?->format('Y-m-d') ?? substr((string) $first->date, 0, 10),
+                    'formatted_date' => $first->date ? Carbon::parse($first->date)->locale('id')->translatedFormat('d M Y') : '-',
+                    'subject' => $first->subject ?? 'Materi Belajar',
+                    'material' => $first->material,
+                    'present_count' => $presentCount,
+                    'total_count' => $totalCount,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $classesDetailed = $classes->map(function (ClassGroup $c) use ($allAttendances) {
+            $clsAtt = $allAttendances->where('class_group_id', $c->id);
+            $clsRecorded = $clsAtt->where('status', '!=', 'belum_absen');
+            $clsHeldDates = $clsRecorded->pluck('date')->map(fn ($d) => is_string($d) ? substr($d, 0, 10) : $d->toDateString())->unique()->count();
+            $clsHadir = $clsRecorded->where('status', 'hadir')->count();
+            $clsTotal = $clsRecorded->count();
+            $targetSessions = $c->total_sessions ?? $c->package?->sessions ?? 8;
+            $rate = $clsTotal > 0 ? round(($clsHadir / $clsTotal) * 100) : null;
+            $scored = $clsRecorded->whereNotNull('understanding_score');
+            $avgScore = $scored->count() > 0 ? round((float) $scored->avg('understanding_score'), 1) : null;
+
+            return [
+                'id' => $c->id,
+                'name' => $c->name,
+                'program' => $c->program?->name ?? '-',
+                'level' => $c->level ?? $c->program?->level,
+                'package_name' => $c->package?->name,
+                'filled' => $c->active_members_count ?? 0,
+                'quota' => $c->quota,
+                'total_sessions' => $targetSessions,
+                'sessions_held' => $clsHeldDates,
+                'attendance_rate' => $rate,
+                'average_understanding' => $avgScore,
+                'schedules' => $c->schedules->map(fn (Schedule $schedule) => [
+                    'day' => $schedule->dayLabel(),
+                    'start_time' => substr((string) $schedule->start_time, 0, 5),
+                    'end_time' => substr((string) $schedule->end_time, 0, 5),
+                    'room' => $schedule->room,
+                ])->values()->all(),
+            ];
+        })->values()->all();
 
         return [
             'classes' => $classes->map(fn (ClassGroup $class) => [
@@ -1155,6 +1631,24 @@ class PortalController extends Controller
                     'end_time' => substr((string) $schedule->end_time, 0, 5),
                 ])->values()->all(),
             ])->values()->all(),
+            'stats' => [
+                'total_classes' => $classes->count(),
+                'total_students' => $uniqueStudentCount,
+                'total_sessions_recorded' => $totalRecorded,
+                'total_sessions_pending' => $pendingSessions,
+                'overall_attendance_rate' => $overallAttendanceRate,
+                'today_sessions_count' => count($todayAgenda),
+                'breakdown' => [
+                    'hadir' => $hadirCount,
+                    'izin' => $izinCount,
+                    'sakit' => $sakitCount,
+                    'alpa' => $alpaCount,
+                ],
+            ],
+            'today_agenda' => $todayAgenda,
+            'weekly_schedule' => $weeklySchedule,
+            'recent_activities' => $recentActivities,
+            'classes_detailed' => $classesDetailed,
         ];
     }
 }

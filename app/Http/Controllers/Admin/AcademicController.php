@@ -3,8 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CompleteClassMemberRequest;
 use App\Http\Requests\SaveClassGroupRequest;
 use App\Http\Requests\StoreAttendanceRequest;
+use App\Http\Requests\StoreClassMemberPeriodRequest;
+use App\Http\Requests\SyncAttendanceSessionsRequest;
+use App\Http\Requests\UpdateClassGroupStatusRequest;
 use App\Models\ActivityLog;
 use App\Models\Attendance;
 use App\Models\ClassGroup;
@@ -36,6 +40,7 @@ class AcademicController extends Controller
                 'teacher:id,name',
                 'members.student:id,name,school_name,level,class_level,parent_contact,parent_email,address,preferred_mode,program,package,package_id,notes',
                 'members.student.packageItem:id,name,level,sessions',
+                'members.periods',
                 'schedules',
                 'attendances:id,class_group_id,student_id,date,status,subject,material,understanding_score,evaluation,note',
             ])
@@ -133,6 +138,7 @@ class AcademicController extends Controller
     public function updateClass(SaveClassGroupRequest $request, ClassGroup $classGroup): RedirectResponse
     {
         $data = $request->validated();
+        unset($data['is_active']);
 
         if (! empty($data['package_id'])) {
             $pkg = Package::find($data['package_id']);
@@ -142,7 +148,7 @@ class AcademicController extends Controller
             }
         }
 
-        if (array_key_exists('teacher_id', $data) || array_key_exists('is_active', $data)) {
+        if (array_key_exists('teacher_id', $data)) {
             $teacherId = $data['teacher_id'] ?? $classGroup->teacher_id;
 
             foreach ($classGroup->schedules as $schedule) {
@@ -161,10 +167,7 @@ class AcademicController extends Controller
             }
         }
 
-        $classGroup->update([
-            ...$data,
-            'is_active' => (bool) ($data['is_active'] ?? $classGroup->is_active),
-        ]);
+        $classGroup->update($data);
 
         return back()->with('success', 'Kelas berhasil diperbarui.');
     }
@@ -174,6 +177,48 @@ class AcademicController extends Controller
         $classGroup->delete();
 
         return back()->with('success', 'Kelas beserta jadwal, absensi, dan nilainya dihapus.');
+    }
+
+    public function updateClassStatus(
+        UpdateClassGroupStatusRequest $request,
+        ClassGroup $classGroup,
+    ): RedirectResponse {
+        $isActive = $request->boolean('is_active');
+
+        if ($isActive) {
+            foreach ($classGroup->schedules as $schedule) {
+                try {
+                    AcademicService::assertNoTeacherClash(
+                        $classGroup->teacher_id,
+                        $schedule->day_of_week,
+                        $schedule->start_time,
+                        $schedule->end_time,
+                        $classGroup->id,
+                        $schedule->id,
+                    );
+                } catch (RuntimeException $exception) {
+                    return back()->with('error', $exception->getMessage());
+                }
+            }
+        }
+
+        $classGroup = AcademicService::setClassActiveStatus($classGroup, $isActive);
+
+        ActivityLog::record(
+            $isActive ? 'akademik.kelas.aktifkan' : 'akademik.kelas.selesaikan',
+            $isActive
+                ? "Kelas \"{$classGroup->name}\" diaktifkan kembali."
+                : "Kelas \"{$classGroup->name}\" diselesaikan.",
+            $classGroup,
+            ['is_active' => $isActive],
+        );
+
+        return back()->with(
+            'success',
+            $isActive
+                ? 'Kelas berhasil diaktifkan kembali.'
+                : 'Kelas berhasil diselesaikan. Seluruh histori tetap tersimpan.',
+        );
     }
 
     public function addMember(Request $request, ClassGroup $classGroup): RedirectResponse
@@ -215,13 +260,81 @@ class AcademicController extends Controller
 
     public function removeMember(ClassMember $member): RedirectResponse
     {
+        if ($member->invoices()->exists()) {
+            return back()->with('error', 'Anggota memiliki histori tagihan. Gunakan Selesaikan Keikutsertaan agar histori keuangan tetap tersimpan.');
+        }
+
         $member->delete();
 
         return back()->with('success', 'Anggota dikeluarkan dari kelas.');
     }
 
+    public function completeMember(
+        CompleteClassMemberRequest $request,
+        ClassMember $member,
+    ): RedirectResponse {
+        $deactivateStudent = $request->boolean('deactivate_student');
+
+        try {
+            $completedMember = AcademicService::completeMember(
+                $member,
+                $deactivateStudent,
+                Auth::id(),
+            );
+        } catch (RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        ActivityLog::record(
+            'akademik.anggota.selesai',
+            "Keanggotaan kelas {$completedMember->student?->name} diselesaikan".
+                ($deactivateStudent ? ' dan data murid dinonaktifkan.' : '.'),
+            $completedMember,
+            ['student_deactivated' => $deactivateStudent],
+        );
+
+        return back()->with(
+            'success',
+            $deactivateStudent
+                ? 'Kelas murid diselesaikan dan data murid dinonaktifkan.'
+                : 'Kelas murid diselesaikan. Status data murid tidak diubah.',
+        );
+    }
+
+    public function storeMemberPeriod(
+        StoreClassMemberPeriodRequest $request,
+        ClassMember $member
+    ): RedirectResponse {
+        try {
+            $result = AcademicService::createMemberPeriod(
+                $member,
+                $request->validated(),
+                Auth::id()
+            );
+        } catch (RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        ActivityLog::record(
+            'akademik.periode.buat',
+            "Periode les {$member->student?->name} ditambahkan dengan {$result['scheduled_sessions']} jadwal pertemuan.",
+            $result['period']
+        );
+
+        return back()->with(
+            'success',
+            "Periode berhasil ditambahkan. {$result['generated_sessions']} absensi baru dibuat mengikuti jadwal kelas."
+        );
+    }
+
     public function storeSchedule(Request $request, ClassGroup $classGroup): RedirectResponse
     {
+        try {
+            AcademicService::assertClassActive($classGroup);
+        } catch (RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
         $data = $request->validate([
             'day_of_week' => ['required', 'integer', 'min:1', 'max:7'],
             'start_time' => ['required', 'date_format:H:i'],
@@ -247,6 +360,12 @@ class AcademicController extends Controller
 
     public function updateSchedule(Request $request, Schedule $schedule): RedirectResponse
     {
+        try {
+            AcademicService::assertClassActive($schedule->classGroup);
+        } catch (RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
         $data = $request->validate([
             'day_of_week' => ['required', 'integer', 'min:1', 'max:7'],
             'start_time' => ['required', 'date_format:H:i'],
@@ -273,6 +392,12 @@ class AcademicController extends Controller
 
     public function destroySchedule(Schedule $schedule): RedirectResponse
     {
+        try {
+            AcademicService::assertClassActive($schedule->classGroup);
+        } catch (RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
         $schedule->delete();
 
         return back()->with('success', 'Jadwal dihapus.');
@@ -298,14 +423,24 @@ class AcademicController extends Controller
         return back()->with('success', "Absensi {$saved} murid tersimpan.");
     }
 
-    public function generateSessions(Request $request, ClassGroup $classGroup): RedirectResponse
+    public function generateSessions(SyncAttendanceSessionsRequest $request, ClassGroup $classGroup): RedirectResponse
     {
-        $data = $request->validate([
-            'dates' => ['nullable', 'array'],
-            'dates.*' => ['required', 'date'],
-            'start_date' => ['nullable', 'date'],
-            'count' => ['nullable', 'integer', 'min:1', 'max:50'],
-        ]);
+        $data = $request->validated();
+
+        try {
+            AcademicService::assertClassActive($classGroup);
+        } catch (RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        if (! empty($data['month'])) {
+            $result = AcademicService::syncAttendanceSessions($classGroup, $data['month'], $data['dates']);
+
+            return back()->with(
+                'success',
+                "Jadwal {$data['month']} diperbarui: {$result['created_dates']} tanggal ditambahkan, {$result['removed_dates']} tanggal kosong dihapus, dan {$result['protected_dates']} tanggal berisi absensi dipertahankan."
+            );
+        }
 
         $schedules = $classGroup->schedules()->orderBy('day_of_week')->orderBy('start_time')->get();
 
@@ -482,12 +617,20 @@ class AcademicController extends Controller
             'filled' => $class->active_members_count ?? $class->activeMembers()->count(),
             'is_active' => $class->is_active,
             'members' => $class->members->map(function (ClassMember $member) use ($class, $totalSessions) {
-                $attended = $class->attendances
+                $memberAttendances = $class->attendances
                     ->where('student_id', $member->student_id)
-                    ->where('status', '!=', 'belum_absen')
-                    ->count();
+                    ->values();
+                $latestPeriod = $member->periods->first();
+                $attended = $latestPeriod
+                    ? $memberAttendances
+                        ->filter(fn (Attendance $attendance): bool => $attendance->date !== null
+                            && $attendance->date->betweenIncluded($latestPeriod->start_date, $latestPeriod->end_date)
+                            && $attendance->status !== 'belum_absen')
+                        ->count()
+                    : $memberAttendances->where('status', '!=', 'belum_absen')->count();
 
-                $targetSessions = $member->student?->packageItem?->sessions
+                $targetSessions = $latestPeriod?->session_limit
+                    ?? $member->student?->packageItem?->sessions
                     ?? $totalSessions;
 
                 return [
@@ -501,6 +644,29 @@ class AcademicController extends Controller
                     'target_sessions' => $targetSessions,
                     'attended_sessions' => $attended,
                     'is_quota_reached' => $targetSessions !== null && $attended >= $targetSessions,
+                    'periods' => $member->periods->map(function ($period) use ($memberAttendances): array {
+                        $periodAttendances = $memberAttendances->filter(
+                            fn (Attendance $attendance): bool => $attendance->date !== null
+                                && $attendance->date->betweenIncluded($period->start_date, $period->end_date)
+                        );
+                        $today = now()->startOfDay();
+                        $status = $today->lt($period->start_date)
+                            ? 'upcoming'
+                            : ($today->gt($period->end_date) ? 'completed' : 'active');
+
+                        return [
+                            'id' => $period->id,
+                            'start_date' => $period->start_date->toDateString(),
+                            'end_date' => $period->end_date->toDateString(),
+                            'session_limit' => $period->session_limit,
+                            'notes' => $period->notes,
+                            'status' => $status,
+                            'scheduled_sessions' => $periodAttendances->count(),
+                            'attended_sessions' => $periodAttendances
+                                ->where('status', '!=', 'belum_absen')
+                                ->count(),
+                        ];
+                    })->values()->all(),
                     'student' => $member->student ? [
                         'id' => $member->student->id,
                         'name' => $member->student->name,

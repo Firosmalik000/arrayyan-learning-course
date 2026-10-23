@@ -5,9 +5,9 @@ export default function MemberSection({
     selected,
     activeMemberCount,
     canCreate,
-    canDelete,
+    canEdit,
     onAdd,
-    onRemove,
+    onComplete,
     onViewDetail,
     icons,
 }) {
@@ -71,10 +71,9 @@ export default function MemberSection({
                                     href: `/admin/pelajar/${m.student_id}/kartu`,
                                     external: true,
                                 },
-                                canDelete && {
-                                    label: 'Keluarkan Dari Kelas',
-                                    danger: true,
-                                    onClick: () => onRemove(m),
+                                canEdit && m.status === 'active' && {
+                                    label: 'Selesaikan Keikutsertaan',
+                                    onClick: () => onComplete(m),
                                 },
                             ].filter(Boolean);
 
@@ -122,7 +121,7 @@ export default function MemberSection({
                                     </td>
                                     <td className="px-4 py-2.5">
                                         <StatusBadge tone={m.status === 'active' ? 'emerald' : 'slate'}>
-                                            {m.status === 'active' ? 'Aktif' : m.status}
+                                            {m.status === 'active' ? 'Aktif' : m.status === 'graduated' ? 'Selesai' : m.status === 'moved' ? 'Pindah' : m.status}
                                         </StatusBadge>
                                     </td>
                                     <td className="px-4 py-2.5 text-xs text-slate-600">

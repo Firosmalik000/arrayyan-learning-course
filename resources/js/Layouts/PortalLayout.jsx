@@ -58,6 +58,16 @@ const parentMenuItems = [
         ),
     },
     {
+        href: '/portal/kritik-saran',
+        label: 'Kritik & Saran',
+        icon: (
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z" />
+                <path d="M8 9h8M8 13h5" />
+            </svg>
+        ),
+    },
+    {
         href: '/portal/profil',
         label: 'Profil Akun',
         icon: (
@@ -137,8 +147,13 @@ export default function PortalLayout({ children }) {
     const selectedStudentId = portalAuth?.selected_student_id ?? students[0]?.id;
     const activeStudent = students.find((s) => s.id === Number(selectedStudentId)) || students[0];
 
-    const userName = portalAuth?.name || (isTeacher ? 'Pengajar' : 'Orang Tua Murid');
-    const userContact = portalAuth?.contact || portalAuth?.email || '';
+    const userName = isTeacher
+        ? portalAuth?.name || 'Pengajar'
+        : activeStudent?.name || portalAuth?.name || 'Murid';
+    const userContact = isTeacher
+        ? portalAuth?.contact || portalAuth?.email || ''
+        : portalAuth?.name ? `Dikelola oleh ${portalAuth.name}` : '';
+    const userPhotoUrl = isTeacher ? portalAuth?.photo_url : activeStudent?.photo_url;
     const userInitials = userName
         .split(' ')
         .filter(Boolean)
@@ -205,8 +220,8 @@ export default function PortalLayout({ children }) {
                 <div className="shrink-0 border-t border-slate-100 p-2.5 bg-slate-50/50">
                     <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-2xs">
                         <div className="flex items-center gap-2 min-w-0">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-xs font-black text-brand-primary">
-                                {userInitials}
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-violet-100 text-xs font-black text-brand-primary">
+                                {userPhotoUrl ? <img src={userPhotoUrl} alt={`Foto ${userName}`} className="h-full w-full object-cover" /> : userInitials}
                             </div>
                             <div className="min-w-0 leading-tight">
                                 <p className="truncate text-xs font-bold text-slate-900" title={userName}>
@@ -307,8 +322,8 @@ export default function PortalLayout({ children }) {
                         </div>
                         <div className="p-3 border-t border-slate-100 space-y-3 bg-slate-50/50">
                             <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-xs font-black text-brand-primary">
-                                    {userInitials}
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-violet-100 text-xs font-black text-brand-primary">
+                                    {userPhotoUrl ? <img src={userPhotoUrl} alt={`Foto ${userName}`} className="h-full w-full object-cover" /> : userInitials}
                                 </div>
                                 <div className="min-w-0 leading-tight">
                                     <p className="truncate text-xs font-bold text-slate-900" title={userName}>

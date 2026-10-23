@@ -18,7 +18,6 @@ import {
     LEVEL_OPTIONS,
     CLASS_OPTIONS_BY_LEVEL,
     TEACHER_ROLE_OPTIONS,
-    TEACHER_LEVEL_OPTIONS,
     DOMICILE_CITIES,
     PADANG_DISTRICTS,
 } from './data';
@@ -60,6 +59,8 @@ const matchesPackageLevel = (pkgLevel, tab) => {
 export default function Register() {
     const { props, url } = usePage();
     const programs = props.programs ?? [];
+    const teacherLevelOptions = props.teacherLevelOptions ?? [];
+    const teacherEducationOptions = props.teacherEducationOptions ?? [];
     const { language } = useI18n();
 
     const urlParams = new URLSearchParams(url.split('?')[1] || '');
@@ -1226,13 +1227,13 @@ export default function Register() {
                                                         <span className="text-[11px] text-slate-400">Pilih satu atau lebih jenjang</span>
                                                     </div>
                                                     <div className="flex flex-wrap gap-2">
-                                                        {TEACHER_LEVEL_OPTIONS.map((lvl) => {
-                                                            const isSelected = selectedLevels.includes(lvl.value);
+                                                        {teacherLevelOptions.map((level) => {
+                                                            const isSelected = selectedLevels.includes(level);
                                                             return (
                                                                 <button
-                                                                    key={lvl.value}
+                                                                    key={level}
                                                                     type="button"
-                                                                    onClick={() => toggleLevel(lvl.value)}
+                                                                    onClick={() => toggleLevel(level)}
                                                                     className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition cursor-pointer select-none ${
                                                                         isSelected
                                                                             ? 'bg-brand-primary text-white shadow-xs'
@@ -1244,7 +1245,7 @@ export default function Register() {
                                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                                                         </svg>
                                                                     )}
-                                                                    {lvl.label}
+                                                                    {level}
                                                                 </button>
                                                             );
                                                         })}
@@ -1283,12 +1284,21 @@ export default function Register() {
                                                     </label>
                                                     <input
                                                         type="text"
+                                                        list="teacher-education-options"
                                                         className={`${inputClass} ${teacherForm.errors.education ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : ''}`}
-                                                        placeholder="Contoh: S1 Pendidikan Matematika - UNP"
+                                                        placeholder="Pilih atau ketik pendidikan terakhir"
                                                         value={teacherForm.data.education}
                                                         onChange={(e) => teacherForm.setData('education', e.target.value)}
                                                         required
                                                     />
+                                                    <datalist id="teacher-education-options">
+                                                        {teacherEducationOptions.map((education) => (
+                                                            <option key={education} value={education} />
+                                                        ))}
+                                                    </datalist>
+                                                    <p className="mt-1 text-[11px] text-slate-400">
+                                                        Pilih dari daftar atau ketik pendidikan baru bila belum tersedia.
+                                                    </p>
                                                     {teacherForm.errors.education && (
                                                         <p className="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
                                                             <span className="font-semibold">{teacherForm.errors.education}</span>

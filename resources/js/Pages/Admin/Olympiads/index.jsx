@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { formatDate } from '@/lib/formatDate';
 import {
     ConfirmModal,
+    EducationTargetFields,
     FlashMessage,
     FormInput,
     FormSelect,
@@ -17,7 +18,6 @@ const statusStyles = {
 };
 
 const statusOptions = ['Aktif', 'Nonaktif'];
-const levelOptions = ['SD', 'SMP', 'SMA', 'SD / SMP', 'SMP / SMA', 'SD - SMA'];
 const categoryOptions = [
     { value: 'free', label: 'Gratis' },
     { value: 'paid', label: 'Berbayar' },
@@ -88,7 +88,7 @@ const getInitials = (value) => {
 };
 
 export default function Olympiads() {
-    const { olympiads: olympiadData = [], flash, allowedActions = {} } = usePage().props;
+    const { olympiads: olympiadData = [], educationOptions = [], flash, allowedActions = {} } = usePage().props;
     const events = useMemo(() => olympiadData.map((event) => ({
         ...event,
         is_active: event.is_active ?? true,
@@ -117,7 +117,8 @@ export default function Olympiads() {
     // Form state
     const form = useForm({
         name: '',
-        level: '',
+        education_levels: [],
+        grades: [],
         schedule: '',
         selection_system: '',
         category: 'free',
@@ -147,12 +148,12 @@ export default function Olympiads() {
         const statusLabel = event.is_active ? 'Aktif' : 'Nonaktif';
         const matchesStatus = !filterStatus || statusLabel === filterStatus;
         const matchesCategory = !filterCategory || event.category === filterCategory;
-        const matchesLevel = !filterLevel || event.level === filterLevel;
+        const matchesLevel = !filterLevel || event.education_levels?.includes(filterLevel);
 
         return matchesSearch && matchesStatus && matchesCategory && matchesLevel;
     });
 
-    const levelFilterOptions = Array.from(new Set(events.map((event) => event.level).filter(Boolean)));
+    const levelFilterOptions = educationOptions.map((option) => option.value);
 
     // Handlers
     const openModal = (item = null) => {
@@ -160,7 +161,8 @@ export default function Olympiads() {
             setEditing(item);
             form.setData({
                 name: item.name || '',
-                level: item.level || '',
+                education_levels: item.education_levels || [],
+                grades: item.grades || [],
                 schedule: item.schedule || '',
                 selection_system: item.selection_system || '',
                 category: normalizeCategory(item.category),
@@ -178,7 +180,8 @@ export default function Olympiads() {
             setEditing(null);
             form.setData({
                 name: '',
-                level: '',
+                education_levels: [],
+                grades: [],
                 schedule: '',
                 selection_system: '',
                 category: 'free',
@@ -400,7 +403,7 @@ export default function Olympiads() {
                                         <button
                                             type="button"
                                             onClick={() => openModal(event)}
-                                            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-violet-100 hover:text-violet-700"
+                                            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-violet-100 hover:text-violet-800"
                                         >
                                             {icons.edit} Edit
                                         </button>
@@ -409,7 +412,7 @@ export default function Olympiads() {
                                         <button
                                             type="button"
                                             onClick={() => openDeleteModal(event)}
-                                            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-red-100 hover:text-red-700"
+                                            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-red-100 hover:text-red-800"
                                         >
                                             {icons.trash} Hapus
                                         </button>
@@ -426,11 +429,15 @@ export default function Olympiads() {
                 <form onSubmit={saveForm} className="space-y-4">
                     <FormInput label="Nama Olimpiade" value={form.data.name} onChange={(v) => form.setData('name', v)} placeholder="contoh: Olimpiade Sains Nasional" required />
                     {form.errors.name && <p className="text-xs text-rose-500">{form.errors.name}</p>}
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormSelect label="Jenjang" value={form.data.level} onChange={(v) => form.setData('level', v)} options={levelOptions} required />
-                        <FormInput label="Jadwal" type="date" value={form.data.schedule} onChange={(v) => form.setData('schedule', v)} />
-                    </div>
-                    {form.errors.level && <p className="text-xs text-rose-500">{form.errors.level}</p>}
+                    <EducationTargetFields
+                        options={educationOptions}
+                        levels={form.data.education_levels}
+                        grades={form.data.grades}
+                        onLevelsChange={(educationLevels) => form.setData('education_levels', educationLevels)}
+                        onGradesChange={(grades) => form.setData('grades', grades)}
+                        errors={form.errors}
+                    />
+                    <FormInput label="Jadwal" type="date" value={form.data.schedule} onChange={(v) => form.setData('schedule', v)} />
                     <FormInput
                         label="Sistem Seleksi"
                         value={form.data.selection_system}

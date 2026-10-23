@@ -25,11 +25,9 @@ import {
     educationLevels,
     subjects,
     bankSoalContent,
-    bankSoalPasskey,
     olympiadContent,
     sectionTitles,
     learningJourney,
-    testimonials,
     faqs,
     ctaButtons,
 } from './data';
@@ -37,7 +35,7 @@ import { olympiadPasskey } from '../Olympiad/data';
 
 export default function Home({ landingContent }) {
     const { language } = useI18n();
-    const { seoSettings } = usePage().props;
+    const { seoSettings, bankSoalUnlocked = false } = usePage().props;
 
     const seoContact = seoSettings?.contact || {};
 
@@ -48,8 +46,7 @@ export default function Home({ landingContent }) {
     const galleryRef = useRef(null);
 
     const handleBankSoalClick = (format = 'all') => {
-        const hasAccess = sessionStorage.getItem('banksoal_access') === 'granted';
-        if (hasAccess) {
+        if (bankSoalUnlocked) {
             window.location.href = `/bank-soal?format=${format}`;
         } else {
             setBankSoalTargetUrl(`/bank-soal?format=${format}`);
@@ -136,12 +133,11 @@ export default function Home({ landingContent }) {
         educationLevels,
         subjects,
         bankSoalContent,
-        bankSoalPasskey,
         olympiadContent,
         bankSoalItems: [],
         sectionTitles,
         learningJourney,
-        testimonials,
+        testimonials: { id: [], en: [] },
         faqs,
         ctaButtons,
         packages: [],
@@ -167,7 +163,7 @@ export default function Home({ landingContent }) {
     const bank = localizeDeep(landing.bankSoalContent[language] || landing.bankSoalContent.id, language);
     const olympiad = localizeDeep(landing.olympiadContent[language] || landing.olympiadContent.id, language);
     const journeyItems = localizeList(landing.learningJourney || learningJourney, language);
-    const testimonialItems = localizeList(landing.testimonials || testimonials, language);
+    const testimonialItems = localizeList(landing.testimonials || { id: [], en: [] }, language);
     const faqItems = localizeList(landing.faqs || faqs, language);
 
     const hours = {
@@ -684,8 +680,9 @@ export default function Home({ landingContent }) {
             </section>
 
             {/* 8. GALERI KEGIATAN - Clean Carousel */}
-            <section className="py-16 sm:py-20 bg-slate-50/60 border-t border-slate-200/60">
-                <Container>
+            {galleryItems.length > 0 && (
+                <section className="py-16 sm:py-20 bg-slate-50/60 border-t border-slate-200/60">
+                    <Container>
                     <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-8">
                         <SectionHeader
                             align="left"
@@ -744,74 +741,92 @@ export default function Home({ landingContent }) {
                                     </div>
                                 );
                             })
-                        ) : (
-                            [1, 2, 3, 4].map((i) => (
-                                <div
-                                    key={i}
-                                    className="min-w-[260px] sm:min-w-[280px] aspect-4/3 shrink-0 rounded-2xl border border-slate-200 bg-white p-5 flex flex-col items-center justify-center text-center shadow-xs text-slate-400"
-                                >
-                                    <svg className="h-8 w-8 text-violet-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                    </svg>
-                                    <p className="text-xs font-semibold text-slate-700">Momen Belajar ALC</p>
-                                    <p className="text-[10px] text-slate-400 mt-0.5">Suasana Interaktif & Hangat</p>
-                                </div>
-                            ))
-                        )}
+                        ) : null}
                     </div>
-                </Container>
-            </section>
+                    </Container>
+                </section>
+            )}
 
-            {/* 9. TESTIMONI - Compact Parent Stories */}
+            {/* 9. TESTIMONI - Real Parent Stories */}
             <section className="py-16 sm:py-20 bg-white border-t border-slate-200/60">
                 <Container>
-                    <SectionHeader
-                        eyebrow="Cerita Orang Tua"
-                        title="Kepercayaan Keluarga ALC"
-                        subtitle="Kisah nyata orang tua yang menyaksikan putra-putrinya berkembang lebih percaya diri."
-                    />
+                    <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-8">
+                        <SectionHeader
+                            align="left"
+                            eyebrow="Cerita Orang Tua"
+                            title="Kepercayaan Keluarga ALC"
+                            subtitle="Kisah nyata orang tua yang menyaksikan putra-putrinya berkembang lebih percaya diri."
+                            className="max-w-2xl"
+                        />
+                        <Link
+                            href="/portal/kritik-saran"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3.5 py-1.5 text-xs font-semibold text-brand-primary shadow-2xs hover:bg-violet-100 transition shrink-0"
+                        >
+                            <span>Beri Ulasan di Portal</span>
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                            </svg>
+                        </Link>
+                    </div>
 
-                    <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
-                        {testimonialItems.map((item, idx) => (
-                            <div
-                                key={idx}
-                                className="flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-6 shadow-xs hover:border-violet-200 hover:shadow-md transition"
-                            >
-                                <div>
-                                    <div className="flex items-center gap-1 text-amber-400">
-                                        {[...Array(item.rating || 5)].map((_, i) => (
-                                            <svg key={i} className="h-3.5 w-3.5 fill-current" viewBox="0 0 20 20">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                            </svg>
-                                        ))}
-                                        <span className="ml-2 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                                            {item.highlight}
-                                        </span>
-                                    </div>
-
-                                    <p className="mt-4 text-xs sm:text-sm text-slate-600 italic leading-relaxed">
-                                        "{item.quote}"
-                                    </p>
-                                </div>
-
-                                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-3">
-                                    <img
-                                        src={item.avatar}
-                                        alt={item.name}
-                                        className="h-9 w-9 rounded-full object-cover ring-1 ring-violet-200"
-                                    />
+                    {testimonialItems.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {testimonialItems.map((item, idx) => (
+                                <div
+                                    key={idx}
+                                    className="flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-6 shadow-xs hover:border-violet-200 hover:shadow-md transition"
+                                >
                                     <div>
-                                        <h4 className="font-display text-xs font-bold text-slate-900 leading-tight">
-                                            {item.name}
-                                        </h4>
-                                        <p className="text-[11px] text-brand-primary font-medium">
-                                            {item.student}
+                                        <div className="flex items-center gap-1 text-amber-400">
+                                            {[...Array(item.rating || 5)].map((_, i) => (
+                                                <svg key={i} className="h-3.5 w-3.5 fill-current" viewBox="0 0 20 20">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                </svg>
+                                            ))}
+                                            <span className="ml-2 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                                                {item.highlight}
+                                            </span>
+                                        </div>
+
+                                        <p className="mt-4 text-xs sm:text-sm text-slate-600 italic leading-relaxed">
+                                            "{item.quote || item.message}"
                                         </p>
                                     </div>
+
+                                    <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-3">
+                                        {item.avatar || item.avatar_url ? (
+                                            <img
+                                                src={item.avatar || item.avatar_url}
+                                                alt={item.name}
+                                                className="h-9 w-9 rounded-full object-cover ring-1 ring-violet-200"
+                                            />
+                                        ) : (
+                                            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-xs font-black text-brand-primary ring-1 ring-violet-200">
+                                                {(item.name || 'K')[0].toUpperCase()}
+                                            </span>
+                                        )}
+                                        <div>
+                                            <h4 className="font-display text-xs font-bold text-slate-900 leading-tight">
+                                                {item.name}
+                                            </h4>
+                                            <p className="text-[11px] text-brand-primary font-medium">
+                                                {item.student || item.role || 'Keluarga ALC'}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-10 text-center">
+                            <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                                Belum ada ulasan publik baru.
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                                Orang tua siswa aktif dapat menyampaikan kesan dan testimoni langsung melalui Portal Siswa & Orang Tua.
+                            </p>
+                        </div>
+                    )}
                 </Container>
             </section>
 
@@ -974,11 +989,8 @@ export default function Home({ landingContent }) {
                     setBankSoalTargetUrl('');
                 }}
                 targetUrl={bankSoalTargetUrl}
-                correctPasskey={landing.bankSoalPasskey}
+                verificationUrl="/bank-soal/unlock"
                 language={language}
-                onSuccess={() => {
-                    sessionStorage.setItem('banksoal_access', 'granted');
-                }}
             />
 
             <PasskeyModal

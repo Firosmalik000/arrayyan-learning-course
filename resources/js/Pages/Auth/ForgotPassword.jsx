@@ -64,7 +64,7 @@ export default function ForgotPassword({ status }) {
                 </form>
 
                 <div className="text-center">
-                    <Link href="/portal/login" className="text-xs font-semibold text-violet-600 transition hover:text-violet-700">
+                    <Link href="/login" className="text-xs font-semibold text-violet-600 transition hover:text-violet-700">
                         Kembali ke halaman masuk
                     </Link>
                 </div>

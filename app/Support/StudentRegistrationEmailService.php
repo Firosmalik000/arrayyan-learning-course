@@ -84,7 +84,7 @@ class StudentRegistrationEmailService
                 programName: $programName,
                 loginEmail: $recipient,
                 temporaryPassword: $temporaryPassword,
-                portalUrl: route('portal.login'),
+                portalUrl: route('login'),
             ));
 
             $log->update(['status' => 'sent']);
@@ -130,7 +130,7 @@ class StudentRegistrationEmailService
                 studentName: $registration->student_name,
                 programName: $programName,
                 loginEmail: $recipient,
-                portalUrl: route('portal.login'),
+                portalUrl: route('login'),
             ));
 
             $log->update(['status' => 'sent']);

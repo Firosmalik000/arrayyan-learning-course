@@ -18,7 +18,8 @@ class PortalAccountService
     public static function createOrLinkForStudent(
         Student $student,
         ?string $parentEmail = null,
-        ?string $parentName = null
+        ?string $parentName = null,
+        ?string $temporaryPassword = null,
     ): ?array {
         $contact = RegistrationTicket::normalizePhone((string) $student->parent_contact);
         $email = $parentEmail ? strtolower(trim($parentEmail)) : ($student->parent_email ? strtolower(trim($student->parent_email)) : null);
@@ -67,7 +68,7 @@ class PortalAccountService
         }
 
         // New parent account: generate secure temporary password
-        $password = strtoupper(Str::random(8));
+        $password = $temporaryPassword ?: strtoupper(Str::random(8));
 
         $account = PortalAccount::create([
             'type' => PortalAccount::TYPE_PARENT,
@@ -116,8 +117,11 @@ class PortalAccountService
      *
      * @return array{account: PortalAccount, is_new: bool, password: ?string}|null
      */
-    public static function createForTeacher(Teacher $teacher, ?string $teacherEmail = null): ?array
-    {
+    public static function createForTeacher(
+        Teacher $teacher,
+        ?string $teacherEmail = null,
+        ?string $temporaryPassword = null,
+    ): ?array {
         $contact = RegistrationTicket::normalizePhone((string) $teacher->contact);
         $email = $teacherEmail ? strtolower(trim($teacherEmail)) : ($teacher->email ? strtolower(trim($teacher->email)) : null);
 
@@ -158,7 +162,7 @@ class PortalAccountService
             ];
         }
 
-        $password = strtoupper(Str::random(8));
+        $password = $temporaryPassword ?: strtoupper(Str::random(8));
 
         $account = PortalAccount::create([
             'type' => PortalAccount::TYPE_TEACHER,

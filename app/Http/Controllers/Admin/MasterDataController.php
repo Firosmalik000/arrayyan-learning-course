@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\BankSoal;
 use App\Models\ClassGroup;
+use App\Models\EducationClass;
+use App\Models\EducationLevel;
 use App\Models\Invoice;
 use App\Models\Olympiad;
 use App\Models\OlympiadRegistration;
@@ -13,8 +15,10 @@ use App\Models\PageContent;
 use App\Models\Program;
 use App\Models\Student;
 use App\Models\StudentRegistration;
+use App\Models\Subject;
 use App\Models\Teacher;
 use App\Models\TeacherRegistration;
+use App\Support\EducationCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -391,31 +395,59 @@ class MasterDataController extends Controller
         ]);
     }
 
-    public function bankSoal(): Response
-    {
+    public function bankSoal(
+        ?EducationLevel $educationLevel = null,
+        ?EducationClass $educationClass = null,
+        ?Subject $subject = null,
+    ): Response {
         $bankSoalContent = PageContent::query()
             ->where('slug', 'bank-soal')
             ->first()?->content;
+
+        if ($educationClass) {
+            abort_unless($educationLevel && $educationClass->education_level_id === $educationLevel->id, 404);
+        }
+        if ($subject) {
+            abort_unless($educationLevel && $educationLevel->subjects()->whereKey($subject->id)->exists(), 404);
+        }
+
+        $levels = EducationLevel::query()->withCount('educationClasses')->orderBy('sort_order')->get();
+        $classes = $educationLevel ? $educationLevel->educationClasses()->withCount('bankSoals')->get() : collect();
+        $subjects = ($educationLevel && $educationClass)
+            ? $educationLevel->subjects()->withCount(['bankSoals' => fn ($query) => $query->where('education_class_id', $educationClass->id)])->get()
+            : collect();
+        $bankSoals = ($educationClass && $subject)
+            ? BankSoal::query()->with(['educationClass.educationLevel', 'subject', 'resources'])
+                ->where('education_class_id', $educationClass->id)->where('subject_id', $subject->id)->latest()->get()
+            : BankSoal::query()->with(['educationClass.educationLevel', 'subject', 'resources'])
+                ->where('classification_status', 'needs_review')->latest()->get();
 
         return Inertia::render('Admin/BankSoal', [
             'globalPasskey' => is_array($bankSoalContent)
                 ? (string) ($bankSoalContent['bankSoalPasskey'] ?? '')
                 : '',
-            'bankSoalItems' => BankSoal::query()
-                ->latest()
-                ->get()
+            'bankSoalItems' => $bankSoals
                 ->map(function (BankSoal $item) {
                     return [
                         'id' => $item->id,
-                        'slug' => $item->slug,
                         'name' => $item->name,
-                        'category' => $item->category,
-                        'level' => $item->level,
+                        'education_level_id' => $item->educationClass?->education_level_id,
+                        'education_level_name' => $item->educationClass?->educationLevel?->name,
+                        'education_class_id' => $item->education_class_id,
+                        'education_class_name' => $item->educationClass?->name,
+                        'subject_id' => $item->subject_id,
+                        'subject_name' => $item->subject?->name,
+                        'classification_status' => $item->classification_status,
                         'format' => $item->format,
                         'questions' => $item->questions,
                         'description' => $item->description,
-                        'links' => $item->links ?? [],
-                        'has_passkey' => ! empty($item->passkey),
+                        'resources' => $item->resources->map(fn ($resource) => [
+                            'id' => $resource->id,
+                            'label' => $resource->label,
+                            'destination_url' => $resource->destination_url,
+                            'file_name' => $resource->file_name,
+                            'has_file' => filled($resource->file_path),
+                        ])->all(),
                         'view_count' => $item->view_count ?? 0,
                         'download_count' => $item->download_count ?? 0,
                         'image_path' => $item->image_path,
@@ -424,6 +456,15 @@ class MasterDataController extends Controller
                         'is_active' => $item->is_active,
                     ];
                 }),
+            'levels' => $levels,
+            'classes' => $classes,
+            'subjects' => $subjects,
+            'allLevels' => EducationLevel::query()->with(['educationClasses', 'subjects'])->orderBy('sort_order')->get(),
+            'selection' => [
+                'education_level_id' => $educationLevel?->id,
+                'education_class_id' => $educationClass?->id,
+                'subject_id' => $subject?->id,
+            ],
         ]);
     }
 
@@ -439,6 +480,8 @@ class MasterDataController extends Controller
                         'name' => $olympiad->name,
                         'slug' => $olympiad->slug,
                         'level' => $olympiad->level,
+                        'education_levels' => $olympiad->education_levels ?? EducationCatalog::extractLevels($olympiad->level),
+                        'grades' => $olympiad->grades ?? [],
                         'schedule' => $olympiad->schedule,
                         'selection_system' => $olympiad->selection_system,
                         'category' => $olympiad->category,
@@ -454,6 +497,7 @@ class MasterDataController extends Controller
                         'image_url' => $olympiad->image_path ? Storage::url($olympiad->image_path) : null,
                     ];
                 }),
+            'educationOptions' => EducationCatalog::options(),
         ]);
     }
 
@@ -475,6 +519,7 @@ class MasterDataController extends Controller
     public function teachers(): Response
     {
         $teachers = Teacher::query()
+            ->with('portalAccount:id,teacher_id,email')
             ->latest()
             ->get()
             ->map(function (Teacher $teacher) {
@@ -489,6 +534,7 @@ class MasterDataController extends Controller
                     'subjects' => $teacher->subjects,
                     'experience' => $teacher->experience,
                     'contact' => $teacher->contact,
+                    'email' => $teacher->email,
                     'cv_path' => $teacher->cv_path,
                     'cv_url' => $teacher->cv_path
                         ? (Str::startsWith($teacher->cv_path, ['http://', 'https://'])
@@ -497,12 +543,28 @@ class MasterDataController extends Controller
                         : null,
                     'notes' => $teacher->notes,
                     'is_active' => $teacher->is_active,
+                    'portal_account_id' => $teacher->portalAccount?->id,
                     'created_at' => $teacher->created_at,
                 ];
             });
 
         return Inertia::render('Admin/Teachers', [
             'teacherRegistrations' => $teachers,
+            'teacherLevelOptions' => EducationLevel::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->pluck('name')
+                ->values()
+                ->all(),
+            'educationOptions' => Teacher::query()
+                ->whereNotNull('education')
+                ->where('education', '<>', '')
+                ->distinct()
+                ->orderBy('education')
+                ->pluck('education')
+                ->values()
+                ->all(),
         ]);
     }
 
@@ -520,8 +582,10 @@ class MasterDataController extends Controller
                         'address' => $student->address,
                         'school_name' => $student->school_name,
                         'level' => $student->level,
+                        'class_level' => $student->class_level,
                         'subjects' => $student->subjects,
                         'program_id' => $student->program_id,
+                        'package_id' => $student->package_id,
                         'program' => $student->programItem?->name ?? $student->program,
                         'package' => $student->package,
                         'parent_contact' => $student->parent_contact,
@@ -529,6 +593,7 @@ class MasterDataController extends Controller
                         'preferred_mode' => $student->preferred_mode,
                         'notes' => $student->notes,
                         'is_active' => $student->is_active,
+                        'portal_account_id' => $student->parent_portal_account_id,
                         'created_at' => $student->created_at,
                     ];
                 }),
@@ -536,6 +601,10 @@ class MasterDataController extends Controller
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->get(['id', 'name', 'level']),
+            'packages' => Package::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'program_id', 'name', 'sessions', 'price']),
         ]);
     }
 

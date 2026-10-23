@@ -12,6 +12,16 @@ class ClassGroup extends Model
 {
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        static::created(function (ClassGroup $classGroup): void {
+            $classGroup->lifecycles()->create([
+                'activated_at' => $classGroup->created_at?->toDateString() ?? now()->toDateString(),
+                'deactivated_at' => $classGroup->is_active ? null : now()->toDateString(),
+            ]);
+        });
+    }
+
     protected $fillable = [
         'program_id',
         'level',
@@ -52,6 +62,16 @@ class ClassGroup extends Model
         return $this->hasMany(ClassMember::class, 'class_group_id');
     }
 
+    public function lifecycles(): HasMany
+    {
+        return $this->hasMany(ClassGroupLifecycle::class)->orderBy('activated_at');
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     public function activeMembers(): HasMany
     {
         return $this->members()->where('status', 'active');
@@ -60,7 +80,7 @@ class ClassGroup extends Model
     public function students(): BelongsToMany
     {
         return $this->belongsToMany(Student::class, 'class_members', 'class_group_id', 'student_id')
-            ->withPivot(['status', 'joined_at', 'is_scholarship', 'notes'])
+            ->withPivot(['status', 'joined_at', 'ended_at', 'is_scholarship', 'notes'])
             ->withTimestamps();
     }
 

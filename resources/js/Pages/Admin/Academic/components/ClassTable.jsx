@@ -9,6 +9,7 @@ export default function ClassTable({
     canDelete = false,
     onSelectClass,
     onEditClass,
+    onToggleStatus,
     onDeleteClass,
     onAddClass,
 }) {
@@ -150,7 +151,7 @@ export default function ClassTable({
                         >
                             <option value="">Semua Status</option>
                             <option value="aktif">Aktif</option>
-                            <option value="nonaktif">Nonaktif</option>
+                            <option value="nonaktif">Selesai / Nonaktif</option>
                         </select>
                     </div>
                 </div>
@@ -196,6 +197,19 @@ export default function ClassTable({
                                             </svg>
                                         ),
                                         onClick: () => onEditClass(cls),
+                                    },
+                                    canEdit && {
+                                        label: cls.is_active ? 'Selesaikan Kelas' : 'Aktifkan Kembali',
+                                        icon: cls.is_active ? (
+                                            <svg className="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 4.5v15m10.5-15v15" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.25v13.5l13.5-6.75-13.5-6.75z" />
+                                            </svg>
+                                        ),
+                                        onClick: () => onToggleStatus(cls),
                                     },
                                     canDelete && {
                                         label: 'Hapus Kelas',
@@ -317,7 +331,7 @@ export default function ClassTable({
                                         {/* Status */}
                                         <td className="px-5 py-3.5 text-center">
                                             <StatusBadge tone={cls.is_active ? 'emerald' : 'slate'}>
-                                                {cls.is_active ? 'Aktif' : 'Nonaktif'}
+                                                {cls.is_active ? 'Aktif' : 'Selesai / Nonaktif'}
                                             </StatusBadge>
                                         </td>
                                     </tr>
@@ -330,7 +344,6 @@ export default function ClassTable({
                                         {classes.length === 0 ? (
                                             <div>
                                                 <p className="text-sm font-bold text-slate-700">Belum ada kelas.</p>
-                                                <p className="mt-1 text-slate-400">Klik tombol "Tambah Kelas" untuk membuat kelas baru.</p>
                                                 {canCreate && (
                                                     <button
                                                         type="button"

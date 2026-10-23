@@ -16,6 +16,27 @@ import {
 const fallbackEducationOptions = ['SMA', 'D3', 'S1', 'S2'];
 const statusOptions = ['Aktif', 'Nonaktif'];
 
+function CreatableSelect({ label, value, onChange, options, listId, placeholder, error }) {
+    return (
+        <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">{label}</label>
+            <input
+                type="text"
+                list={listId}
+                value={value ?? ''}
+                onChange={(event) => onChange(event.target.value)}
+                placeholder={placeholder}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+            />
+            <datalist id={listId}>
+                {options.map((option) => <option key={option} value={option} />)}
+            </datalist>
+            <p className="mt-1 text-xs text-slate-400">Pilih dari daftar atau ketik pendidikan baru.</p>
+            {error && <p className="mt-1 text-xs text-rose-500">{error}</p>}
+        </div>
+    );
+}
+
 const icons = {
     plus: (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -38,6 +59,16 @@ const icons = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
     ),
+    key: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 11-5.83 1.003L3.75 12.423V15h2.25v2.25H8.25v2.25h3v-2.69l3.497-3.497A3 3 0 0115.75 5.25z" />
+        </svg>
+    ),
+    mail: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0l-8.69 5.347a2.25 2.25 0 01-2.36 0L2.25 6.75" />
+        </svg>
+    ),
 };
 
 const statusBadge = (isActive) => (
@@ -53,7 +84,13 @@ const statusBadge = (isActive) => (
 );
 
 export default function Teachers() {
-    const { teacherRegistrations: registrationsData = [], allowedActions = {}, flash } = usePage().props;
+    const {
+        teacherRegistrations: registrationsData = [],
+        teacherLevelOptions = [],
+        educationOptions = [],
+        allowedActions = {},
+        flash,
+    } = usePage().props;
 
     const teachers = useMemo(() => registrationsData.map((item) => ({
         id: item.id,
@@ -66,6 +103,8 @@ export default function Teachers() {
         subjects: item.subjects ?? '',
         experience: item.experience ?? '',
         contact: item.contact ?? '',
+        email: item.email ?? '',
+        portal_account_id: item.portal_account_id ?? null,
         cv_url: item.cv_url ?? '',
         notes: item.notes ?? '',
         is_active: item.is_active ?? true,
@@ -81,6 +120,7 @@ export default function Teachers() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [editing, setEditing] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [resetPasswordTarget, setResetPasswordTarget] = useState(null);
 
     const can = (action) => (allowedActions.pengajar ?? []).includes(action);
     const canView = can('view');
@@ -98,9 +138,16 @@ export default function Teachers() {
         subjects: '',
         experience: '',
         contact: '',
+        email: '',
         cv: null,
         notes: '',
         is_active: true,
+        temporary_password: '',
+        temporary_password_confirmation: '',
+    });
+    const resetPasswordForm = useForm({
+        password: '',
+        password_confirmation: '',
     });
     const [currentCvUrl, setCurrentCvUrl] = useState(null);
 
@@ -142,8 +189,10 @@ export default function Teachers() {
         { label: 'Berpengalaman', value: teachers.filter((t) => t.experience).length },
     ];
 
-    const educationOptions = Array.from(new Set(teachers.map((t) => t.education).filter(Boolean)));
     const resolvedEducationOptions = educationOptions.length > 0 ? educationOptions : fallbackEducationOptions;
+    const resolvedTeacherLevelOptions = form.data.teacher_role && !teacherLevelOptions.includes(form.data.teacher_role)
+        ? [form.data.teacher_role, ...teacherLevelOptions]
+        : teacherLevelOptions;
 
     const openModal = (item = null) => {
         if (item) {
@@ -158,9 +207,12 @@ export default function Teachers() {
                 subjects: item.subjects,
                 experience: item.experience,
                 contact: item.contact,
+                email: item.email,
                 cv: null,
                 notes: item.notes,
                 is_active: item.is_active ?? true,
+                temporary_password: '',
+                temporary_password_confirmation: '',
             });
             setCurrentCvUrl(item.cv_url || null);
         } else {
@@ -175,9 +227,12 @@ export default function Teachers() {
                 subjects: '',
                 experience: '',
                 contact: '',
+                email: '',
                 cv: null,
                 notes: '',
                 is_active: true,
+                temporary_password: '',
+                temporary_password_confirmation: '',
             });
             setCurrentCvUrl(null);
         }
@@ -226,6 +281,25 @@ export default function Teachers() {
             preserveScroll: true,
             onSuccess: () => setShowDeleteModal(false),
         });
+    };
+
+    const openResetPasswordModal = (teacher) => {
+        resetPasswordForm.reset();
+        resetPasswordForm.clearErrors();
+        setResetPasswordTarget(teacher);
+    };
+
+    const submitResetPassword = (event) => {
+        event.preventDefault();
+        if (!resetPasswordTarget) return;
+        resetPasswordForm.patch(`/admin/pengajar/${resetPasswordTarget.id}/portal-password`, {
+            preserveScroll: true,
+            onSuccess: () => setResetPasswordTarget(null),
+        });
+    };
+
+    const resendPortalInformation = (teacher) => {
+        router.post(`/admin/pengajar/${teacher.id}/portal-information`, {}, { preserveScroll: true });
     };
 
     return (
@@ -329,6 +403,16 @@ export default function Teachers() {
                                             label: 'Edit Data',
                                             icon: icons.edit,
                                             onClick: () => openModal(teacher),
+                                        },
+                                        canEdit && {
+                                            label: 'Reset Password Sementara',
+                                            icon: icons.key,
+                                            onClick: () => openResetPasswordModal(teacher),
+                                        },
+                                        canEdit && {
+                                            label: 'Kirim Ulang Informasi Login',
+                                            icon: icons.mail,
+                                            onClick: () => resendPortalInformation(teacher),
                                         },
                                         canDelete && {
                                             label: 'Nonaktifkan',
@@ -445,7 +529,7 @@ export default function Teachers() {
                 <form onSubmit={saveForm} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                         <FormInput label="Nama Lengkap" value={form.data.name} onChange={(v) => form.setData('name', v)} placeholder="contoh: Ustadzah Hana" required />
-                        <FormInput label="Jenjang yang Diajar" value={form.data.teacher_role} onChange={(v) => form.setData('teacher_role', v)} placeholder="contoh: SD, SMP / SMA" />
+                        <FormSelect label="Jenjang yang Diajar" value={form.data.teacher_role} onChange={(v) => form.setData('teacher_role', v)} options={resolvedTeacherLevelOptions} placeholder="Pilih jenjang" />
                     </div>
                     {form.errors.name && <p className="text-xs text-rose-500">{form.errors.name}</p>}
                     {form.errors.teacher_role && <p className="text-xs text-rose-500">{form.errors.teacher_role}</p>}
@@ -455,7 +539,15 @@ export default function Teachers() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <FormInput label="Alamat Lengkap" value={form.data.address} onChange={(v) => form.setData('address', v)} placeholder="Alamat jalan / RT / RW" />
-                        <FormSelect label="Pendidikan Terakhir" value={form.data.education} onChange={(v) => form.setData('education', v)} options={resolvedEducationOptions} />
+                        <CreatableSelect
+                            label="Pendidikan Terakhir"
+                            value={form.data.education}
+                            onChange={(value) => form.setData('education', value)}
+                            options={resolvedEducationOptions}
+                            listId="admin-teacher-education-options"
+                            placeholder="Pilih atau ketik pendidikan terakhir"
+                            error={form.errors.education}
+                        />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <FormInput label="Keahlian / Mata Pelajaran" value={form.data.subjects} onChange={(v) => form.setData('subjects', v)} placeholder="contoh: Matematika, IPA" />
@@ -463,6 +555,15 @@ export default function Teachers() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <FormInput label="No. HP/WA" value={form.data.contact} onChange={(v) => form.setData('contact', v)} placeholder="08xx-xxxx-xxxx" />
+                        <FormInput label="Email" type="email" value={form.data.email} onChange={(v) => form.setData('email', v)} placeholder="guru@example.com" required />
+                    </div>
+                    {(form.errors.contact || form.errors.email) && (
+                        <div className="space-y-1 text-xs text-rose-500">
+                            {form.errors.contact && <p>{form.errors.contact}</p>}
+                            {form.errors.email && <p>{form.errors.email}</p>}
+                        </div>
+                    )}
+                    <div className="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label className="mb-1.5 block text-sm font-medium text-slate-700">Upload CV</label>
                             <input
@@ -482,6 +583,16 @@ export default function Teachers() {
                             {form.errors.cv && <p className="mt-1 text-xs text-rose-500">{form.errors.cv}</p>}
                         </div>
                     </div>
+                    {!editing && (
+                        <div className="rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
+                            <p className="mb-3 text-sm font-semibold text-violet-900">Akun Portal Pengajar</p>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <FormInput label="Password Sementara" type="password" value={form.data.temporary_password} onChange={(v) => form.setData('temporary_password', v)} required />
+                                <FormInput label="Konfirmasi Password" type="password" value={form.data.temporary_password_confirmation} onChange={(v) => form.setData('temporary_password_confirmation', v)} required />
+                            </div>
+                            {form.errors.temporary_password && <p className="mt-2 text-xs text-rose-500">{form.errors.temporary_password}</p>}
+                        </div>
+                    )}
                     <FormTextarea label="Catatan" value={form.data.notes} onChange={(v) => form.setData('notes', v)} placeholder="Catatan tambahan..." />
                     <FormSelect
                         label="Status"
@@ -496,6 +607,19 @@ export default function Teachers() {
                         <button type="submit" disabled={form.processing} className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">
                             {editing ? 'Simpan Perubahan' : 'Tambah Pengajar'}
                         </button>
+                    </div>
+                </form>
+            </Modal>
+
+            <Modal isOpen={!!resetPasswordTarget} onClose={() => setResetPasswordTarget(null)} title="Reset Password Sementara" size="sm">
+                <form onSubmit={submitResetPassword} className="space-y-4">
+                    <p className="text-sm text-slate-600">Buat password sementara baru untuk <span className="font-semibold text-slate-800">{resetPasswordTarget?.name}</span>. Informasi login akan dikirim ke email pengajar.</p>
+                    <FormInput label="Password Sementara" type="password" value={resetPasswordForm.data.password} onChange={(v) => resetPasswordForm.setData('password', v)} required />
+                    <FormInput label="Konfirmasi Password" type="password" value={resetPasswordForm.data.password_confirmation} onChange={(v) => resetPasswordForm.setData('password_confirmation', v)} required />
+                    {resetPasswordForm.errors.password && <p className="text-xs text-rose-500">{resetPasswordForm.errors.password}</p>}
+                    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+                        <button type="button" onClick={() => setResetPasswordTarget(null)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600">Batal</button>
+                        <button type="submit" disabled={resetPasswordForm.processing} className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60">Reset & Kirim</button>
                     </div>
                 </form>
             </Modal>

@@ -2,16 +2,17 @@ import { Link, usePage } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
 import SeoHead from '@/Components/SeoHead';
 import { useI18n } from '@/lib/i18n';
-import { formatDate, parseDateValue } from '@/lib/formatDate';
+import { formatDate } from '@/lib/formatDate';
 import {
     Container,
     Badge,
     Button,
     SectionHeader,
     OlympiadCard,
+    EducationPathPicker,
     EmptyState,
 } from '@/Components/Public';
-import { pageContent, olympiadLevels, events as fallbackEvents } from './data';
+import { pageContent, events as fallbackEvents } from './data';
 
 const formatCurrency = (value, lang = 'id') => {
     if (!value || value === 0) return lang === 'en' ? 'Free' : 'Gratis';
@@ -22,23 +23,7 @@ const formatCurrency = (value, lang = 'id') => {
     }).format(value);
 };
 
-const getMonth = (dateStr) => {
-    if (!dateStr) return null;
-    const date = parseDateValue(dateStr);
-    if (!date) return null;
-    return date.getMonth();
-};
-
-const monthNames = {
-    id: [
-        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ],
-    en: [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-    ],
-};
+const inferLevels = (label) => ['TK', 'SD', 'SMP', 'SMA'].filter((level) => String(label || '').toUpperCase().includes(level));
 
 const dbToEvent = (item) => ({
     id: `db-${item.id}`,
@@ -55,6 +40,8 @@ const dbToEvent = (item) => ({
     },
     fee: { id: formatCurrency(item.fee, 'id'), en: formatCurrency(item.fee, 'en') },
     description: { id: item.notes || '', en: item.notes || '' },
+    education_levels: Array.isArray(item.education_levels) ? item.education_levels : inferLevels(item.level),
+    grades: Array.isArray(item.grades) ? item.grades : [],
 });
 
 export default function Olympiad() {
@@ -67,12 +54,12 @@ export default function Olympiad() {
     const [activeCategory, setActiveCategory] = useState(
         initialCategory === 'all' || initialCategory === 'semua' ? 'semua' : initialCategory
     );
-    const [activeLevel, setActiveLevel] = useState('semua');
-    const [activeMonth, setActiveMonth] = useState('semua');
+    const [activeLevel, setActiveLevel] = useState('');
+    const [activeGrade, setActiveGrade] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
 
     const text = pageContent[language] || pageContent.id;
-    const levels = olympiadLevels[language] || olympiadLevels.id;
+    const educationOptions = props.educationOptions || [];
 
     // Load events from database props, fallback to data.js if database has no active records
     const allEvents = useMemo(() => {
@@ -84,14 +71,17 @@ export default function Olympiad() {
             image_url: null,
             selection: ev.selection,
             schedule_raw: null,
+            education_levels: inferLevels(ev.level?.id || ev.level),
+            grades: [],
         }));
     }, [props.olympiads]);
 
     // Filter logic
     const filteredEvents = useMemo(() => {
+        if (!activeLevel || !activeGrade) return [];
+
         return allEvents.filter((event) => {
             const eventCategory = (event.category[language] || event.category.id || '').toLowerCase();
-            const eventLevel = event.level[language] || event.level.id || '';
             const eventName = event.name[language] || event.name.id || '';
             const eventDesc = event.description[language] || event.description.id || '';
 
@@ -101,34 +91,31 @@ export default function Olympiad() {
                 (activeCategory === 'berbayar' && eventCategory === 'berbayar') ||
                 eventCategory === activeCategory;
 
-            const matchLevel =
-                activeLevel === 'semua' ||
-                eventLevel.toLowerCase().includes(activeLevel.toLowerCase());
+            const matchLevel = event.education_levels.includes(activeLevel);
+            const matchGrade = event.grades.length === 0 || event.grades.includes(activeGrade);
 
             const matchSearch =
                 !searchQuery ||
                 eventName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 eventDesc.toLowerCase().includes(searchQuery.toLowerCase());
 
-            const matchMonth =
-                activeMonth === 'semua' ||
-                (event.schedule_raw && getMonth(event.schedule_raw) === parseInt(activeMonth, 10));
-
-            return matchCategory && matchLevel && matchMonth && matchSearch;
+            return matchCategory && matchLevel && matchGrade && matchSearch;
         });
-    }, [allEvents, activeCategory, activeLevel, activeMonth, searchQuery, language]);
+    }, [allEvents, activeCategory, activeLevel, activeGrade, searchQuery, language]);
 
     const clearFilters = () => {
         setActiveCategory('semua');
-        setActiveLevel('semua');
-        setActiveMonth('semua');
         setSearchQuery('');
+    };
+
+    const resetEducation = () => {
+        setActiveLevel('');
+        setActiveGrade('');
+        clearFilters();
     };
 
     const hasActiveFilter =
         activeCategory !== 'semua' ||
-        activeLevel !== 'semua' ||
-        activeMonth !== 'semua' ||
         searchQuery !== '';
 
     return (
@@ -160,8 +147,22 @@ export default function Olympiad() {
                         align="center"
                     />
 
+                    <EducationPathPicker
+                        options={educationOptions}
+                        items={allEvents}
+                        selectedLevel={activeLevel}
+                        selectedGrade={activeGrade}
+                        onLevelChange={(level) => {
+                            setActiveLevel(level);
+                            setActiveGrade('');
+                        }}
+                        onGradeChange={setActiveGrade}
+                        onReset={resetEducation}
+                        tone="amber"
+                    />
+
                     {/* Filter & Search Bar */}
-                    <div className="mt-10 mx-auto max-w-4xl rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-lg">
+                    {activeLevel && activeGrade && <div className="mt-8 mx-auto max-w-4xl rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5">
                         <div className="flex flex-col gap-4">
                             {/* Search */}
                             <div className="relative">
@@ -219,30 +220,16 @@ export default function Olympiad() {
                                     ))}
                                 </div>
 
-                                {/* Level Filters */}
-                                <div className="flex items-center gap-1.5 w-full xs:w-auto justify-between xs:justify-start">
-                                    <span className="text-xs font-bold text-slate-400 mr-1">Jenjang:</span>
-                                    <select
-                                        value={activeLevel}
-                                        onChange={(e) => setActiveLevel(e.target.value)}
-                                        className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-amber-500 w-full xs:w-auto"
-                                    >
-                                        <option value="semua">Semua Jenjang</option>
-                                        <option value="SD">SD / MI</option>
-                                        <option value="SMP">SMP / MTs</option>
-                                        <option value="SMA">SMA / MA</option>
-                                    </select>
-                                </div>
                             </div>
                         </div>
-                    </div>
+                    </div>}
                 </Container>
             </section>
 
             {/* Event Grid Listing */}
             <section className="py-12 sm:py-16 bg-slate-50/40">
                 <Container>
-                    <div className="mb-8 flex items-center justify-between gap-4">
+                    {activeLevel && activeGrade && <div className="mb-8 flex items-center justify-between gap-4">
                         <p className="text-sm font-semibold text-slate-600">
                             Menemukan <span className="text-slate-900 font-bold">{filteredEvents.length}</span> event kompetisi
                         </p>
@@ -256,9 +243,13 @@ export default function Olympiad() {
                                 Reset Filter
                             </button>
                         )}
-                    </div>
+                    </div>}
 
-                    {filteredEvents.length > 0 ? (
+                    {!activeLevel || !activeGrade ? (
+                        <div className="mx-auto max-w-xl py-10 text-center">
+                            <p className="text-sm font-semibold text-slate-700">Pilih jenjang dan kelas di atas untuk melihat informasi lomba.</p>
+                        </div>
+                    ) : filteredEvents.length > 0 ? (
                         <div className="grid grid-cols-1 gap-6 xs:gap-8 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                             {filteredEvents.map((olympiad) => (
                                 <OlympiadCard

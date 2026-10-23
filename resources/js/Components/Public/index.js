@@ -3,6 +3,7 @@ export { default as Badge } from './Badge';
 export { default as Button } from './Button';
 export { default as SectionHeader } from './SectionHeader';
 export { default as EmptyState } from './EmptyState';
+export { default as EducationPathPicker } from './EducationPathPicker';
 export { default as ProgramCard } from './ProgramCard';
 export { default as OlympiadCard } from './OlympiadCard';
 export { default as BankSoalCard } from './BankSoalCard';

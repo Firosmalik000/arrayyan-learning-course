@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\BankSoal;
 use App\Models\Olympiad;
 use App\Models\OlympiadRegistration;
+use App\Models\PageContent;
 use App\Models\PortalAccount;
 use App\Models\Role;
 use App\Models\User;
@@ -47,10 +48,45 @@ class OlympiadBankSoalTest extends TestCase
 
     private function makeBankSoal(array $overrides = []): BankSoal
     {
-        return BankSoal::factory()->create(array_merge([
-            'slug' => 'modul-test',
+        $resources = $overrides['links'] ?? [];
+        unset($overrides['links'], $overrides['slug']);
+        $bankSoal = BankSoal::factory()->create(array_merge(['is_active' => true], $overrides));
+        foreach ($resources as $index => $resource) {
+            $bankSoal->resources()->create([
+                'label' => $resource['label'] ?? null,
+                'destination_url' => $resource['link'] ?? null,
+                'file_path' => $resource['file_path'] ?? null,
+                'file_name' => $resource['file_name'] ?? null,
+                'sort_order' => ($index + 1) * 10,
+            ]);
+        }
+
+        return $bankSoal;
+    }
+
+    private function bankSoalRouteParameters(BankSoal $bankSoal): array
+    {
+        return [$bankSoal->educationClass->educationLevel, $bankSoal->educationClass, $bankSoal->subject, $bankSoal];
+    }
+
+    private function enableGlobalBankSoalPasskey(): void
+    {
+        PageContent::create([
+            'slug' => 'bank-soal',
+            'content' => ['bankSoalPasskey' => 'Rahasia123'],
+        ]);
+    }
+
+    private function makePortalAccount(): PortalAccount
+    {
+        return PortalAccount::create([
+            'type' => 'student',
+            'name' => 'Murid Portal',
+            'contact' => '081234567890',
+            'password' => Hash::make('secret123'),
+            'must_change_password' => false,
             'is_active' => true,
-        ], $overrides));
+        ]);
     }
 
     // ── Olimpiade: pendaftaran publik ────────────────────────────
@@ -213,103 +249,96 @@ class OlympiadBankSoalTest extends TestCase
 
     public function test_guest_detail_hides_links_and_counts_views(): void
     {
-        $this->makeBankSoal([
-            'passkey' => Hash::make('Rahasia123'),
+        $this->enableGlobalBankSoalPasskey();
+        $bankSoal = $this->makeBankSoal([
             'links' => [['id' => 11, 'label' => 'Modul A', 'link' => 'https://example.com/a.pdf']],
         ]);
 
-        $response = $this->get(route('banksoal.detail', 'modul-test'));
+        $response = $this->get(route('banksoal.detail', $this->bankSoalRouteParameters($bankSoal)));
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->where('bankSoal.links', [])
+            ->where('bankSoal.resources', [])
             ->where('bankSoal.unlocked', false)
             ->where('bankSoal.has_lock', true)
+            ->where('bankSoal.passkey_verified', false)
+            ->where('bankSoal.authenticated', false)
         );
         $this->assertEquals(1, BankSoal::query()->first()->view_count);
     }
 
-    public function test_unlock_with_correct_passkey_reveals_links(): void
+    public function test_correct_global_passkey_requires_login_before_links_are_revealed(): void
     {
-        $this->makeBankSoal([
-            'passkey' => Hash::make('Rahasia123'),
+        $this->enableGlobalBankSoalPasskey();
+        $bankSoal = $this->makeBankSoal([
             'links' => [['id' => 11, 'label' => 'Modul A', 'link' => 'https://example.com/a.pdf']],
         ]);
 
-        $wrong = $this->post(route('banksoal.unlock', 'modul-test'), ['passkey' => 'Salah']);
+        $parameters = $this->bankSoalRouteParameters($bankSoal);
+        $wrong = $this->post(route('banksoal.unlock', $parameters), ['passkey' => 'Salah']);
         $wrong->assertSessionHas('error');
 
-        $right = $this->post(route('banksoal.unlock', 'modul-test'), ['passkey' => 'Rahasia123']);
+        $right = $this->post(route('banksoal.unlock', $parameters), ['passkey' => 'Rahasia123']);
         $right->assertSessionHasNoErrors();
         $right->assertSessionHas('success');
 
-        $detail = $this->get(route('banksoal.detail', 'modul-test'));
+        $detail = $this->get(route('banksoal.detail', $parameters));
         $detail->assertInertia(fn ($page) => $page
-            ->where('bankSoal.unlocked', true)
-            ->has('bankSoal.links', 1)
-            ->where('bankSoal.links.0.label', 'Modul A')
+            ->where('bankSoal.unlocked', false)
+            ->where('bankSoal.passkey_verified', true)
+            ->where('bankSoal.authenticated', false)
+            ->where('bankSoal.resources', [])
         );
+
+        $this->actingAs($this->makePortalAccount(), 'portal')
+            ->get(route('banksoal.detail', $parameters))
+            ->assertInertia(fn ($page) => $page
+                ->where('bankSoal.unlocked', true)
+                ->has('bankSoal.resources', 1)
+                ->where('bankSoal.resources.0.label', 'Modul A')
+            );
     }
 
     public function test_download_requires_unlock_and_counts(): void
     {
-        $this->makeBankSoal([
-            'passkey' => Hash::make('Rahasia123'),
+        $this->enableGlobalBankSoalPasskey();
+        $bankSoal = $this->makeBankSoal([
             'links' => [['id' => 11, 'label' => 'Modul A', 'link' => 'https://example.com/a.pdf']],
         ]);
 
-        $locked = $this->get(route('banksoal.download', ['slug' => 'modul-test', 'linkId' => 11]));
-        $locked->assertRedirect(route('banksoal.detail', 'modul-test'));
+        $parameters = $this->bankSoalRouteParameters($bankSoal);
+        $resource = $bankSoal->resources()->firstOrFail();
+        $downloadParameters = [...$parameters, $resource];
+        $locked = $this->get(route('banksoal.download', $downloadParameters));
+        $locked->assertRedirect(route('banksoal.detail', $parameters));
 
-        $this->post(route('banksoal.unlock', 'modul-test'), ['passkey' => 'Rahasia123']);
+        $this->post(route('banksoal.unlock', $parameters), ['passkey' => 'Rahasia123']);
 
-        $open = $this->get(route('banksoal.download', ['slug' => 'modul-test', 'linkId' => 11]));
+        $stillLocked = $this->get(route('banksoal.download', $downloadParameters));
+        $stillLocked->assertRedirect(route('banksoal.detail', $parameters));
+
+        $open = $this->actingAs($this->makePortalAccount(), 'portal')
+            ->get(route('banksoal.download', $downloadParameters));
         $open->assertRedirect('https://example.com/a.pdf');
         $this->assertEquals(1, BankSoal::query()->first()->download_count);
     }
 
-    public function test_portal_student_auto_access_without_passkey(): void
+    public function test_portal_student_still_needs_the_global_passkey(): void
     {
-        $this->makeBankSoal([
-            'passkey' => Hash::make('Rahasia123'),
+        $this->enableGlobalBankSoalPasskey();
+        $bankSoal = $this->makeBankSoal([
             'links' => [['id' => 11, 'label' => 'Modul A', 'link' => 'https://example.com/a.pdf']],
         ]);
-        $account = PortalAccount::create([
-            'type' => 'student',
-            'name' => 'Murid Portal',
-            'contact' => '081234567890',
-            'password' => Hash::make('secret123'),
-            'must_change_password' => false,
-            'is_active' => true,
-        ]);
+        $account = $this->makePortalAccount();
 
-        $response = $this->actingAs($account, 'portal')->get(route('banksoal.detail', 'modul-test'));
+        $response = $this->actingAs($account, 'portal')->get(route('banksoal.detail', $this->bankSoalRouteParameters($bankSoal)));
 
         $response->assertSuccessful();
         $response->assertInertia(fn ($page) => $page
-            ->where('bankSoal.unlocked', true)
-            ->has('bankSoal.links', 1)
+            ->where('bankSoal.unlocked', false)
+            ->where('bankSoal.passkey_verified', false)
+            ->where('bankSoal.authenticated', true)
+            ->where('bankSoal.resources', [])
         );
-    }
-
-    public function test_admin_can_set_passkey(): void
-    {
-        $user = $this->actingAsAdmin();
-        $item = $this->makeBankSoal();
-
-        $response = $this->actingAs($user, PermissionCatalog::GUARD)->put(
-            route('admin.banksoal.update', $item),
-            [
-                'name' => 'Modul Test',
-                'category' => 'Umum',
-                'level' => 'SMP',
-                'format' => 'PDF',
-                'passkey' => 'KunciBaru',
-                'is_active' => 1,
-            ]
-        );
-
-        $response->assertRedirect();
-        $this->assertTrue(Hash::check('KunciBaru', $item->fresh()->passkey));
     }
 }

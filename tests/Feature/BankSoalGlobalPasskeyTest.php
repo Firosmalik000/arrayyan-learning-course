@@ -61,7 +61,7 @@ class BankSoalGlobalPasskeyTest extends TestCase
             ->assertSuccessful()
             ->assertInertia(fn ($page) => $page
                 ->component('Public/BankSoal', false)
-                ->where('landingContent.bankSoalPasskey', 'PASSKEY-BARU')
+                ->missing('landingContent.bankSoalPasskey')
             );
     }
 

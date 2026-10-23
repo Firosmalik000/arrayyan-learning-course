@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Attendance;
 use App\Models\ClassGroup;
+use App\Models\ClassMember;
 use App\Models\Grade;
 use App\Models\Invoice;
 use App\Models\Package;
@@ -92,7 +93,7 @@ class AcademicTest extends TestCase
         );
     }
 
-    public function test_add_member_requires_paid_invoice(): void
+    public function test_add_member_allows_payment_after_joining_class(): void
     {
         $user = $this->actingAsAdmin();
         $program = $this->makeProgram();
@@ -105,13 +106,15 @@ class AcademicTest extends TestCase
         );
 
         $response->assertRedirect();
-        $this->assertDatabaseMissing('class_members', [
+        $this->assertDatabaseHas('class_members', [
             'class_group_id' => $class->id,
             'student_id' => $student->id,
+            'status' => 'active',
+            'is_scholarship' => false,
         ]);
     }
 
-    public function test_add_member_with_scholarship_bypasses_paid_check(): void
+    public function test_add_member_records_scholarship_status(): void
     {
         $user = $this->actingAsAdmin();
         $program = $this->makeProgram();
@@ -602,6 +605,90 @@ class AcademicTest extends TestCase
         $this->assertEquals('belum_absen', Attendance::query()->where('class_group_id', $class->id)->whereDate('date', '2026-10-30')->first()->status);
     }
 
+    public function test_monthly_session_sync_edits_only_selected_month_and_preserves_recorded_attendance(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+        $student = $this->makeStudent($program);
+        $this->makePaid($student);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.members.store', $class),
+            ['student_ids' => [$student->id]]
+        );
+
+        Attendance::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'date' => '2026-10-05',
+            'status' => 'hadir',
+        ]);
+        Attendance::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'date' => '2026-10-12',
+            'status' => 'belum_absen',
+        ]);
+        Attendance::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'date' => '2026-11-02',
+            'status' => 'belum_absen',
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.sessions.generate', $class),
+            [
+                'month' => '2026-10',
+                'dates' => ['2026-10-05', '2026-10-19'],
+            ]
+        );
+
+        $response->assertSessionHas('success');
+        $this->assertTrue(Attendance::query()
+            ->where('class_group_id', $class->id)
+            ->where('student_id', $student->id)
+            ->whereDate('date', '2026-10-05')
+            ->where('status', 'hadir')
+            ->exists());
+        $this->assertFalse(Attendance::query()
+            ->where('class_group_id', $class->id)
+            ->where('student_id', $student->id)
+            ->whereDate('date', '2026-10-12')
+            ->exists());
+        $this->assertTrue(Attendance::query()
+            ->where('class_group_id', $class->id)
+            ->where('student_id', $student->id)
+            ->whereDate('date', '2026-10-19')
+            ->where('status', 'belum_absen')
+            ->exists());
+        $this->assertTrue(Attendance::query()
+            ->where('class_group_id', $class->id)
+            ->where('student_id', $student->id)
+            ->whereDate('date', '2026-11-02')
+            ->where('status', 'belum_absen')
+            ->exists());
+    }
+
+    public function test_monthly_session_sync_rejects_dates_outside_selected_month(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.sessions.generate', $class),
+            [
+                'month' => '2026-10',
+                'dates' => ['2026-11-02'],
+            ]
+        );
+
+        $response->assertSessionHasErrors('dates.0');
+        $this->assertDatabaseCount('attendances', 0);
+    }
+
     public function test_attendance_enforces_session_limit(): void
     {
         $user = $this->actingAsAdmin();
@@ -668,5 +755,447 @@ class AcademicTest extends TestCase
             ]
         );
         $res2->assertSessionHas('error');
+    }
+
+    public function test_member_period_generates_pending_attendance_from_weekly_schedule(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+        $student = $this->makeStudent($program);
+        $this->makePaid($student);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.members.store', $class),
+            ['student_ids' => [$student->id]]
+        );
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.schedules.store', $class),
+            ['day_of_week' => 1, 'start_time' => '16:00', 'end_time' => '17:30']
+        );
+
+        $member = ClassMember::query()->where('student_id', $student->id)->firstOrFail();
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.members.periods.store', $member),
+            [
+                'start_date' => '2026-11-01',
+                'end_date' => '2026-11-30',
+                'session_limit' => 4,
+                'notes' => 'Perpanjangan November',
+            ]
+        );
+
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('class_member_periods', [
+            'class_member_id' => $member->id,
+            'session_limit' => 4,
+        ]);
+        $period = $member->periods()->firstOrFail();
+        $this->assertSame('2026-11-01', $period->start_date->toDateString());
+        $this->assertSame('2026-11-30', $period->end_date->toDateString());
+        $this->assertEquals(
+            ['2026-11-02', '2026-11-09', '2026-11-16', '2026-11-23'],
+            Attendance::query()
+                ->where('class_group_id', $class->id)
+                ->where('student_id', $student->id)
+                ->orderBy('date')
+                ->pluck('date')
+                ->map(fn ($date) => substr((string) $date, 0, 10))
+                ->all()
+        );
+        $this->assertEquals(4, Attendance::query()->where('status', 'belum_absen')->count());
+    }
+
+    public function test_member_period_rejects_overlapping_date_ranges(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+        $student = $this->makeStudent($program);
+        $this->makePaid($student);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.members.store', $class),
+            ['student_ids' => [$student->id]]
+        );
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.schedules.store', $class),
+            ['day_of_week' => 1, 'start_time' => '16:00', 'end_time' => '17:30']
+        );
+        $member = ClassMember::query()->where('student_id', $student->id)->firstOrFail();
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.members.periods.store', $member),
+            ['start_date' => '2026-11-01', 'end_date' => '2026-11-30', 'session_limit' => 4]
+        );
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.members.periods.store', $member),
+            ['start_date' => '2026-11-15', 'end_date' => '2026-12-15', 'session_limit' => 4]
+        );
+
+        $response->assertSessionHasErrors('start_date');
+        $this->assertDatabaseCount('class_member_periods', 1);
+    }
+
+    public function test_new_period_resets_attendance_session_limit_without_new_class_registration(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $package = Package::create([
+            'program_id' => $program->id,
+            'name' => 'Paket Bulanan 1 Sesi',
+            'level' => 'SMP',
+            'sessions' => 1,
+            'is_active' => true,
+        ]);
+        $class = ClassGroup::create([
+            'program_id' => $program->id,
+            'package_id' => $package->id,
+            'total_sessions' => 1,
+            'name' => 'Kelas Lanjutan',
+            'is_active' => true,
+        ]);
+        $student = Student::create([
+            'name' => 'Anak Berlanjut',
+            'program_id' => $program->id,
+            'package_id' => $package->id,
+            'is_active' => true,
+        ]);
+        $this->makePaid($student);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.members.store', $class),
+            ['student_ids' => [$student->id]]
+        );
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.schedules.store', $class),
+            ['day_of_week' => 1, 'start_time' => '16:00', 'end_time' => '17:30']
+        );
+        $member = ClassMember::query()->where('student_id', $student->id)->firstOrFail();
+
+        foreach ([
+            ['start_date' => '2026-10-01', 'end_date' => '2026-10-31'],
+            ['start_date' => '2026-11-01', 'end_date' => '2026-11-30'],
+        ] as $period) {
+            $this->actingAs($user, PermissionCatalog::GUARD)->post(
+                route('admin.academic.members.periods.store', $member),
+                [...$period, 'session_limit' => 1]
+            )->assertSessionHas('success');
+        }
+
+        foreach (['2026-10-05', '2026-11-02'] as $date) {
+            $this->actingAs($user, PermissionCatalog::GUARD)->post(
+                route('admin.academic.attendance.store', $class),
+                [
+                    'date' => $date,
+                    'subject' => 'Matematika',
+                    'material' => 'Latihan berkala',
+                    'rows' => [[
+                        'student_id' => $student->id,
+                        'status' => 'hadir',
+                        'understanding_score' => 4,
+                        'evaluation' => 'Memahami materi.',
+                    ]],
+                ]
+            )->assertSessionHas('success');
+        }
+
+        $this->assertDatabaseCount('class_members', 1);
+        $this->assertDatabaseCount('class_member_periods', 2);
+        $this->assertEquals(2, Attendance::query()->where('status', 'hadir')->count());
+    }
+
+    public function test_completing_class_membership_keeps_student_active_and_preserves_history_by_default(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+        $student = $this->makeStudent($program);
+        $member = ClassMember::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'status' => ClassMember::STATUS_ACTIVE,
+            'joined_at' => '2026-10-01',
+        ]);
+        $member->periods()->create([
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-31',
+            'session_limit' => 4,
+        ]);
+        Attendance::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'date' => '2026-10-05',
+            'status' => 'hadir',
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->patch(
+            route('admin.academic.members.complete', $member),
+            ['deactivate_student' => false],
+        );
+
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('class_members', [
+            'id' => $member->id,
+            'status' => ClassMember::STATUS_GRADUATED,
+        ]);
+        $this->assertTrue($student->fresh()->is_active);
+        $this->assertDatabaseCount('class_member_periods', 1);
+        $this->assertDatabaseCount('attendances', 1);
+    }
+
+    public function test_member_with_invoice_history_cannot_be_deleted(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+        $student = $this->makeStudent($program);
+        $member = ClassMember::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'status' => ClassMember::STATUS_ACTIVE,
+            'joined_at' => now(),
+        ]);
+        Invoice::create([
+            'invoice_no' => 'INV-2026-HISTORY',
+            'student_id' => $student->id,
+            'class_member_id' => $member->id,
+            'class_group_id' => $class->id,
+            'billing_type' => 'monthly',
+            'billing_month' => now()->startOfMonth(),
+            'amount' => 350000,
+            'status' => Invoice::STATUS_UNPAID,
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->delete(
+            route('admin.academic.members.destroy', $member),
+        );
+
+        $response->assertSessionHas('error');
+        $this->assertDatabaseHas('class_members', ['id' => $member->id]);
+        $this->assertDatabaseCount('invoices', 1);
+    }
+
+    public function test_completing_class_membership_can_optionally_deactivate_student(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+        $student = $this->makeStudent($program);
+        $member = ClassMember::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'status' => ClassMember::STATUS_ACTIVE,
+            'joined_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->patch(
+            route('admin.academic.members.complete', $member),
+            ['deactivate_student' => true],
+        );
+
+        $response->assertSessionHas('success');
+        $this->assertSame(ClassMember::STATUS_GRADUATED, $member->fresh()->status);
+        $this->assertFalse($student->fresh()->is_active);
+        $this->assertSame($user->id, $student->fresh()->updated_by);
+    }
+
+    public function test_student_with_another_active_class_cannot_be_deactivated_when_completing_membership(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $otherProgram = $this->makeProgram('Intensif');
+        $class = $this->makeClass($program);
+        $otherClass = $this->makeClass($otherProgram);
+        $student = $this->makeStudent($program);
+        $member = ClassMember::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'status' => ClassMember::STATUS_ACTIVE,
+            'joined_at' => now(),
+        ]);
+        ClassMember::create([
+            'class_group_id' => $otherClass->id,
+            'student_id' => $student->id,
+            'status' => ClassMember::STATUS_ACTIVE,
+            'joined_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)->patch(
+            route('admin.academic.members.complete', $member),
+            ['deactivate_student' => true],
+        );
+
+        $response->assertSessionHas('error');
+        $this->assertSame(ClassMember::STATUS_ACTIVE, $member->fresh()->status);
+        $this->assertTrue($student->fresh()->is_active);
+    }
+
+    public function test_admin_can_complete_and_reactivate_class_without_changing_history_or_members(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+        $student = $this->makeStudent($program);
+        $member = ClassMember::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'status' => ClassMember::STATUS_ACTIVE,
+            'joined_at' => now(),
+        ]);
+        $class->schedules()->create([
+            'day_of_week' => 1,
+            'start_time' => '15:00',
+            'end_time' => '16:00',
+        ]);
+        Attendance::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'date' => '2026-10-05',
+            'status' => 'hadir',
+        ]);
+        Grade::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'subject' => 'Matematika',
+            'term' => 'Oktober',
+            'score' => 90,
+        ]);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)
+            ->patch(route('admin.academic.classes.status.update', $class), ['is_active' => false])
+            ->assertSessionHas('success');
+
+        $this->assertFalse($class->fresh()->is_active);
+        $this->assertSame(ClassMember::STATUS_ACTIVE, $member->fresh()->status);
+        $this->assertDatabaseCount('schedules', 1);
+        $this->assertDatabaseCount('attendances', 1);
+        $this->assertDatabaseCount('grades', 1);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)
+            ->patch(route('admin.academic.classes.status.update', $class), ['is_active' => true])
+            ->assertSessionHas('success');
+
+        $this->assertTrue($class->fresh()->is_active);
+        $this->assertSame(ClassMember::STATUS_ACTIVE, $member->fresh()->status);
+        $this->assertDatabaseCount('schedules', 1);
+        $this->assertDatabaseCount('attendances', 1);
+        $this->assertDatabaseCount('grades', 1);
+    }
+
+    public function test_class_metadata_update_cannot_bypass_the_dedicated_status_action(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $teacher = Teacher::create(['name' => 'Guru Kelas', 'is_active' => true]);
+        $class = $this->makeClass($program, $teacher);
+        $class->update(['is_active' => false]);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)
+            ->put(route('admin.academic.classes.update', $class), [
+                'program_id' => $program->id,
+                'teacher_id' => $teacher->id,
+                'name' => 'Kelas Diperbarui',
+                'is_active' => true,
+            ])
+            ->assertSessionHas('success');
+
+        $class->refresh();
+
+        $this->assertSame('Kelas Diperbarui', $class->name);
+        $this->assertFalse($class->is_active);
+    }
+
+    public function test_inactive_class_rejects_new_academic_operations(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $class = $this->makeClass($program);
+        $student = $this->makeStudent($program);
+        $member = ClassMember::create([
+            'class_group_id' => $class->id,
+            'student_id' => $student->id,
+            'status' => ClassMember::STATUS_ACTIVE,
+            'joined_at' => now(),
+        ]);
+        $class->update(['is_active' => false]);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.schedules.store', $class),
+            ['day_of_week' => 1, 'start_time' => '15:00', 'end_time' => '16:00'],
+        )->assertSessionHas('error');
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.attendance.store', $class),
+            [
+                'date' => '2026-10-05',
+                'subject' => 'Matematika',
+                'material' => 'Aljabar',
+                'rows' => [[
+                    'student_id' => $student->id,
+                    'status' => 'hadir',
+                    'understanding_score' => 4,
+                    'evaluation' => 'Baik',
+                ]],
+            ],
+        )->assertSessionHas('error');
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.sessions.generate', $class),
+            ['month' => '2026-10', 'dates' => ['2026-10-05']],
+        )->assertSessionHas('error');
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.grades.store', $class),
+            [
+                'subject' => 'Matematika',
+                'term' => 'Oktober',
+                'rows' => [['student_id' => $student->id, 'score' => 90]],
+            ],
+        )->assertSessionHas('error');
+
+        $this->actingAs($user, PermissionCatalog::GUARD)->post(
+            route('admin.academic.members.periods.store', $member),
+            [
+                'start_date' => '2026-10-01',
+                'end_date' => '2026-10-31',
+                'session_limit' => 4,
+            ],
+        )->assertSessionHas('error');
+
+        $this->assertDatabaseCount('schedules', 0);
+        $this->assertDatabaseCount('attendances', 0);
+        $this->assertDatabaseCount('grades', 0);
+        $this->assertDatabaseCount('class_member_periods', 0);
+    }
+
+    public function test_inactive_class_cannot_be_reactivated_when_teacher_schedule_now_conflicts(): void
+    {
+        $user = $this->actingAsAdmin();
+        $program = $this->makeProgram();
+        $teacher = Teacher::create(['name' => 'Guru Jadwal', 'is_active' => true]);
+        $activeClass = $this->makeClass($program, $teacher);
+        $inactiveClass = ClassGroup::create([
+            'program_id' => $program->id,
+            'teacher_id' => $teacher->id,
+            'name' => 'Kelas Lama',
+            'is_active' => false,
+        ]);
+        $activeClass->schedules()->create([
+            'day_of_week' => 1,
+            'start_time' => '15:00',
+            'end_time' => '16:00',
+        ]);
+        $inactiveClass->schedules()->create([
+            'day_of_week' => 1,
+            'start_time' => '15:30',
+            'end_time' => '16:30',
+        ]);
+
+        $this->actingAs($user, PermissionCatalog::GUARD)
+            ->patch(route('admin.academic.classes.status.update', $inactiveClass), ['is_active' => true])
+            ->assertSessionHas('error');
+
+        $this->assertFalse($inactiveClass->fresh()->is_active);
     }
 }

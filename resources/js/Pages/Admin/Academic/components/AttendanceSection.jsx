@@ -363,7 +363,7 @@ export default function AttendanceSection({
                                 {sessions.length === 0 && (
                                     <tr>
                                         <td colSpan={4} className="px-4 py-8 text-center text-xs text-slate-500">
-                                            Belum ada riwayat pertemuan absensi. Klik “Generate Jadwal Pertemuan” untuk membuat otomatis.
+                                            Belum ada riwayat pertemuan.
                                         </td>
                                     </tr>
                                 )}
@@ -388,10 +388,6 @@ export default function AttendanceSection({
                 title="Generate Otomatis Pertemuan Absensi"
             >
                 <form onSubmit={handleConfirmGenerate} className="space-y-4">
-                    <p className="text-xs text-slate-600">
-                        Sistem akan membuat tanggal pertemuan absensi secara otomatis berdasarkan <strong>jadwal mingguan</strong> kelas ini sampai target jumlah pertemuan terpenuhi.
-                    </p>
-
                     <div className="rounded-xl border border-violet-100 bg-violet-50/60 p-3 text-xs">
                         <span className="font-semibold text-violet-800">Jadwal Mingguan Kelas:</span>
                         <p className="mt-1 text-slate-700">

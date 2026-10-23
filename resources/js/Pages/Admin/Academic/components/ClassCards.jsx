@@ -28,7 +28,7 @@ export default function ClassCards({ classes, selectedId, onSelect }) {
                                 </p>
                             </div>
                             <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                                {cls.is_active ? 'Aktif' : 'Nonaktif'}
+                                {cls.is_active ? 'Aktif' : 'Selesai / Nonaktif'}
                             </span>
                         </div>
                         <div className="mt-3 flex items-center justify-between text-xs">

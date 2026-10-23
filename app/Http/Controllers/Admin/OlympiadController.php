@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOlympiadRequest;
 use App\Http\Requests\UpdateOlympiadRequest;
 use App\Models\Olympiad;
+use App\Support\EducationCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 
@@ -19,6 +20,9 @@ class OlympiadController extends Controller
         }
         unset($data['image']);
 
+        $data['education_levels'] = array_values($data['education_levels'] ?? []);
+        $data['grades'] = array_values($data['grades'] ?? []);
+        $data['level'] = EducationCatalog::summarize($data['education_levels']);
         $data['is_active'] = filter_var($data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $data['is_registration_open'] = filter_var($data['is_registration_open'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $data['winners'] = $this->normalizeWinners($data['winners'] ?? null);
@@ -37,6 +41,9 @@ class OlympiadController extends Controller
         }
         unset($data['image']);
 
+        $data['education_levels'] = array_values($data['education_levels'] ?? []);
+        $data['grades'] = array_values($data['grades'] ?? []);
+        $data['level'] = EducationCatalog::summarize($data['education_levels']);
         $data['is_active'] = filter_var($data['is_active'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $data['is_registration_open'] = filter_var($data['is_registration_open'] ?? $olympiad->is_registration_open, FILTER_VALIDATE_BOOLEAN);
         $data['winners'] = $this->normalizeWinners($data['winners'] ?? null);

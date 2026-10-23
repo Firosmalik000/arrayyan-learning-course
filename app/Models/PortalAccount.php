@@ -61,6 +61,11 @@ class PortalAccount extends Authenticatable
         return $this->belongsTo(Teacher::class, 'teacher_id');
     }
 
+    public function feedbackSubmissions(): HasMany
+    {
+        return $this->hasMany(FeedbackSubmission::class);
+    }
+
     public function isParent(): bool
     {
         return in_array($this->type, [self::TYPE_PARENT, self::TYPE_STUDENT], true);

@@ -42,6 +42,7 @@ class RolePermissionSeeder extends Seeder
                     'akademik' => ['view', 'create', 'edit', 'delete', 'export'],
                     'pelajar' => ['view', 'create', 'edit', 'delete'],
                     'pengajar' => ['view', 'create', 'edit', 'delete'],
+                    'kritik-saran' => ['view', 'edit'],
                 ]),
             ],
             'editor' => [
@@ -59,6 +60,7 @@ class RolePermissionSeeder extends Seeder
                     'akademik' => ['view'],
                     'pelajar' => ['view'],
                     'pengajar' => ['view'],
+                    'kritik-saran' => ['view'],
                 ]),
             ],
         ];

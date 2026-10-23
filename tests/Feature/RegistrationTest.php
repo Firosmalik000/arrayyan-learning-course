@@ -6,6 +6,7 @@ use App\Mail\StudentRegistrationReceivedMail;
 use App\Mail\TeacherRegistrationApprovedExistingAccountMail;
 use App\Mail\TeacherRegistrationApprovedNewAccountMail;
 use App\Mail\TeacherRegistrationReceivedMail;
+use App\Models\EducationLevel;
 use App\Models\NotificationLog;
 use App\Models\PortalAccount;
 use App\Models\Program;
@@ -63,6 +64,27 @@ class RegistrationTest extends TestCase
             ->has('programs', 1)
             ->where('programs.0.name', 'Reguler')
             ->where('programs.0.duration', '60 menit / sesi')
+        );
+    }
+
+    public function test_public_teacher_registration_uses_master_levels_and_existing_teacher_educations(): void
+    {
+        EducationLevel::query()->update(['is_active' => false]);
+        EducationLevel::query()->updateOrCreate(['name' => 'SD / MI'], ['sort_order' => 20, 'is_active' => true]);
+        EducationLevel::query()->updateOrCreate(['name' => 'TK / RA'], ['sort_order' => 10, 'is_active' => true]);
+        EducationLevel::query()->create(['name' => 'Jenjang Nonaktif', 'sort_order' => 5, 'is_active' => false]);
+
+        Teacher::query()->create(['name' => 'Guru S2', 'education' => 'S2 Pendidikan', 'subjects' => 'IPA']);
+        Teacher::query()->create(['name' => 'Guru S1', 'education' => 'S1 Pendidikan', 'subjects' => 'Matematika']);
+        Teacher::query()->create(['name' => 'Guru S1 Lain', 'education' => 'S1 Pendidikan', 'subjects' => 'Bahasa Inggris']);
+
+        $response = $this->get(route('register'));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Public/Register', false)
+            ->where('teacherLevelOptions', ['TK / RA', 'SD / MI'])
+            ->where('teacherEducationOptions', ['S1 Pendidikan', 'S2 Pendidikan'])
         );
     }
 

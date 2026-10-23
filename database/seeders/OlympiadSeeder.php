@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Olympiad;
+use App\Support\EducationCatalog;
 use Illuminate\Database\Seeder;
 
 class OlympiadSeeder extends Seeder
@@ -69,6 +70,9 @@ class OlympiadSeeder extends Seeder
         ];
 
         foreach ($olympiads as $olympiad) {
+            $olympiad['education_levels'] = EducationCatalog::extractLevels($olympiad['level']);
+            $olympiad['grades'] = [];
+
             Olympiad::query()->updateOrCreate(
                 ['slug' => $olympiad['slug']],
                 $olympiad,

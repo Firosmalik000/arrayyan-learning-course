@@ -8,7 +8,9 @@ import {
 import AttendanceModal from './components/AttendanceModal';
 import ClassDetailView from './components/ClassDetailView';
 import ClassModal from './components/ClassModal';
+import ClassStatusModal from './components/ClassStatusModal';
 import ClassTable from './components/ClassTable';
+import CompleteMemberModal from './components/CompleteMemberModal';
 import GenerateSessionsModal from './components/GenerateSessionsModal';
 import GradeModal from './components/GradeModal';
 import MemberModal from './components/MemberModal';
@@ -78,6 +80,8 @@ export default function Academic() {
     // Class modal (Create / Edit)
     const [showClassModal, setShowClassModal] = useState(false);
     const [editingClass, setEditingClass] = useState(null);
+    const [statusClass, setStatusClass] = useState(null);
+    const classStatusForm = useForm({ is_active: false });
     const classForm = useForm({
         program_id: '',
         level: '',
@@ -98,6 +102,8 @@ export default function Academic() {
     const [memberChecked, setMemberChecked] = useState([]);
     const [scholarship, setScholarship] = useState(false);
     const [viewingStudent, setViewingStudent] = useState(null);
+    const [completingMember, setCompletingMember] = useState(null);
+    const completeMemberForm = useForm({ deactivate_student: false });
 
     // Schedule modal
     const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -135,9 +141,7 @@ export default function Academic() {
     }, [students, selected, memberSearch]);
 
     const selectAllEligible = () => {
-        const available = eligibleStudents
-            .filter((s) => scholarship || s.has_paid)
-            .map((s) => s.id);
+        const available = eligibleStudents.map((student) => student.id);
 
         if (remainingQuota != null) {
             setMemberChecked(available.slice(0, remainingQuota));
@@ -193,6 +197,31 @@ export default function Academic() {
         });
     };
 
+    const openClassStatusModal = (classGroup) => {
+        classStatusForm.setData('is_active', !classGroup.is_active);
+        classStatusForm.clearErrors();
+        setStatusClass(classGroup);
+    };
+
+    const closeClassStatusModal = () => {
+        if (classStatusForm.processing) return;
+        setStatusClass(null);
+        classStatusForm.clearErrors();
+    };
+
+    const submitClassStatus = (event) => {
+        event.preventDefault();
+        if (!statusClass) return;
+
+        classStatusForm.patch(`/admin/akademik/kelas/${statusClass.id}/status`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setStatusClass(null);
+                classStatusForm.clearErrors();
+            },
+        });
+    };
+
     const confirmDelete = () => {
         if (!deleteModal) return;
         if (deleteModal.kind === 'class') {
@@ -200,17 +229,39 @@ export default function Academic() {
                 preserveScroll: true,
                 onSuccess: () => { setDeleteModal(null); setSelectedClassId(null); },
             });
-        } else if (deleteModal.kind === 'member') {
-            router.delete(`/admin/akademik/anggota/${deleteModal.id}`, {
-                preserveScroll: true,
-                onSuccess: () => setDeleteModal(null),
-            });
         } else if (deleteModal.kind === 'schedule') {
             router.delete(`/admin/akademik/jadwal/${deleteModal.id}`, {
                 preserveScroll: true,
                 onSuccess: () => setDeleteModal(null),
             });
         }
+    };
+
+    const openCompleteMemberModal = (member) => {
+        completeMemberForm.reset();
+        completeMemberForm.clearErrors();
+        setCompletingMember(member);
+    };
+
+    const closeCompleteMemberModal = () => {
+        if (completeMemberForm.processing) return;
+        setCompletingMember(null);
+        completeMemberForm.reset();
+        completeMemberForm.clearErrors();
+    };
+
+    const submitCompleteMember = (event) => {
+        event.preventDefault();
+        if (!completingMember) return;
+
+        completeMemberForm.patch(`/admin/akademik/anggota/${completingMember.id}/selesaikan`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setCompletingMember(null);
+                completeMemberForm.reset();
+                completeMemberForm.clearErrors();
+            },
+        });
     };
 
     // Member handlers
@@ -277,13 +328,12 @@ export default function Academic() {
         }, { preserveScroll: true, ...callbacks });
     };
 
-    const handleGenerateSessions = (startDate, count, dates) => {
+    const handleGenerateSessions = (month, dates, callbacks = {}) => {
         if (!selected) return;
         router.post(`/admin/akademik/kelas/${selected.id}/generate-pertemuan`, {
-            start_date: startDate,
-            count: count,
-            dates: dates,
-        }, { preserveScroll: true });
+            month,
+            dates,
+        }, { preserveScroll: true, ...callbacks });
     };
 
     // Grade handlers
@@ -327,6 +377,7 @@ export default function Academic() {
                             canDelete={canDelete}
                             onSelectClass={(cls) => setSelectedClassId(cls.id)}
                             onEditClass={(cls) => openClassModal(cls)}
+                            onToggleStatus={openClassStatusModal}
                             onDeleteClass={(cls) => setDeleteModal({ kind: 'class', id: cls.id, name: cls.name })}
                             onAddClass={() => openClassModal()}
                         />
@@ -341,9 +392,10 @@ export default function Academic() {
                         canExport={canExport}
                         onBack={() => setSelectedClassId(null)}
                         onEditClass={() => openClassModal(selected)}
+                        onToggleStatus={() => openClassStatusModal(selected)}
                         onDeleteClass={() => setDeleteModal({ kind: 'class', id: selected.id, name: selected.name })}
                         onOpenMemberModal={openMemberModal}
-                        onRemoveMember={(m) => setDeleteModal({ kind: 'member', id: m.id, name: m.student_name })}
+                        onCompleteMember={openCompleteMemberModal}
                         onViewStudentDetail={setViewingStudent}
                         onOpenScheduleModal={() => openScheduleModal(null)}
                         onEditSchedule={(sch) => openScheduleModal(sch)}
@@ -365,6 +417,13 @@ export default function Academic() {
                 programs={programs}
                 teachers={teachers}
                 onSubmit={saveClass}
+            />
+
+            <ClassStatusModal
+                classGroup={statusClass}
+                form={classStatusForm}
+                onClose={closeClassStatusModal}
+                onSubmit={submitClassStatus}
             />
 
             <MemberModal
@@ -392,6 +451,15 @@ export default function Academic() {
                 member={viewingStudent}
                 className={selected?.name}
                 classAttendances={selected?.attendances ?? []}
+                canEdit={canEdit && !!selected?.is_active}
+            />
+
+            <CompleteMemberModal
+                member={completingMember}
+                className={selected?.name}
+                form={completeMemberForm}
+                onClose={closeCompleteMemberModal}
+                onSubmit={submitCompleteMember}
             />
 
             <ScheduleModal
@@ -436,11 +504,9 @@ export default function Academic() {
                 isOpen={!!deleteModal}
                 onClose={() => setDeleteModal(null)}
                 title="Konfirmasi Hapus"
-                message={deleteModal?.kind === 'class' ? (
-                    <>Hapus kelas <span className="font-semibold text-slate-800">{deleteModal?.name}</span> beserta seluruh jadwal, absensi, dan nilainya?</>
-                ) : (
-                    <>Hapus <span className="font-semibold text-slate-800">{deleteModal?.name}</span>?</>
-                )}
+                message={deleteModal?.kind === 'class'
+                    ? <>Hapus kelas <span className="font-semibold text-slate-800">{deleteModal?.name}</span> beserta seluruh jadwal, absensi, dan nilainya?</>
+                    : <>Hapus <span className="font-semibold text-slate-800">{deleteModal?.name}</span>?</>}
                 onConfirm={confirmDelete}
             />
         </>

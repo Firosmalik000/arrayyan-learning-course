@@ -1,4 +1,34 @@
+import { useForm } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import { Modal, StatusBadge } from '@/Components/Admin';
+
+const toInputDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+};
+
+const nextPeriodDefaults = (periods = []) => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+
+    if (periods.length > 0) {
+        const latestEnd = new Date(`${periods[0].end_date}T00:00:00`);
+        if (latestEnd >= start) {
+            start.setTime(latestEnd.getTime());
+            start.setDate(start.getDate() + 1);
+        }
+    }
+
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+
+    return {
+        start_date: toInputDate(start),
+        end_date: toInputDate(end),
+    };
+};
 
 export default function StudentDetailModal({
     show,
@@ -6,7 +36,29 @@ export default function StudentDetailModal({
     member,
     className,
     classAttendances = [],
+    canEdit = false,
 }) {
+    const [showPeriodForm, setShowPeriodForm] = useState(false);
+    const periodForm = useForm({
+        start_date: '',
+        end_date: '',
+        session_limit: 4,
+        notes: '',
+    });
+
+    useEffect(() => {
+        if (!show || !member) return;
+
+        const defaults = nextPeriodDefaults(member.periods ?? []);
+        periodForm.setData({
+            ...defaults,
+            session_limit: member.student?.package_sessions ?? member.target_sessions ?? 4,
+            notes: '',
+        });
+        periodForm.clearErrors();
+        setShowPeriodForm(false);
+    }, [show, member?.id]);
+
     if (!member) return null;
 
     const student = member.student || {};
@@ -26,6 +78,18 @@ export default function StudentDetailModal({
     const attSakit = studentAtts.filter((a) => a.status === 'sakit').length;
     const attAlpa = studentAtts.filter((a) => a.status === 'alpa').length;
     const attRate = attTotal > 0 ? Math.round((attHadir / attTotal) * 100) : null;
+    const periods = member.periods ?? [];
+
+    const submitPeriod = (event) => {
+        event.preventDefault();
+        periodForm.post(`/admin/akademik/anggota/${member.id}/periode`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setShowPeriodForm(false);
+                onClose();
+            },
+        });
+    };
 
     return (
         <Modal
@@ -36,7 +100,7 @@ export default function StudentDetailModal({
         >
             <div className="space-y-6">
                 {/* Header Profile Card */}
-                <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-violet-50 to-indigo-50/50 p-4 border border-violet-100/80 sm:flex-row sm:items-center">
+                <div className="flex flex-col gap-4 rounded-2xl border border-violet-100/80 bg-violet-50 p-4 sm:flex-row sm:items-center">
                     <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-primary font-bold text-xl text-white shadow-md shadow-brand-primary/20">
                         {member.student_name ? member.student_name.charAt(0).toUpperCase() : 'M'}
                     </div>
@@ -56,7 +120,7 @@ export default function StudentDetailModal({
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 sm:self-start">
                         <StatusBadge tone={member.status === 'active' ? 'emerald' : 'slate'}>
-                            {member.status === 'active' ? 'Aktif' : member.status}
+                            {member.status === 'active' ? 'Aktif' : member.status === 'graduated' ? 'Selesai' : member.status === 'moved' ? 'Pindah' : member.status}
                         </StatusBadge>
                         {member.is_scholarship ? (
                             <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
@@ -180,6 +244,114 @@ export default function StudentDetailModal({
                         <div className="mt-2 pt-2 border-t border-slate-200/60 text-xs">
                             <span className="text-slate-500">Catatan Khusus Pelajar: </span>
                             <span className="italic text-slate-700">{student.notes}</span>
+                        </div>
+                    )}
+                </div>
+
+                <div className="space-y-3 rounded-xl border border-violet-100 bg-violet-50/40 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h5 className="text-xs font-bold uppercase tracking-wider text-violet-700">
+                                Periode Les
+                            </h5>
+                        </div>
+                        {canEdit && member.status === 'active' && (
+                            <button
+                                type="button"
+                                onClick={() => setShowPeriodForm((current) => !current)}
+                                className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-violet-700"
+                            >
+                                {showPeriodForm ? 'Batal' : '+ Tambah Periode'}
+                            </button>
+                        )}
+                    </div>
+
+                    {showPeriodForm && (
+                        <form onSubmit={submitPeriod} className="space-y-3 rounded-xl border border-violet-200 bg-white p-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                <label className="space-y-1 text-xs font-medium text-slate-600">
+                                    <span>Tanggal Mulai</span>
+                                    <input
+                                        type="date"
+                                        value={periodForm.data.start_date}
+                                        onChange={(event) => periodForm.setData('start_date', event.target.value)}
+                                        className="w-full rounded-lg border-slate-200 text-xs focus:border-violet-400 focus:ring-violet-400"
+                                        required
+                                    />
+                                    {periodForm.errors.start_date && <span className="block text-rose-600">{periodForm.errors.start_date}</span>}
+                                </label>
+                                <label className="space-y-1 text-xs font-medium text-slate-600">
+                                    <span>Tanggal Selesai</span>
+                                    <input
+                                        type="date"
+                                        value={periodForm.data.end_date}
+                                        onChange={(event) => periodForm.setData('end_date', event.target.value)}
+                                        className="w-full rounded-lg border-slate-200 text-xs focus:border-violet-400 focus:ring-violet-400"
+                                        required
+                                    />
+                                    {periodForm.errors.end_date && <span className="block text-rose-600">{periodForm.errors.end_date}</span>}
+                                </label>
+                                <label className="space-y-1 text-xs font-medium text-slate-600">
+                                    <span>Kuota Pertemuan</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="100"
+                                        value={periodForm.data.session_limit}
+                                        onChange={(event) => periodForm.setData('session_limit', event.target.value)}
+                                        className="w-full rounded-lg border-slate-200 text-xs focus:border-violet-400 focus:ring-violet-400"
+                                        required
+                                    />
+                                    {periodForm.errors.session_limit && <span className="block text-rose-600">{periodForm.errors.session_limit}</span>}
+                                </label>
+                            </div>
+                            <label className="block space-y-1 text-xs font-medium text-slate-600">
+                                <span>Catatan (opsional)</span>
+                                <input
+                                    type="text"
+                                    value={periodForm.data.notes}
+                                    onChange={(event) => periodForm.setData('notes', event.target.value)}
+                                    className="w-full rounded-lg border-slate-200 text-xs focus:border-violet-400 focus:ring-violet-400"
+                                    placeholder="Contoh: Perpanjangan paket November"
+                                />
+                                {periodForm.errors.notes && <span className="block text-rose-600">{periodForm.errors.notes}</span>}
+                            </label>
+                            <div className="flex justify-end">
+                                <button
+                                    type="submit"
+                                    disabled={periodForm.processing}
+                                    className="rounded-lg bg-violet-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {periodForm.processing ? 'Menyimpan...' : 'Simpan & Generate Absensi'}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
+                    {periods.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-violet-200 bg-white/70 p-3 text-xs text-slate-500">
+                            Belum ada periode.
+                        </div>
+                    ) : (
+                        <div className="grid gap-2 sm:grid-cols-2">
+                            {periods.map((period) => (
+                                <div key={period.id} className="rounded-lg border border-violet-100 bg-white p-3 text-xs">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="font-semibold text-slate-800">
+                                            {period.start_date} — {period.end_date}
+                                        </div>
+                                        <StatusBadge tone={period.status === 'active' ? 'emerald' : period.status === 'upcoming' ? 'blue' : 'slate'}>
+                                            {period.status === 'active' ? 'Aktif' : period.status === 'upcoming' ? 'Akan Datang' : 'Selesai'}
+                                        </StatusBadge>
+                                    </div>
+                                    <div className="flex flex-wrap gap-3 pt-2 text-slate-500">
+                                        <span>Kuota: <strong className="text-slate-700">{period.session_limit}</strong></span>
+                                        <span>Terjadwal: <strong className="text-slate-700">{period.scheduled_sessions}</strong></span>
+                                        <span>Tercatat: <strong className="text-slate-700">{period.attended_sessions}</strong></span>
+                                    </div>
+                                    {period.notes && <p className="pt-2 text-slate-500">{period.notes}</p>}
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>

@@ -1,68 +1,166 @@
-import { Link, usePage, router } from '@inertiajs/react';
-import { useMemo, useState, useRef, useEffect } from 'react';
-import ToastContainer from '@/Components/Toast';
+import { Link, usePage, router } from "@inertiajs/react";
+import { useMemo, useState, useRef, useEffect } from "react";
+import ToastContainer from "@/Components/Toast";
 
-const getMenu = (pendingCounts, allowedMenus) => {
-    const isAllowed = (menuId) => !allowedMenus || allowedMenus.includes(menuId);
+const getMenu = (pendingCounts, pendingFeedbackCount, allowedMenus) => {
+    const isAllowed = (menuId) =>
+        !allowedMenus || allowedMenus.includes(menuId);
 
     const menu = [
-        { href: '/admin', label: 'Dashboard', icon: 'dashboard', menuId: 'dashboard' },
         {
-            label: 'Content',
-            icon: 'layout',
-            children: [
-                { href: '/admin/landing', label: 'Landing Page', icon: 'layout', menuId: 'landing' },
-                { href: '/admin/konten', label: 'Konten (Blog/FAQ)', icon: 'book', menuId: 'konten' },
-                { href: '/admin/seo', label: 'SEO', icon: 'search', menuId: 'seo' },
-            ],
+            href: "/admin",
+            label: "Dashboard",
+            icon: "dashboard",
+            menuId: "dashboard",
         },
         {
-            label: 'Master Data',
-            icon: 'database',
-            children: [
-                { href: '/admin/program', label: 'Program', icon: 'book', menuId: 'program' },
-                { href: '/admin/bank-soal', label: 'Bank Soal', icon: 'layers', menuId: 'bank-soal' },
-                { href: '/admin/olimpiade', label: 'Olimpiade', icon: 'trophy', menuId: 'olimpiade' },
-                { href: '/admin/olimpiade/pendaftaran', label: 'Pendaftar Lomba', icon: 'users', menuId: 'olimpiade' },
-            ],
-        },
-        {
-            label: 'Internal Management',
-            icon: 'users',
+            label: "Content",
+            icon: "layout",
             children: [
                 {
-                    href: '/admin/pendaftaran/pelajar',
-                    label: 'Pendaftaran Pelajar',
-                    icon: 'users',
-                    menuId: 'pendaftaran',
-                    badge: pendingCounts?.student > 0 ? String(pendingCounts.student) : null,
+                    href: "/admin/landing",
+                    label: "Landing Page",
+                    icon: "layout",
+                    menuId: "landing",
                 },
                 {
-                    href: '/admin/pendaftaran/pengajar',
-                    label: 'Pendaftaran Pengajar',
-                    icon: 'user',
-                    menuId: 'pendaftaran',
-                    badge: pendingCounts?.teacher > 0 ? String(pendingCounts.teacher) : null,
+                    href: "/admin/konten",
+                    label: "Konten (Blog/FAQ)",
+                    icon: "book",
+                    menuId: "konten",
                 },
-                { href: '/admin/pelajar', label: 'Pelajar', icon: 'users', menuId: 'pelajar' },
-                { href: '/admin/pengajar', label: 'Pengajar', icon: 'user', menuId: 'pengajar' },
-                { href: '/admin/keuangan', label: 'Keuangan', icon: 'wallet', menuId: 'keuangan' },
+                {
+                    href: "/admin/seo",
+                    label: "SEO",
+                    icon: "search",
+                    menuId: "seo",
+                },
             ],
         },
         {
-            label: 'Akademik',
-            icon: 'academic',
+            label: "Master Data",
+            icon: "database",
             children: [
-                { href: '/admin/akademik', label: 'Kelas & Jadwal', icon: 'academic', menuId: 'akademik' },
+                {
+                    href: "/admin/program",
+                    label: "Program",
+                    icon: "book",
+                    menuId: "program",
+                },
+                {
+                    href: "/admin/master-pendidikan",
+                    label: "Jenjang, Kelas & Mapel",
+                    icon: "academic",
+                    menuId: "bank-soal",
+                },
+                {
+                    href: "/admin/bank-soal",
+                    label: "Bank Soal",
+                    icon: "layers",
+                    menuId: "bank-soal",
+                },
+                {
+                    href: "/admin/olimpiade",
+                    label: "Olimpiade",
+                    icon: "trophy",
+                    menuId: "olimpiade",
+                },
+                {
+                    href: "/admin/olimpiade/pendaftaran",
+                    label: "Pendaftar Lomba",
+                    icon: "users",
+                    menuId: "olimpiade",
+                },
             ],
         },
         {
-            label: 'Administrator',
-            icon: 'shield',
+            label: "Manajemen",
+            icon: "users",
             children: [
-                { href: '/admin/akses-menu', label: 'Akses Menu', icon: 'key', menuId: 'akses-menu' },
-                { href: '/admin/roles', label: 'Role', icon: 'badge', menuId: 'roles' },
-                { href: '/admin/users', label: 'User', icon: 'users', menuId: 'users' },
+                {
+                    href: "/admin/pendaftaran/pelajar",
+                    label: "Pendaftaran Pelajar",
+                    icon: "users",
+                    menuId: "pendaftaran",
+                    badge:
+                        pendingCounts?.student > 0
+                            ? String(pendingCounts.student)
+                            : null,
+                },
+                {
+                    href: "/admin/pendaftaran/pengajar",
+                    label: "Pendaftaran Pengajar",
+                    icon: "user",
+                    menuId: "pendaftaran",
+                    badge:
+                        pendingCounts?.teacher > 0
+                            ? String(pendingCounts.teacher)
+                            : null,
+                },
+                {
+                    href: "/admin/pelajar",
+                    label: "Pelajar",
+                    icon: "users",
+                    menuId: "pelajar",
+                },
+                {
+                    href: "/admin/pengajar",
+                    label: "Pengajar",
+                    icon: "user",
+                    menuId: "pengajar",
+                },
+                {
+                    href: "/admin/keuangan",
+                    label: "Keuangan",
+                    icon: "wallet",
+                    menuId: "keuangan",
+                },
+                {
+                    href: "/admin/kritik-saran",
+                    label: "Kritik & Saran",
+                    icon: "message",
+                    menuId: "kritik-saran",
+                    badge:
+                        pendingFeedbackCount > 0
+                            ? String(Math.min(pendingFeedbackCount, 99))
+                            : null,
+                },
+            ],
+        },
+        {
+            label: "Akademik",
+            icon: "academic",
+            children: [
+                {
+                    href: "/admin/akademik",
+                    label: "Kelas & Jadwal",
+                    icon: "academic",
+                    menuId: "akademik",
+                },
+            ],
+        },
+        {
+            label: "Administrator",
+            icon: "shield",
+            children: [
+                {
+                    href: "/admin/akses-menu",
+                    label: "Akses Menu",
+                    icon: "key",
+                    menuId: "akses-menu",
+                },
+                {
+                    href: "/admin/roles",
+                    label: "Role",
+                    icon: "badge",
+                    menuId: "roles",
+                },
+                {
+                    href: "/admin/users",
+                    label: "User",
+                    icon: "users",
+                    menuId: "users",
+                },
             ],
         },
     ];
@@ -72,7 +170,9 @@ const getMenu = (pendingCounts, allowedMenus) => {
             return isAllowed(item.menuId) ? [item] : [];
         }
 
-        const children = item.children.filter((child) => isAllowed(child.menuId));
+        const children = item.children.filter((child) =>
+            isAllowed(child.menuId),
+        );
         if (children.length === 0) {
             return [];
         }
@@ -81,9 +181,8 @@ const getMenu = (pendingCounts, allowedMenus) => {
     });
 };
 
-const getFlatMenu = (menu) => menu.flatMap((item) =>
-    item.children ? item.children : [item]
-);
+const getFlatMenu = (menu) =>
+    menu.flatMap((item) => (item.children ? item.children : [item]));
 
 const icons = {
     dashboard: (
@@ -277,6 +376,21 @@ const icons = {
             <circle cx="17" cy="14" r="1" fill="currentColor" stroke="none" />
         </svg>
     ),
+    message: (
+        <svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+        >
+            <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z" />
+            <path d="M8 9h8M8 13h5" />
+        </svg>
+    ),
     logout: (
         <svg
             viewBox="0 0 24 24"
@@ -442,24 +556,37 @@ export default function AdminLayout({ children }) {
         student: pendingRegistrationCount,
         teacher: 0,
     };
+    const pendingFeedbackCount = props.pendingFeedbackCount ?? 0;
     const allowedMenus = props.allowedMenus ?? null;
     const impersonation = props.impersonation ?? { active: false };
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const profileRef = useRef(null);
 
-    const user = props.auth?.user || { name: 'Admin ALC', email: 'admin@alclearning.id' };
+    const user = props.auth?.user || {
+        name: "Admin ALC",
+        email: "admin@alclearning.id",
+    };
 
-    const menu = useMemo(() => getMenu(pendingRegistrationCounts, allowedMenus), [
-        pendingRegistrationCounts?.total,
-        pendingRegistrationCounts?.student,
-        pendingRegistrationCounts?.teacher,
-        allowedMenus ? allowedMenus.join('|') : 'all',
-    ]);
+    const menu = useMemo(
+        () =>
+            getMenu(
+                pendingRegistrationCounts,
+                pendingFeedbackCount,
+                allowedMenus,
+            ),
+        [
+            pendingRegistrationCounts?.total,
+            pendingRegistrationCounts?.student,
+            pendingRegistrationCounts?.teacher,
+            pendingFeedbackCount,
+            allowedMenus ? allowedMenus.join("|") : "all",
+        ],
+    );
     const flatMenu = useMemo(() => getFlatMenu(menu), [menu]);
     const groupLabels = useMemo(
         () => menu.filter((item) => item.children).map((item) => item.label),
-        [menu]
+        [menu],
     );
 
     // Initial state: only expand the group that contains the current active URL
@@ -467,7 +594,9 @@ export default function AdminLayout({ children }) {
         const initial = {};
         menu.forEach((item) => {
             if (item.children) {
-                const isGroupActive = item.children.some((child) => child.href === url);
+                const isGroupActive = item.children.some(
+                    (child) => child.href === url,
+                );
                 initial[item.label] = isGroupActive;
             }
         });
@@ -477,7 +606,7 @@ export default function AdminLayout({ children }) {
     // Automatically expand the group containing the active page on navigation
     useEffect(() => {
         const activeGroup = menu.find((item) =>
-            item.children?.some((child) => child.href === url)
+            item.children?.some((child) => child.href === url),
         );
         if (activeGroup) {
             setOpenGroups((prev) => ({
@@ -490,20 +619,24 @@ export default function AdminLayout({ children }) {
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (profileRef.current && !profileRef.current.contains(event.target)) {
+            if (
+                profileRef.current &&
+                !profileRef.current.contains(event.target)
+            ) {
                 setIsProfileOpen(false);
             }
         };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     const handleLogout = () => {
-        router.post('/logout');
+        router.post("/logout");
     };
 
     const handleStopImpersonate = () => {
-        router.post('/admin/impersonate/stop');
+        router.post("/admin/impersonate/stop");
     };
 
     return (
@@ -513,17 +646,30 @@ export default function AdminLayout({ children }) {
                 <aside className="hidden md:flex fixed inset-y-0 left-0 z-30 w-64 flex-col border-r border-slate-200/60 bg-white/95 backdrop-blur-xl h-screen">
                     {/* Sidebar Header */}
                     <div className="shrink-0 border-b border-slate-100 px-4 py-3.5">
-                        <Link href="/admin" className="flex items-center gap-2.5 group">
+                        <Link
+                            href="/admin"
+                            className="flex items-center gap-2.5 group"
+                        >
                             {appLogo ? (
-                                <img src={appLogo} alt="Logo" className="h-9 w-9 rounded-xl object-contain shadow-brand transition-transform group-hover:scale-105" />
+                                <img
+                                    src={appLogo}
+                                    alt="Logo"
+                                    className="h-9 w-9 rounded-xl object-contain shadow-brand transition-transform group-hover:scale-105"
+                                />
                             ) : (
                                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-gradient text-white shadow-brand transition-transform group-hover:scale-105">
-                                    <span className="text-xs font-bold tracking-wide">ALC</span>
+                                    <span className="text-xs font-bold tracking-wide">
+                                        ALC
+                                    </span>
                                 </div>
                             )}
                             <div>
-                                <p className="text-xs font-bold text-slate-800">Admin Console</p>
-                                <p className="text-[11px] font-semibold text-brand-primary">Ar Rayyan LC</p>
+                                <p className="text-xs font-bold text-slate-800">
+                                    Admin Console
+                                </p>
+                                <p className="text-[11px] font-semibold text-brand-primary">
+                                    Ar Rayyan LC
+                                </p>
                             </div>
                         </Link>
                     </div>
@@ -538,26 +684,34 @@ export default function AdminLayout({ children }) {
                                         <Link
                                             key={item.href}
                                             href={item.href}
-                                            className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition-all ${
+                                            className={`flex items-center justify-between rounded-xl px-3 py-2 transition-all ${
                                                 isActive
-                                                    ? 'bg-brand-gradient text-white shadow-md shadow-brand'
-                                                    : 'text-slate-600 hover:bg-slate-50'
+                                                    ? "bg-brand-gradient text-white shadow-md shadow-brand"
+                                                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                                             }`}
                                         >
-                                            <span className="flex items-center gap-3">
-                                                <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                                                    isActive
-                                                        ? 'bg-white/20 text-white'
-                                                        : 'bg-slate-100 text-slate-500'
-                                                }`}>
+                                            <span className="flex items-center gap-2.5 min-w-0">
+                                                <span
+                                                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                                                        isActive
+                                                            ? "bg-white/20 text-white"
+                                                            : "bg-slate-100 text-slate-500"
+                                                    }`}
+                                                >
                                                     {icons[item.icon]}
                                                 </span>
-                                                <span className="text-sm font-medium">{item.label}</span>
+                                                <span className="text-xs font-bold tracking-wide truncate">
+                                                    {item.label}
+                                                </span>
                                             </span>
                                             {item.badge && (
-                                                <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                                                    isActive ? 'bg-white/20 text-white' : 'bg-brand-secondary-soft text-brand-secondary'
-                                                }`}>
+                                                <span
+                                                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                                        isActive
+                                                            ? "bg-white/20 text-white"
+                                                            : "bg-brand-secondary-soft text-brand-secondary"
+                                                    }`}
+                                                >
                                                     {item.badge}
                                                 </span>
                                             )}
@@ -565,60 +719,92 @@ export default function AdminLayout({ children }) {
                                     );
                                 }
 
-                                const isGroupActive = item.children.some((child) => child.href === url);
-                                const isGroupOpen = openGroups[item.label] ?? isGroupActive;
+                                const isGroupActive = item.children.some(
+                                    (child) => child.href === url,
+                                );
+                                const isGroupOpen =
+                                    openGroups[item.label] ?? isGroupActive;
 
                                 return (
-                                    <div key={item.label} className="rounded-2xl transition-colors">
+                                    <div
+                                        key={item.label}
+                                        className="rounded-2xl transition-colors"
+                                    >
                                         <button
                                             type="button"
-                                            onClick={() => setOpenGroups((prev) => ({
-                                                ...prev,
-                                                [item.label]: !isGroupOpen,
-                                            }))}
-                                            className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider transition ${
-                                                isGroupActive ? 'text-brand-primary bg-violet-50/70' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                                            onClick={() =>
+                                                setOpenGroups((prev) => ({
+                                                    ...prev,
+                                                    [item.label]: !isGroupOpen,
+                                                }))
+                                            }
+                                            className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-bold tracking-wide transition ${
+                                                isGroupActive
+                                                    ? "text-brand-primary bg-violet-50/70"
+                                                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                                             }`}
                                         >
-                                            <span className="flex items-center gap-2.5">
-                                                <span className={`flex h-6 w-6 items-center justify-center rounded-md ${
-                                                    isGroupActive ? 'bg-brand-soft text-brand-primary' : 'bg-slate-100 text-slate-400'
-                                                }`}>
+                                            <span className="flex items-center gap-2.5 min-w-0">
+                                                <span
+                                                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                                                        isGroupActive
+                                                            ? "bg-brand-soft text-brand-primary"
+                                                            : "bg-slate-100 text-slate-400"
+                                                    }`}
+                                                >
                                                     {icons[item.icon]}
                                                 </span>
-                                                <span>{item.label}</span>
+                                                <span className="truncate">{item.label}</span>
                                             </span>
-                                            <span className={`text-slate-400 transition-transform duration-200 ${isGroupOpen ? 'rotate-180' : ''}`}>
+                                            <span
+                                                className={`shrink-0 text-slate-400 transition-transform duration-200 ${isGroupOpen ? "rotate-180" : ""}`}
+                                            >
                                                 {icons.chevronDown}
                                             </span>
                                         </button>
-                                        <div className={`mt-1 space-y-0.5 pl-3 border-l-2 border-slate-100 ml-4 transition-all ${isGroupOpen ? 'block' : 'hidden'}`}>
+                                        <div
+                                            className={`mt-1 space-y-0.5 pl-3 border-l-2 border-slate-100 ml-4 transition-all ${isGroupOpen ? "block" : "hidden"}`}
+                                        >
                                             {item.children.map((child) => {
-                                                const isActive = url === child.href;
+                                                const isActive =
+                                                    url === child.href;
                                                 return (
                                                     <Link
                                                         key={child.href}
                                                         href={child.href}
-                                                        className={`flex items-center justify-between rounded-xl px-3 py-2 transition-all ${
+                                                        className={`flex items-center justify-between rounded-xl px-2.5 py-1.5 transition-all ${
                                                             isActive
-                                                                ? 'bg-brand-gradient text-white shadow-xs'
-                                                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                                                ? "bg-brand-gradient text-white shadow-xs"
+                                                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                                                         }`}
                                                     >
-                                                        <span className="flex items-center gap-2.5">
-                                                            <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                                                                isActive
-                                                                    ? 'bg-white/20 text-white'
-                                                                    : 'bg-slate-100 text-slate-400'
-                                                            }`}>
-                                                                {icons[child.icon]}
+                                                        <span className="flex items-center gap-2 min-w-0">
+                                                            <span
+                                                                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${
+                                                                    isActive
+                                                                        ? "bg-white/20 text-white"
+                                                                        : "bg-slate-100 text-slate-400"
+                                                                }`}
+                                                            >
+                                                                {
+                                                                    icons[
+                                                                        child
+                                                                            .icon
+                                                                    ]
+                                                                }
                                                             </span>
-                                                            <span className="text-xs font-semibold">{child.label}</span>
+                                                            <span className="text-xs font-medium truncate">
+                                                                {child.label}
+                                                            </span>
                                                         </span>
                                                         {child.badge && (
-                                                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                                                isActive ? 'bg-white/20 text-white' : 'bg-brand-secondary-soft text-brand-secondary'
-                                                            }`}>
+                                                            <span
+                                                                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                                                    isActive
+                                                                        ? "bg-white/20 text-white"
+                                                                        : "bg-brand-secondary-soft text-brand-secondary"
+                                                                }`}
+                                                            >
                                                                 {child.badge}
                                                             </span>
                                                         )}
@@ -658,10 +844,20 @@ export default function AdminLayout({ children }) {
                                             Mode Impersonate
                                         </span>
                                         <span className="text-amber-700">
-                                            Masuk sebagai <span className="font-semibold">{user.name}</span>
-                                            {impersonation.impersonator?.name && (
+                                            Masuk sebagai{" "}
+                                            <span className="font-semibold">
+                                                {user.name}
+                                            </span>
+                                            {impersonation.impersonator
+                                                ?.name && (
                                                 <span className="text-amber-600">
-                                                    {' '}({impersonation.impersonator.name})
+                                                    {" "}
+                                                    (
+                                                    {
+                                                        impersonation
+                                                            .impersonator.name
+                                                    }
+                                                    )
                                                 </span>
                                             )}
                                         </span>
@@ -691,10 +887,16 @@ export default function AdminLayout({ children }) {
                                 {/* Breadcrumb / Title */}
                                 <div className="hidden sm:block">
                                     <div className="flex items-center gap-1.5 text-xs">
-                                        <span className="text-slate-400">Admin</span>
-                                        <span className="text-slate-300">/</span>
+                                        <span className="text-slate-400">
+                                            Admin
+                                        </span>
+                                        <span className="text-slate-300">
+                                            /
+                                        </span>
                                         <span className="font-semibold text-slate-700">
-                                            {flatMenu.find((item) => item.href === url)?.label || 'Dashboard'}
+                                            {flatMenu.find(
+                                                (item) => item.href === url,
+                                            )?.label || "Dashboard"}
                                         </span>
                                     </div>
                                 </div>
@@ -707,13 +909,26 @@ export default function AdminLayout({ children }) {
                                     title="Pusat Notifikasi"
                                     className="relative rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-2xs transition hover:border-brand-soft hover:text-slate-700"
                                 >
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.6"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        aria-hidden="true"
+                                    >
                                         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
                                         <path d="M13.7 21a2 2 0 0 1-3.4 0" />
                                     </svg>
-                                    {(pendingRegistrationCounts?.total ?? 0) > 0 && (
+                                    {(pendingRegistrationCounts?.total ?? 0) >
+                                        0 && (
                                         <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                                            {pendingRegistrationCounts.total > 99 ? '99+' : pendingRegistrationCounts.total}
+                                            {pendingRegistrationCounts.total >
+                                            99
+                                                ? "99+"
+                                                : pendingRegistrationCounts.total}
                                         </span>
                                     )}
                                 </Link>
@@ -722,19 +937,29 @@ export default function AdminLayout({ children }) {
                                 <div className="relative" ref={profileRef}>
                                     <button
                                         type="button"
-                                        onClick={() => setIsProfileOpen(!isProfileOpen)}
+                                        onClick={() =>
+                                            setIsProfileOpen(!isProfileOpen)
+                                        }
                                         className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 shadow-2xs transition hover:border-brand-soft"
                                     >
                                         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-gradient text-white">
                                             <span className="text-xs font-bold">
-                                                {user.name?.charAt(0)?.toUpperCase() || 'A'}
+                                                {user.name
+                                                    ?.charAt(0)
+                                                    ?.toUpperCase() || "A"}
                                             </span>
                                         </div>
                                         <div className="hidden text-left sm:block">
-                                            <p className="text-xs font-bold text-slate-700 leading-tight">{user.name}</p>
-                                            <p className="text-[10px] text-slate-500 leading-tight">{user.email}</p>
+                                            <p className="text-xs font-bold text-slate-700 leading-tight">
+                                                {user.name}
+                                            </p>
+                                            <p className="text-[10px] text-slate-500 leading-tight">
+                                                {user.email}
+                                            </p>
                                         </div>
-                                        <span className={`hidden text-slate-400 transition-transform sm:block ${isProfileOpen ? 'rotate-180' : ''}`}>
+                                        <span
+                                            className={`hidden text-slate-400 transition-transform sm:block ${isProfileOpen ? "rotate-180" : ""}`}
+                                        >
                                             {icons.chevronDown}
                                         </span>
                                     </button>
@@ -743,13 +968,19 @@ export default function AdminLayout({ children }) {
                                     {isProfileOpen && (
                                         <div className="absolute right-0 mt-1.5 w-52 origin-top-right rounded-xl border border-slate-200 bg-white py-1.5 shadow-lg z-30">
                                             <div className="border-b border-slate-100 px-3 py-2 sm:hidden">
-                                                <p className="text-xs font-bold text-slate-700">{user.name}</p>
-                                                <p className="text-[10px] text-slate-500">{user.email}</p>
+                                                <p className="text-xs font-bold text-slate-700">
+                                                    {user.name}
+                                                </p>
+                                                <p className="text-[10px] text-slate-500">
+                                                    {user.email}
+                                                </p>
                                             </div>
                                             <Link
                                                 href="/admin/profile"
                                                 className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-600 transition hover:bg-slate-50"
-                                                onClick={() => setIsProfileOpen(false)}
+                                                onClick={() =>
+                                                    setIsProfileOpen(false)
+                                                }
                                             >
                                                 {icons.profile}
                                                 Profil Saya
@@ -757,7 +988,9 @@ export default function AdminLayout({ children }) {
                                             <Link
                                                 href="/admin/help"
                                                 className="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-600 transition hover:bg-slate-50"
-                                                onClick={() => setIsProfileOpen(false)}
+                                                onClick={() =>
+                                                    setIsProfileOpen(false)
+                                                }
                                             >
                                                 {icons.help}
                                                 Bantuan
@@ -787,12 +1020,14 @@ export default function AdminLayout({ children }) {
                                         href={item.href}
                                         className={`flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition ${
                                             isActive
-                                                ? 'bg-brand-primary text-white shadow-xs'
-                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                ? "bg-brand-primary text-white shadow-xs"
+                                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                                         }`}
                                     >
                                         {icons[item.icon]}
-                                        <span className="whitespace-nowrap">{item.label}</span>
+                                        <span className="whitespace-nowrap">
+                                            {item.label}
+                                        </span>
                                     </Link>
                                 );
                             })}
@@ -800,14 +1035,18 @@ export default function AdminLayout({ children }) {
                     </header>
 
                     {/* Main Content */}
-                    <main className="flex-1 w-full min-w-0 max-w-[96rem] mx-auto p-3 xs:p-4 sm:p-5 lg:p-6">{children}</main>
+                    <main className="flex-1 w-full min-w-0 max-w-[96rem] mx-auto p-3 xs:p-4 sm:p-5 lg:p-6">
+                        {children}
+                    </main>
                 </div>
             </div>
 
             {/* Mobile Sidebar Overlay */}
             <div
                 className={`fixed inset-0 z-50 transition-opacity duration-300 md:hidden ${
-                    isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                    isMobileMenuOpen
+                        ? "opacity-100 pointer-events-auto"
+                        : "opacity-0 pointer-events-none"
                 }`}
             >
                 {/* Backdrop */}
@@ -819,22 +1058,36 @@ export default function AdminLayout({ children }) {
                 {/* Sidebar Panel */}
                 <aside
                     className={`absolute left-0 top-0 h-full w-72 bg-white shadow-2xl transition-transform duration-300 ease-out flex flex-col ${
-                        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+                        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
                     }`}
                 >
                     {/* Mobile Sidebar Header */}
                     <div className="shrink-0 flex items-center justify-between border-b border-slate-100 px-5 py-4">
-                        <Link href="/admin" className="flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
+                        <Link
+                            href="/admin"
+                            className="flex items-center gap-3"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                        >
                             {appLogo ? (
-                                <img src={appLogo} alt="Logo" className="h-10 w-10 rounded-xl object-contain shadow-lg" />
+                                <img
+                                    src={appLogo}
+                                    alt="Logo"
+                                    className="h-10 w-10 rounded-xl object-contain shadow-lg"
+                                />
                             ) : (
                                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-gradient text-white shadow-brand">
-                                    <span className="text-xs font-bold">ALC</span>
+                                    <span className="text-xs font-bold">
+                                        ALC
+                                    </span>
                                 </div>
                             )}
                             <div>
-                                <p className="text-sm font-bold text-slate-800">Admin</p>
-                                <p className="text-xs text-brand-primary">Ar Rayyan Learning</p>
+                                <p className="text-sm font-bold text-slate-800">
+                                    Admin
+                                </p>
+                                <p className="text-xs text-brand-primary">
+                                    Ar Rayyan Learning
+                                </p>
                             </div>
                         </Link>
                         <button
@@ -856,80 +1109,137 @@ export default function AdminLayout({ children }) {
                                         <Link
                                             key={item.href}
                                             href={item.href}
-                                            onClick={() => setIsMobileMenuOpen(false)}
-                                            className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition ${
+                                            onClick={() =>
+                                                setIsMobileMenuOpen(false)
+                                            }
+                                            className={`flex items-center justify-between rounded-xl px-3 py-2 transition ${
                                                 isActive
-                                                    ? 'bg-brand-primary text-white'
-                                                    : 'text-slate-600 hover:bg-slate-50'
+                                                    ? "bg-brand-primary text-white"
+                                                    : "text-slate-600 hover:bg-slate-50"
                                             }`}
                                         >
-                                            <span className="flex items-center gap-3">
-                                                <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                                                    isActive ? 'bg-white/20' : 'bg-slate-100'
-                                                }`}>
+                                            <span className="flex items-center gap-2.5 min-w-0">
+                                                <span
+                                                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                                                        isActive
+                                                            ? "bg-white/20"
+                                                            : "bg-slate-100 text-slate-500"
+                                                    }`}
+                                                >
                                                     {icons[item.icon]}
                                                 </span>
-                                                <span className="text-sm font-medium">{item.label}</span>
+                                                <span className="text-xs font-bold tracking-wide truncate">
+                                                    {item.label}
+                                                </span>
                                             </span>
                                             {item.badge && (
-                                                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                                                    isActive ? 'bg-white/20' : 'bg-brand-secondary-soft text-brand-secondary'
-                                            }`}>
-                                                {item.badge}
-                                            </span>
+                                                <span
+                                                    className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                                                        isActive
+                                                            ? "bg-white/20"
+                                                            : "bg-brand-secondary-soft text-brand-secondary"
+                                                    }`}
+                                                >
+                                                    {item.badge}
+                                                </span>
                                             )}
                                         </Link>
                                     );
                                 }
 
-                                const isGroupActive = item.children.some((child) => child.href === url);
-                                const isGroupOpen = openGroups[item.label] ?? isGroupActive;
+                                const isGroupActive = item.children.some(
+                                    (child) => child.href === url,
+                                );
+                                const isGroupOpen =
+                                    openGroups[item.label] ?? isGroupActive;
 
                                 return (
-                                    <div key={item.label} className="rounded-2xl transition-colors">
+                                    <div
+                                        key={item.label}
+                                        className="rounded-2xl transition-colors"
+                                    >
                                         <button
                                             type="button"
-                                            onClick={() => setOpenGroups((prev) => ({
-                                                ...prev,
-                                                [item.label]: !isGroupOpen,
-                                            }))}
-                                            className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider transition ${
-                                                isGroupActive ? 'text-brand-primary bg-violet-50/70' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                                            onClick={() =>
+                                                setOpenGroups((prev) => ({
+                                                    ...prev,
+                                                    [item.label]: !isGroupOpen,
+                                                }))
+                                            }
+                                            className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-bold tracking-wide transition ${
+                                                isGroupActive
+                                                    ? "text-brand-primary bg-violet-50/70"
+                                                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                                             }`}
                                         >
-                                            <span className="flex-1 text-left">{item.label}</span>
-                                            <span className={`text-slate-400 transition-transform duration-200 ${isGroupOpen ? 'rotate-180' : ''}`}>
+                                            <span className="flex items-center gap-2.5 min-w-0">
+                                                <span
+                                                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                                                        isGroupActive
+                                                            ? "bg-brand-soft text-brand-primary"
+                                                            : "bg-slate-100 text-slate-400"
+                                                    }`}
+                                                >
+                                                    {icons[item.icon]}
+                                                </span>
+                                                <span className="truncate">{item.label}</span>
+                                            </span>
+                                            <span
+                                                className={`shrink-0 text-slate-400 transition-transform duration-200 ${isGroupOpen ? "rotate-180" : ""}`}
+                                            >
                                                 {icons.chevronDown}
                                             </span>
                                         </button>
-                                        <div className={`mt-1 space-y-0.5 pl-3 border-l-2 border-slate-100 ml-4 transition-all ${isGroupOpen ? 'block' : 'hidden'}`}>
+                                        <div
+                                            className={`mt-1 space-y-0.5 pl-3 border-l-2 border-slate-100 ml-4 transition-all ${isGroupOpen ? "block" : "hidden"}`}
+                                        >
                                             {item.children.map((child) => {
-                                                const isActive = url === child.href;
+                                                const isActive =
+                                                    url === child.href;
                                                 return (
                                                     <Link
                                                         key={child.href}
                                                         href={child.href}
-                                                        onClick={() => setIsMobileMenuOpen(false)}
+                                                        onClick={() =>
+                                                            setIsMobileMenuOpen(
+                                                                false,
+                                                            )
+                                                        }
                                                         className={`flex items-center justify-between rounded-xl px-3 py-2 transition ${
                                                             isActive
-                                                            ? 'bg-brand-primary text-white shadow-xs'
-                                                            : 'text-slate-600 hover:bg-slate-50'
-                                                    }`}
-                                                >
+                                                                ? "bg-brand-primary text-white shadow-xs"
+                                                                : "text-slate-600 hover:bg-slate-50"
+                                                        }`}
+                                                    >
                                                         <span className="flex items-center gap-2.5">
-                                                            <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                                                                isActive ? 'bg-white/20' : 'bg-slate-100 text-slate-400'
-                                                            }`}>
-                                                                {icons[child.icon]}
+                                                            <span
+                                                                className={`flex h-7 w-7 items-center justify-center rounded-lg ${
+                                                                    isActive
+                                                                        ? "bg-white/20"
+                                                                        : "bg-slate-100 text-slate-400"
+                                                                }`}
+                                                            >
+                                                                {
+                                                                    icons[
+                                                                        child
+                                                                            .icon
+                                                                    ]
+                                                                }
                                                             </span>
-                                                            <span className="text-xs font-semibold">{child.label}</span>
+                                                            <span className="text-xs font-semibold">
+                                                                {child.label}
+                                                            </span>
                                                         </span>
                                                         {child.badge && (
-                                                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                                                isActive ? 'bg-white/20 text-white' : 'bg-brand-secondary-soft text-brand-secondary'
-                                                        }`}>
-                                                            {child.badge}
-                                                        </span>
+                                                            <span
+                                                                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                                                    isActive
+                                                                        ? "bg-white/20 text-white"
+                                                                        : "bg-brand-secondary-soft text-brand-secondary"
+                                                                }`}
+                                                            >
+                                                                {child.badge}
+                                                            </span>
                                                         )}
                                                     </Link>
                                                 );

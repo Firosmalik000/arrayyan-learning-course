@@ -423,11 +423,7 @@ export default function AttendanceModal({
                                             </span>
                                         </label>
                                     </div>
-                                ) : (
-                                    <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600 ring-1 ring-slate-200">
-                                        Skala pemahaman dan evaluasi tidak diwajibkan karena murid tidak hadir.
-                                    </div>
-                                )}
+                                ) : null}
 
                                 <label className="block space-y-1.5">
                                     <span className="text-xs font-bold text-slate-700">Catatan Kehadiran <span className="font-medium text-slate-400">(opsional)</span></span>
@@ -465,10 +461,7 @@ export default function AttendanceModal({
                             </div>
                         ) : (
                             <div className="flex min-h-80 items-center justify-center text-center">
-                                <div>
-                                    <p className="text-sm font-bold text-slate-800">Belum ada murid aktif</p>
-                                    <p className="mt-1 text-xs text-slate-500">Tambahkan murid ke kelas sebelum mengisi absensi.</p>
-                                </div>
+                                <p className="text-sm font-bold text-slate-800">Belum ada murid aktif</p>
                             </div>
                         )}
                     </main>

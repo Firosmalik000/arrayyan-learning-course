@@ -96,7 +96,6 @@ export default function MemberModal({
                     {eligibleStudents.map((s) => {
                         const checked = memberChecked.includes(s.id);
                         const inProgram = (s.active_program_ids ?? []).includes(selectedProgramId);
-                        const canSelect = scholarship || s.has_paid;
 
                         return (
                             <label
@@ -104,17 +103,14 @@ export default function MemberModal({
                                 className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm transition ${
                                     checked
                                         ? 'border-violet-300 bg-violet-50/80 shadow-sm'
-                                        : !canSelect
-                                          ? 'border-amber-100 bg-amber-50/20 opacity-75'
-                                          : 'border-slate-100 hover:border-violet-200 hover:bg-slate-50'
+                                        : 'border-slate-100 hover:border-violet-200 hover:bg-slate-50'
                                 }`}
                             >
                                 <input
                                     type="checkbox"
                                     checked={checked}
-                                    disabled={!canSelect}
                                     onChange={() => toggleCheck(s.id)}
-                                    className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-400 disabled:opacity-40"
+                                    className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-400"
                                 />
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">

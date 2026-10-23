@@ -12,9 +12,10 @@ export default function ClassDetailView({
     canExport,
     onBack,
     onEditClass,
+    onToggleStatus,
     onDeleteClass,
     onOpenMemberModal,
-    onRemoveMember,
+    onCompleteMember,
     onViewStudentDetail,
     onOpenScheduleModal,
     onEditSchedule,
@@ -67,6 +68,20 @@ export default function ClassDetailView({
                     {canEdit && (
                         <button
                             type="button"
+                            onClick={onToggleStatus}
+                            className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+                                selectedClass.is_active
+                                    ? 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                                    : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                            }`}
+                        >
+                            <span>{selectedClass.is_active ? 'Selesaikan Kelas' : 'Aktifkan Kembali'}</span>
+                        </button>
+                    )}
+
+                    {canEdit && (
+                        <button
+                            type="button"
                             onClick={onEditClass}
                             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition"
                         >
@@ -110,7 +125,7 @@ export default function ClassDetailView({
                                 </span>
                             )}
                             <StatusBadge tone={selectedClass.is_active ? 'emerald' : 'slate'}>
-                                {selectedClass.is_active ? 'Aktif' : 'Nonaktif'}
+                                {selectedClass.is_active ? 'Aktif' : 'Selesai / Nonaktif'}
                             </StatusBadge>
                         </div>
                         <h2 className="font-display text-2xl font-extrabold text-slate-900">
@@ -225,7 +240,7 @@ export default function ClassDetailView({
                         selectedClass={selectedClass}
                         members={activeMembers}
                         attendances={selectedClass.attendances ?? []}
-                        canEdit={canEdit}
+                        canEdit={canEdit && selectedClass.is_active}
                         onOpenAttendanceModal={onOpenAttendanceModal}
                         onOpenGenerateModal={onOpenGenerateModal}
                     />
@@ -235,10 +250,10 @@ export default function ClassDetailView({
                     <MemberSection
                         selected={selectedClass}
                         activeMemberCount={activeMembers.length}
-                        canCreate={canCreate}
-                        canDelete={canDelete}
+                        canCreate={canCreate && selectedClass.is_active}
+                        canEdit={canEdit && selectedClass.is_active}
                         onAdd={onOpenMemberModal}
-                        onRemove={onRemoveMember}
+                        onComplete={onCompleteMember}
                         onViewDetail={onViewStudentDetail}
                         icons={icons}
                     />
@@ -247,9 +262,9 @@ export default function ClassDetailView({
                 {activeTab === 'schedules' && (
                     <ScheduleSection
                         schedules={selectedClass.schedules}
-                        canCreate={canCreate}
-                        canEdit={canEdit}
-                        canDelete={canDelete}
+                        canCreate={canCreate && selectedClass.is_active}
+                        canEdit={canEdit && selectedClass.is_active}
+                        canDelete={canDelete && selectedClass.is_active}
                         onAdd={() => onOpenScheduleModal(null)}
                         onEdit={onOpenScheduleModal}
                         onDelete={onDeleteSchedule}
@@ -264,12 +279,9 @@ export default function ClassDetailView({
                                 <h3 className="text-sm font-bold text-slate-800">
                                     Nilai & Perkembangan Siswa
                                 </h3>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    Catat nilai tugas, ujian, modul, atau perkembangan akademik murid di kelas ini.
-                                </p>
                             </div>
 
-                            {canEdit && activeMembers.length > 0 && (
+                            {canEdit && selectedClass.is_active && activeMembers.length > 0 && (
                                 <button
                                     type="button"
                                     onClick={onOpenGradeModal}

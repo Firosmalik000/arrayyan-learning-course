@@ -6,6 +6,8 @@ use App\Models\BankSoal;
 use App\Models\Olympiad;
 use App\Models\PageContent;
 use App\Models\Program;
+use App\Models\Subject;
+use App\Support\EducationCatalog;
 use Illuminate\Database\Seeder;
 
 class LandingContentSeeder extends Seeder
@@ -663,22 +665,23 @@ class LandingContentSeeder extends Seeder
         }
 
         foreach ($content['bankSoalItems'] ?? [] as $item) {
-            if (! isset($item['slug'])) {
+            $name = $item['name']['id'] ?? null;
+            if (! $name) {
                 continue;
             }
-            BankSoal::updateOrCreate(
-                ['slug' => $item['slug']],
-                [
-                    'name' => $item['name'] ?? ['id' => '', 'en' => ''],
-                    'category' => $item['category'] ?? ['id' => '', 'en' => ''],
-                    'level' => $item['level'] ?? ['id' => '', 'en' => ''],
-                    'format' => $item['format'] ?? null,
-                    'questions' => $item['questions'] ?? 0,
-                    'description' => $item['description'] ?? ['id' => '', 'en' => ''],
-                    'tone' => $item['tone'] ?? 'violet',
-                    'is_active' => true,
-                ],
-            );
+            $subjectName = $item['category']['id'] ?? 'Belum Dikategorikan';
+            $subject = Subject::query()->firstOrCreate(['name' => $subjectName]);
+            $bankSoal = BankSoal::query()->where('name->id', $name)->first() ?? new BankSoal;
+            $bankSoal->fill([
+                'subject_id' => $subject->id,
+                'classification_status' => 'needs_review',
+                'name' => $item['name'],
+                'format' => $item['format'] ?? null,
+                'questions' => $item['questions'] ?? 0,
+                'description' => $item['description'] ?? ['id' => '', 'en' => ''],
+                'tone' => $item['tone'] ?? 'violet',
+                'is_active' => true,
+            ])->save();
         }
 
         foreach ($content['packages'] ?? [] as $package) {
@@ -713,6 +716,8 @@ class LandingContentSeeder extends Seeder
                 ['name' => $name],
                 [
                     'level' => $item['level']['id'] ?? ($item['level'] ?? 'Semua Jenjang'),
+                    'education_levels' => EducationCatalog::extractLevels($item['level'] ?? null),
+                    'grades' => [],
                     'schedule' => $item['schedule']['id'] ?? ($item['schedule'] ?? null),
                     'category' => $category,
                     'is_active' => true,

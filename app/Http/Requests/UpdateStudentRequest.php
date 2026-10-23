@@ -19,6 +19,7 @@ class UpdateStudentRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:500'],
             'school_name' => ['nullable', 'string', 'max:255'],
             'level' => ['nullable', 'string', 'max:100'],
+            'class_level' => ['nullable', 'string', 'max:100'],
             'subjects' => ['nullable', 'string', 'max:255'],
             'program_id' => [
                 'required',

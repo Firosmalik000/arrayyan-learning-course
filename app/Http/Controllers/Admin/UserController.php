@@ -362,6 +362,7 @@ class UserController extends Controller
             'pendaftaran' => 'admin.registrations.students',
             'pelajar' => 'admin.students',
             'pengajar' => 'admin.teachers',
+            'kritik-saran' => 'admin.feedback.index',
             'akses-menu' => 'admin.access-menu',
             'roles' => 'admin.roles',
             'users' => 'admin.users',

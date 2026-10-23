@@ -10,6 +10,8 @@ use App\Models\Package;
 use App\Models\PageContent;
 use App\Models\PageContentRevision;
 use App\Models\Program;
+use App\Models\Testimonial;
+use App\Support\EducationCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -38,13 +40,15 @@ class LandingContentController extends Controller
 
     public function show(): Response
     {
-        $content = $this->loadLandingContent();
+        $content = $this->loadPublicLandingContent();
         $content['programs'] = $this->getPrograms(true);
         $content['bankSoalItems'] = $this->getBankSoalItems(true);
         $content['olympiadHighlights'] = $this->getOlympiadHighlights(true);
+        $content['testimonials'] = $this->getTestimonials();
 
         return Inertia::render('Public/Home', [
             'landingContent' => $this->withMediaUrls($content),
+            'bankSoalUnlocked' => BankSoalAccessController::hasGlobalAccess(request()),
         ]);
     }
 
@@ -52,7 +56,7 @@ class LandingContentController extends Controller
     {
         $content = $this->loadLandingContent();
         $content['programs'] = $this->getPrograms();
-        $content['bankSoalItems'] = $this->getBankSoalItems();
+        $content['bankSoalItems'] = $this->getBankSoalItems(includeLinks: true);
         $content['olympiadHighlights'] = $this->getOlympiadHighlights();
 
         return Inertia::render('Admin/Landing', [
@@ -66,18 +70,21 @@ class LandingContentController extends Controller
 
     public function bankSoal(): Response
     {
-        $content = $this->loadLandingContent();
+        $content = $this->loadPublicLandingContent();
         $content['bankSoalItems'] = $this->getBankSoalItems(true);
 
         return Inertia::render('Public/BankSoal', [
             'landingContent' => $this->withMediaUrls($content),
             'bankSoalItems' => $content['bankSoalItems'],
+            'bankSoalUnlocked' => BankSoalAccessController::hasGlobalAccess(request()),
+            'bankSoalAuthenticated' => BankSoalAccessController::isAuthenticated(),
+            'educationOptions' => EducationCatalog::options(),
         ]);
     }
 
     public function programs(): Response
     {
-        $content = $this->loadLandingContent();
+        $content = $this->loadPublicLandingContent();
         $content['programs'] = $this->getPrograms(true);
 
         return Inertia::render('Public/Program', [
@@ -88,7 +95,7 @@ class LandingContentController extends Controller
 
     public function programDetail(string $program): Response
     {
-        $content = $this->loadLandingContent();
+        $content = $this->loadPublicLandingContent();
         $record = Program::query()
             ->with('teacher:id,name,subjects')
             ->where('is_active', true)
@@ -269,6 +276,14 @@ class LandingContentController extends Controller
         });
     }
 
+    private function loadPublicLandingContent(): array
+    {
+        $content = $this->loadLandingContent();
+        unset($content['bankSoalPasskey']);
+
+        return $content;
+    }
+
     private function buildLandingContent(): array
     {
         $content = [];
@@ -445,24 +460,35 @@ class LandingContentController extends Controller
         return '';
     }
 
-    private function getBankSoalItems(bool $onlyActive = false): array
+    private function getBankSoalItems(bool $onlyActive = false, bool $includeLinks = false): array
     {
-        $query = BankSoal::query();
+        $query = BankSoal::query()->with(['educationClass.educationLevel', 'subject', 'resources'])
+            ->where('classification_status', 'ready');
         if ($onlyActive) {
             $query->where('is_active', true);
         }
 
-        return $query->latest()->get()->map(function (BankSoal $item) {
+        return $query->latest()->get()->map(function (BankSoal $item) use ($includeLinks) {
             return [
                 'id' => $item->id,
-                'slug' => $item->slug,
                 'name' => $this->normalizeLocalized($item->name),
-                'category' => $this->normalizeLocalized($item->category),
-                'level' => $this->normalizeLocalized($item->level),
+                'category' => ['id' => $item->subject?->name, 'en' => $item->subject?->name],
+                'level' => ['id' => $item->educationClass?->educationLevel?->name, 'en' => $item->educationClass?->educationLevel?->name],
+                'education_levels' => [$item->educationClass?->educationLevel?->name],
+                'grades' => [$item->educationClass?->name],
                 'format' => $item->format,
                 'questions' => $item->questions,
                 'description' => $this->normalizeLocalized($item->description),
-                'links' => $item->links ?? [],
+                'links' => $includeLinks ? $item->resources->map(fn ($resource) => [
+                    'id' => $resource->id,
+                    'label' => $resource->label,
+                    'link' => $resource->destination_url,
+                    'file_path' => $resource->file_path,
+                    'file_name' => $resource->file_name,
+                ])->all() : [],
+                'url' => $item->educationClass && $item->subject
+                    ? route('banksoal.detail', [$item->educationClass->educationLevel, $item->educationClass, $item->subject, $item])
+                    : null,
                 'image_url' => $item->image_path ? Storage::url($item->image_path) : null,
                 'tone' => $item->tone,
                 'is_active' => $item->is_active,
@@ -566,5 +592,36 @@ class LandingContentController extends Controller
                 ],
             ];
         })->values()->all();
+    }
+
+    private function getTestimonials(): array
+    {
+        $dbTestimonials = Testimonial::query()
+            ->with('student:id,name,photo_path')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->latest()
+            ->get();
+
+        $formatted = $dbTestimonials->map(function (Testimonial $item): array {
+            $studentText = $item->student_name ?: ($item->student?->name ? "Orang Tua dari {$item->student->name}" : ($item->role ?: 'Orang Tua Siswa'));
+
+            return [
+                'id' => $item->id,
+                'name' => $item->name,
+                'role' => $item->role ?: 'Orang Tua Siswa',
+                'student' => $studentText,
+                'rating' => (int) $item->rating,
+                'quote' => $item->message,
+                'message' => $item->message,
+                'avatar' => $item->avatar_url,
+                'highlight' => $item->highlight ?: 'Keluarga ALC',
+            ];
+        })->values()->all();
+
+        return [
+            'id' => $formatted,
+            'en' => $formatted,
+        ];
     }
 }

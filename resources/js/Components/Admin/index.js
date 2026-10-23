@@ -8,5 +8,6 @@ export { default as SearchInput, SearchIcon } from './SearchInput';
 export { default as ConfirmModal } from './ConfirmModal';
 export { default as PageHeader } from './PageHeader';
 export { default as FlashMessage } from './FlashMessage';
+export { default as EducationTargetFields } from './EducationTargetFields';
 export { default as PlaceholderPanel } from './PlaceholderPanel';
 export { default as ToastContainer, showToast } from '../Toast';

@@ -18,6 +18,11 @@ const statusOptions = ['Aktif', 'Nonaktif'];
 const fallbackLevelOptions = ['Pra TK', 'TK', 'SD', 'SMP', 'SMA'];
 
 const icons = {
+    plus: (
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+    ),
     eye: (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -79,7 +84,7 @@ const getWhatsAppUrl = (phone) => {
 };
 
 export default function Students() {
-    const { students: studentsData = [], programs = [], allowedActions = {}, flash } = usePage().props;
+    const { students: studentsData = [], programs = [], packages = [], allowedActions = {}, flash } = usePage().props;
 
     const students = useMemo(() => studentsData.map((student) => ({
         id: student.id,
@@ -87,8 +92,10 @@ export default function Students() {
         address: student.address ?? '',
         school_name: student.school_name ?? '',
         level: student.level ?? '',
+        class_level: student.class_level ?? '',
         subjects: student.subjects ?? '',
         program_id: student.program_id ?? '',
+        package_id: student.package_id ?? '',
         program: student.program ?? '',
         package: student.package ?? '',
         parent_contact: student.parent_contact ?? '',
@@ -96,6 +103,7 @@ export default function Students() {
         preferred_mode: student.preferred_mode ?? '',
         notes: student.notes ?? '',
         is_active: student.is_active ?? true,
+        portal_account_id: student.portal_account_id ?? null,
         created_at: student.created_at ?? null,
     })), [studentsData]);
 
@@ -112,14 +120,35 @@ export default function Students() {
     const [detailModal, setDetailModal] = useState(null);
     const [editModal, setEditModal] = useState(null);
     const [deleteModal, setDeleteModal] = useState(null);
+    const [createModal, setCreateModal] = useState(false);
+    const [resetPasswordTarget, setResetPasswordTarget] = useState(null);
+
+    const createForm = useForm({
+        name: '',
+        address: '',
+        school_name: '',
+        level: '',
+        class_level: '',
+        subjects: '',
+        program_id: '',
+        package_id: '',
+        parent_contact: '',
+        parent_email: '',
+        preferred_mode: 'offline',
+        notes: '',
+        temporary_password: '',
+        temporary_password_confirmation: '',
+    });
 
     const editForm = useForm({
         name: '',
         address: '',
         school_name: '',
         level: '',
+        class_level: '',
         subjects: '',
         program_id: '',
+        package_id: '',
         package: '',
         parent_contact: '',
         parent_email: '',
@@ -130,6 +159,7 @@ export default function Students() {
 
     const can = (action) => (allowedActions.pelajar ?? []).includes(action);
     const canView = can('view');
+    const canCreate = can('create');
     const canEdit = can('edit');
     const canDelete = can('delete');
 
@@ -169,8 +199,10 @@ export default function Students() {
             address: student.address,
             school_name: student.school_name,
             level: student.level,
+            class_level: student.class_level,
             subjects: student.subjects,
             program_id: student.program_id ? String(student.program_id) : '',
+            package_id: student.package_id ? String(student.package_id) : '',
             package: student.package,
             parent_contact: student.parent_contact,
             parent_email: student.parent_email ?? '',
@@ -198,6 +230,48 @@ export default function Students() {
         });
     };
 
+    const packageOptionsFor = (programId) => packages
+        .filter((item) => String(item.program_id) === String(programId))
+        .map((item) => ({
+            value: String(item.id),
+            label: `${item.name}${item.sessions ? ` • ${item.sessions} sesi` : ''}`,
+        }));
+
+    const submitCreate = (event) => {
+        event.preventDefault();
+        createForm.post('/admin/pelajar', {
+            preserveScroll: true,
+            onSuccess: () => {
+                setCreateModal(false);
+                createForm.reset();
+            },
+        });
+    };
+
+    const openResetPasswordModal = (student) => {
+        resetPasswordForm.reset();
+        resetPasswordForm.clearErrors();
+        setResetPasswordTarget(student);
+    };
+
+    const resetPasswordForm = useForm({
+        password: '',
+        password_confirmation: '',
+    });
+
+    const submitResetPassword = (event) => {
+        event.preventDefault();
+        if (!resetPasswordTarget) return;
+        resetPasswordForm.patch(`/admin/pelajar/${resetPasswordTarget.id}/portal-password`, {
+            preserveScroll: true,
+            onSuccess: () => setResetPasswordTarget(null),
+        });
+    };
+
+    const resendPortalInformation = (student) => {
+        router.post(`/admin/pelajar/${student.id}/portal-information`, {}, { preserveScroll: true });
+    };
+
     return (
         <>
             <Head title="Pelajar" />
@@ -205,6 +279,12 @@ export default function Students() {
             <div className="space-y-6">
                 <PageHeader
                     title="Pelajar"
+                    actions={canCreate && (
+                        <button type="button" onClick={() => setCreateModal(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90">
+                            {icons.plus}
+                            Tambah Pelajar
+                        </button>
+                    )}
                 />
 
                 <FlashMessage flash={flash} />
@@ -288,6 +368,16 @@ export default function Students() {
                                             label: 'Edit Data',
                                             icon: icons.edit,
                                             onClick: () => openEditModal(student),
+                                        },
+                                        canEdit && {
+                                            label: 'Reset Password Sementara',
+                                            icon: icons.card,
+                                            onClick: () => openResetPasswordModal(student),
+                                        },
+                                        canEdit && {
+                                            label: 'Kirim Ulang Informasi Login',
+                                            icon: icons.mail,
+                                            onClick: () => resendPortalInformation(student),
                                         },
                                         canDelete && {
                                             label: 'Nonaktifkan',
@@ -545,6 +635,81 @@ export default function Students() {
                 )}
             </Modal>
 
+            <Modal isOpen={createModal} onClose={() => setCreateModal(false)} title="Tambah Pelajar Baru" size="lg">
+                <form onSubmit={submitCreate} className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormInput label="Nama Pelajar" value={createForm.data.name} onChange={(v) => createForm.setData('name', v)} required />
+                        <FormInput label="Sekolah" value={createForm.data.school_name} onChange={(v) => createForm.setData('school_name', v)} required />
+                    </div>
+                    <FormInput label="Alamat" value={createForm.data.address} onChange={(v) => createForm.setData('address', v)} required />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormSelect label="Jenjang" value={createForm.data.level} onChange={(v) => createForm.setData('level', v)} options={fallbackLevelOptions} required />
+                        <FormInput label="Kelas" value={createForm.data.class_level} onChange={(v) => createForm.setData('class_level', v)} placeholder="contoh: Kelas 5" />
+                    </div>
+                    <FormInput label="Mata Pelajaran" value={createForm.data.subjects} onChange={(v) => createForm.setData('subjects', v)} required />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormSelect
+                            label="Program"
+                            value={createForm.data.program_id}
+                            onChange={(v) => createForm.setData({ ...createForm.data, program_id: v, package_id: '' })}
+                            options={programOptions}
+                            required
+                            placeholder="Pilih Program"
+                        />
+                        <FormSelect
+                            label="Paket"
+                            value={createForm.data.package_id}
+                            onChange={(v) => createForm.setData('package_id', v)}
+                            options={packageOptionsFor(createForm.data.program_id)}
+                            placeholder="Pilih Paket"
+                        />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormInput label="Kontak Orang Tua" value={createForm.data.parent_contact} onChange={(v) => createForm.setData('parent_contact', v)} placeholder="08xx-xxxx-xxxx" required />
+                        <FormInput type="email" label="Email Orang Tua / Wali" value={createForm.data.parent_email} onChange={(v) => createForm.setData('parent_email', v)} required />
+                    </div>
+                    <FormSelect
+                        label="Mode Belajar"
+                        value={createForm.data.preferred_mode}
+                        onChange={(v) => createForm.setData('preferred_mode', v)}
+                        options={[
+                            { value: 'offline', label: 'Offline' },
+                            { value: 'online', label: 'Online' },
+                        ]}
+                    />
+                    <FormTextarea label="Catatan" value={createForm.data.notes} onChange={(v) => createForm.setData('notes', v)} />
+                    <div className="rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
+                        <p className="mb-3 text-sm font-semibold text-violet-900">Akun Portal Orang Tua</p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <FormInput label="Password Sementara" type="password" value={createForm.data.temporary_password} onChange={(v) => createForm.setData('temporary_password', v)} required />
+                            <FormInput label="Konfirmasi Password" type="password" value={createForm.data.temporary_password_confirmation} onChange={(v) => createForm.setData('temporary_password_confirmation', v)} required />
+                        </div>
+                    </div>
+                    {Object.values(createForm.errors).length > 0 && (
+                        <div className="rounded-xl bg-rose-50 p-3 text-xs text-rose-700">
+                            {Object.values(createForm.errors).map((error) => <p key={error}>{error}</p>)}
+                        </div>
+                    )}
+                    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+                        <button type="button" onClick={() => setCreateModal(false)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600">Batal</button>
+                        <button type="submit" disabled={createForm.processing} className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60">Tambah Pelajar</button>
+                    </div>
+                </form>
+            </Modal>
+
+            <Modal isOpen={!!resetPasswordTarget} onClose={() => setResetPasswordTarget(null)} title="Reset Password Sementara" size="sm">
+                <form onSubmit={submitResetPassword} className="space-y-4">
+                    <p className="text-sm text-slate-600">Buat password sementara baru untuk orang tua <span className="font-semibold text-slate-800">{resetPasswordTarget?.name}</span>. Informasi login akan dikirim ke email wali.</p>
+                    <FormInput label="Password Sementara" type="password" value={resetPasswordForm.data.password} onChange={(v) => resetPasswordForm.setData('password', v)} required />
+                    <FormInput label="Konfirmasi Password" type="password" value={resetPasswordForm.data.password_confirmation} onChange={(v) => resetPasswordForm.setData('password_confirmation', v)} required />
+                    {resetPasswordForm.errors.password && <p className="text-xs text-rose-500">{resetPasswordForm.errors.password}</p>}
+                    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+                        <button type="button" onClick={() => setResetPasswordTarget(null)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600">Batal</button>
+                        <button type="submit" disabled={resetPasswordForm.processing} className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60">Reset & Kirim</button>
+                    </div>
+                </form>
+            </Modal>
+
             <Modal isOpen={!!editModal} onClose={() => setEditModal(null)} title="Edit Pelajar" size="lg">
                 <form onSubmit={submitEdit} className="space-y-4">
                     <FormInput label="Nama Pelajar" value={editForm.data.name} onChange={(v) => editForm.setData('name', v)} required />
@@ -555,8 +720,9 @@ export default function Students() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <FormInput label="Jenjang" value={editForm.data.level} onChange={(v) => editForm.setData('level', v)} />
-                        <FormInput label="Mata Pelajaran" value={editForm.data.subjects} onChange={(v) => editForm.setData('subjects', v)} />
+                        <FormInput label="Kelas" value={editForm.data.class_level} onChange={(v) => editForm.setData('class_level', v)} />
                     </div>
+                    <FormInput label="Mata Pelajaran" value={editForm.data.subjects} onChange={(v) => editForm.setData('subjects', v)} />
                     <div className="grid gap-4 sm:grid-cols-2">
                         <FormSelect
                             label="Program"
@@ -566,7 +732,13 @@ export default function Students() {
                             required
                             placeholder={programOptions.length > 0 ? 'Pilih Program' : 'Belum ada program aktif'}
                         />
-                        <FormInput label="Paket" value={editForm.data.package} onChange={(v) => editForm.setData('package', v)} />
+                        <FormSelect
+                            label="Paket"
+                            value={editForm.data.package_id}
+                            onChange={(v) => editForm.setData('package_id', v)}
+                            options={packageOptionsFor(editForm.data.program_id)}
+                            placeholder="Pilih Paket"
+                        />
                     </div>
                     {editForm.errors.program_id && <p className="text-xs text-rose-500">{editForm.errors.program_id}</p>}
                     <div className="grid gap-4 sm:grid-cols-2">

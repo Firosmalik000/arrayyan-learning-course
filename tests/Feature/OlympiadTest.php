@@ -62,7 +62,7 @@ class OlympiadTest extends TestCase
 
         $response = $this->actingAs($user, PermissionCatalog::GUARD)->post('/admin/olimpiade', []);
 
-        $response->assertSessionHasErrors(['name', 'level', 'category']);
+        $response->assertSessionHasErrors(['name', 'education_levels', 'category']);
     }
 
     public function test_update_olympiad(): void

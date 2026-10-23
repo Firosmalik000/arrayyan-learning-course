@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\AcademicController;
 use App\Http\Controllers\Admin\AccessMenuController;
 use App\Http\Controllers\Admin\BankSoalController;
 use App\Http\Controllers\Admin\ContentController;
+use App\Http\Controllers\Admin\EducationMasterController;
+use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\OlympiadController;
@@ -19,20 +21,24 @@ use App\Http\Controllers\Admin\TeacherController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BankSoalAccessController;
+use App\Http\Controllers\BankSoalBrowseController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\LandingContentController;
 use App\Http\Controllers\OlympiadCertificateController;
 use App\Http\Controllers\OlympiadRegistrationController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\Portal\FeedbackController as PortalFeedbackController;
 use App\Http\Controllers\Portal\PortalAuthController;
 use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\Portal\PortalPasswordResetController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\StatusCheckController;
-use App\Models\BankSoal;
+use App\Models\EducationLevel;
 use App\Models\Olympiad;
 use App\Models\Program;
+use App\Models\Teacher;
+use App\Support\EducationCatalog;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -51,6 +57,8 @@ Route::get('/olimpiade', function () {
                     'slug' => $olympiad->slug,
                     'name' => $olympiad->name,
                     'level' => $olympiad->level,
+                    'education_levels' => $olympiad->education_levels ?? EducationCatalog::extractLevels($olympiad->level),
+                    'grades' => $olympiad->grades ?? [],
                     'schedule' => $olympiad->schedule,
                     'selection_system' => $olympiad->selection_system,
                     'category' => $olympiad->category,
@@ -59,6 +67,7 @@ Route::get('/olimpiade', function () {
                     'image_url' => $olympiad->image_path ? Storage::url($olympiad->image_path) : null,
                 ];
             }),
+        'educationOptions' => EducationCatalog::options(),
     ]);
 })->name('olympiad');
 Route::get('/olimpiade/{slug}/daftar', [OlympiadRegistrationController::class, 'create'])->name('olympiad.register');
@@ -79,6 +88,8 @@ Route::get('/olimpiade/{slug}', function ($slug) {
             'slug' => $olympiad->slug,
             'name' => $olympiad->name,
             'level' => $olympiad->level,
+            'education_levels' => $olympiad->education_levels ?? EducationCatalog::extractLevels($olympiad->level),
+            'grades' => $olympiad->grades ?? [],
             'schedule' => $olympiad->schedule,
             'selection_system' => $olympiad->selection_system,
             'category' => $olympiad->category,
@@ -134,6 +145,21 @@ Route::get('/pendaftaran', fn () => Inertia::render('Public/Register', [
         ])
         ->values()
         ->all(),
+    'teacherLevelOptions' => EducationLevel::query()
+        ->where('is_active', true)
+        ->orderBy('sort_order')
+        ->orderBy('name')
+        ->pluck('name')
+        ->values()
+        ->all(),
+    'teacherEducationOptions' => Teacher::query()
+        ->whereNotNull('education')
+        ->where('education', '<>', '')
+        ->distinct()
+        ->orderBy('education')
+        ->pluck('education')
+        ->values()
+        ->all(),
 ]))->name('register');
 Route::get('/program', [LandingContentController::class, 'programs'])->name('programs');
 Route::get('/program/{program}', [LandingContentController::class, 'programDetail'])
@@ -141,49 +167,18 @@ Route::get('/program/{program}', [LandingContentController::class, 'programDetai
 Route::get('/blog', [BlogController::class, 'index'])->name('blog');
 Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.detail');
 Route::get('/faq', [BlogController::class, 'faq'])->name('faq');
-Route::get('/bank-soal', [LandingContentController::class, 'bankSoal'])->name('banksoal');
-Route::get('/bank-soal/{slug}', function ($slug) {
-    $bankSoal = BankSoal::query()
-        ->where('slug', $slug)
-        ->where('is_active', true)
-        ->first();
-
-    $bankSoal?->increment('view_count');
-
-    $unlocked = $bankSoal
-        ? BankSoalAccessController::hasAccess($bankSoal, request())
-        : false;
-
-    return Inertia::render('Public/BankSoal/Detail', [
-        'slug' => $slug,
-        'bankSoal' => $bankSoal ? [
-            'id' => $bankSoal->id,
-            'slug' => $bankSoal->slug,
-            'name' => $bankSoal->name,
-            'category' => $bankSoal->category,
-            'level' => $bankSoal->level,
-            'format' => $bankSoal->format,
-            'questions' => $bankSoal->questions,
-            'description' => $bankSoal->description,
-            'links' => $unlocked
-                ? collect($bankSoal->links ?? [])->map(fn (array $link) => [
-                    'id' => $link['id'] ?? null,
-                    'label' => $link['label'] ?? 'Unduh',
-                ])->values()->all()
-                : [],
-            'unlocked' => $unlocked,
-            'has_lock' => (bool) $bankSoal->passkey || (bool) BankSoalAccessController::globalPasskey(),
-            'view_count' => $bankSoal->view_count,
-            'download_count' => $bankSoal->download_count,
-            'image_url' => $bankSoal->image_path ? Storage::url($bankSoal->image_path) : null,
-            'tone' => $bankSoal->tone,
-        ] : null,
-    ]);
-})->name('banksoal.detail');
-Route::post('/bank-soal/{slug}/unlock', [BankSoalAccessController::class, 'unlock'])
+Route::get('/bank-soal', [BankSoalBrowseController::class, 'index'])->name('banksoal');
+Route::post('/bank-soal/unlock', [BankSoalAccessController::class, 'unlockGlobal'])
+    ->middleware('throttle:10,1')
+    ->name('banksoal.unlock-global');
+Route::get('/bank-soal/{educationLevel}', [BankSoalBrowseController::class, 'level'])->name('banksoal.level');
+Route::get('/bank-soal/{educationLevel}/{educationClass}', [BankSoalBrowseController::class, 'educationClass'])->name('banksoal.class');
+Route::get('/bank-soal/{educationLevel}/{educationClass}/{subject}', [BankSoalBrowseController::class, 'subject'])->name('banksoal.subject');
+Route::get('/bank-soal/{educationLevel}/{educationClass}/{subject}/{bankSoal}', [BankSoalBrowseController::class, 'detail'])->name('banksoal.detail');
+Route::post('/bank-soal/{educationLevel}/{educationClass}/{subject}/{bankSoal}/unlock', [BankSoalAccessController::class, 'unlock'])
     ->middleware('throttle:10,1')
     ->name('banksoal.unlock');
-Route::get('/bank-soal/{slug}/unduh/{linkId}', [BankSoalAccessController::class, 'download'])
+Route::get('/bank-soal/{educationLevel}/{educationClass}/{subject}/{bankSoal}/{resource}', [BankSoalAccessController::class, 'download'])
     ->middleware('throttle:60,1')
     ->name('banksoal.download');
 
@@ -191,7 +186,7 @@ Route::get('/login', [AuthenticatedSessionController::class, 'create'])
     ->middleware('guest')
     ->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])
-    ->middleware('guest')
+    ->middleware(['guest', 'throttle:5,1'])
     ->name('login.store');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
@@ -222,10 +217,6 @@ Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])
     ->middleware('guest')
     ->name('admin.login');
 
-Route::get('/portal/login', [PortalAuthController::class, 'create'])->name('portal.login');
-Route::post('/portal/login', [PortalAuthController::class, 'store'])
-    ->middleware('throttle:5,1')
-    ->name('portal.login.store');
 Route::get('/portal/lupa-password', [PortalPasswordResetController::class, 'create'])
     ->name('portal.password.request');
 Route::post('/portal/lupa-password', [PortalPasswordResetController::class, 'store'])
@@ -257,6 +248,17 @@ Route::prefix('portal')->name('portal.')->middleware('auth:portal')->group(funct
         Route::delete('/jadwal/{schedule}', [PortalController::class, 'destroyClassSchedule'])->name('classes.schedules.destroy');
         Route::post('/kelas/{classGroup}/generate-pertemuan', [PortalController::class, 'generateClassSessions'])->name('classes.sessions.generate');
         Route::get('/profil', [PortalController::class, 'profile'])->name('profile');
+        Route::put('/profil', [PortalController::class, 'updateProfile'])->name('profile.update');
+        Route::put('/profil/murid/{student}', [PortalController::class, 'updateStudentProfile'])->name('profile.student.update');
+        Route::get('/kritik-saran', [PortalFeedbackController::class, 'index'])->name('feedback.index');
+        Route::post('/kritik-saran', [PortalFeedbackController::class, 'store'])
+            ->middleware('throttle:5,1')
+            ->name('feedback.store');
+        Route::post('/kritik-saran/review', [PortalFeedbackController::class, 'storeReview'])
+            ->middleware('throttle:5,1')
+            ->name('feedback.review.store');
+        Route::delete('/kritik-saran/review', [PortalFeedbackController::class, 'destroyReview'])
+            ->name('feedback.review.destroy');
         Route::post('/pilih-anak/{student}', [PortalController::class, 'switchStudent'])->name('switch_student');
         Route::post('/tambah-program', [PortalController::class, 'storeProgram'])->name('programs.store');
     });
@@ -299,6 +301,15 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::get('/bank-soal', [MasterDataController::class, 'bankSoal'])
         ->middleware('role_or_permission:administrator|bank-soal.view,admin')
         ->name('banksoal');
+    Route::get('/bank-soal/{educationLevel}', [MasterDataController::class, 'bankSoal'])
+        ->middleware('role_or_permission:administrator|bank-soal.view,admin')
+        ->name('banksoal.level');
+    Route::get('/bank-soal/{educationLevel}/{educationClass}', [MasterDataController::class, 'bankSoal'])
+        ->middleware('role_or_permission:administrator|bank-soal.view,admin')
+        ->name('banksoal.class');
+    Route::get('/bank-soal/{educationLevel}/{educationClass}/{subject}', [MasterDataController::class, 'bankSoal'])
+        ->middleware('role_or_permission:administrator|bank-soal.view,admin')
+        ->name('banksoal.subject');
     Route::post('/bank-soal', [BankSoalController::class, 'store'])
         ->middleware('role_or_permission:administrator|bank-soal.create,admin')
         ->name('banksoal.store');
@@ -311,6 +322,36 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::delete('/bank-soal/{bankSoal}', [BankSoalController::class, 'destroy'])
         ->middleware('role_or_permission:administrator|bank-soal.delete,admin')
         ->name('banksoal.destroy');
+    Route::get('/master-pendidikan', [EducationMasterController::class, 'index'])
+        ->middleware('role_or_permission:administrator|bank-soal.view,admin')
+        ->name('education-master.index');
+    Route::post('/master-pendidikan/jenjang', [EducationMasterController::class, 'storeLevel'])
+        ->middleware('role_or_permission:administrator|bank-soal.create,admin')
+        ->name('education-master.levels.store');
+    Route::put('/master-pendidikan/jenjang/{educationLevel}', [EducationMasterController::class, 'updateLevel'])
+        ->middleware('role_or_permission:administrator|bank-soal.edit,admin')
+        ->name('education-master.levels.update');
+    Route::delete('/master-pendidikan/jenjang/{educationLevel}', [EducationMasterController::class, 'destroyLevel'])
+        ->middleware('role_or_permission:administrator|bank-soal.delete,admin')
+        ->name('education-master.levels.destroy');
+    Route::post('/master-pendidikan/kelas', [EducationMasterController::class, 'storeClass'])
+        ->middleware('role_or_permission:administrator|bank-soal.create,admin')
+        ->name('education-master.classes.store');
+    Route::put('/master-pendidikan/kelas/{educationClass}', [EducationMasterController::class, 'updateClass'])
+        ->middleware('role_or_permission:administrator|bank-soal.edit,admin')
+        ->name('education-master.classes.update');
+    Route::delete('/master-pendidikan/kelas/{educationClass}', [EducationMasterController::class, 'destroyClass'])
+        ->middleware('role_or_permission:administrator|bank-soal.delete,admin')
+        ->name('education-master.classes.destroy');
+    Route::post('/master-pendidikan/mapel', [EducationMasterController::class, 'storeSubject'])
+        ->middleware('role_or_permission:administrator|bank-soal.create,admin')
+        ->name('education-master.subjects.store');
+    Route::put('/master-pendidikan/mapel/{subject}', [EducationMasterController::class, 'updateSubject'])
+        ->middleware('role_or_permission:administrator|bank-soal.edit,admin')
+        ->name('education-master.subjects.update');
+    Route::delete('/master-pendidikan/mapel/{subject}', [EducationMasterController::class, 'destroySubject'])
+        ->middleware('role_or_permission:administrator|bank-soal.delete,admin')
+        ->name('education-master.subjects.destroy');
     Route::get('/olimpiade', [MasterDataController::class, 'olympiads'])
         ->middleware('role_or_permission:administrator|olimpiade.view,admin')
         ->name('olympiads');
@@ -386,6 +427,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::put('/akademik/kelas/{classGroup}', [AcademicController::class, 'updateClass'])
         ->middleware('role_or_permission:administrator|akademik.edit,admin')
         ->name('academic.classes.update');
+    Route::patch('/akademik/kelas/{classGroup}/status', [AcademicController::class, 'updateClassStatus'])
+        ->middleware('role_or_permission:administrator|akademik.edit,admin')
+        ->name('academic.classes.status.update');
     Route::delete('/akademik/kelas/{classGroup}', [AcademicController::class, 'destroyClass'])
         ->middleware('role_or_permission:administrator|akademik.delete,admin')
         ->name('academic.classes.destroy');
@@ -395,6 +439,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::delete('/akademik/anggota/{member}', [AcademicController::class, 'removeMember'])
         ->middleware('role_or_permission:administrator|akademik.delete,admin')
         ->name('academic.members.destroy');
+    Route::patch('/akademik/anggota/{member}/selesaikan', [AcademicController::class, 'completeMember'])
+        ->middleware('role_or_permission:administrator|akademik.edit,admin')
+        ->name('academic.members.complete');
+    Route::post('/akademik/anggota/{member}/periode', [AcademicController::class, 'storeMemberPeriod'])
+        ->middleware('role_or_permission:administrator|akademik.edit,admin')
+        ->name('academic.members.periods.store');
     Route::post('/akademik/kelas/{classGroup}/jadwal', [AcademicController::class, 'storeSchedule'])
         ->middleware('role_or_permission:administrator|akademik.create,admin')
         ->name('academic.schedules.store');
@@ -422,6 +472,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::post('/pengajar', [TeacherController::class, 'store'])
         ->middleware('role_or_permission:administrator|pengajar.create,admin')
         ->name('teachers.store');
+    Route::patch('/pengajar/{teacher}/portal-password', [TeacherController::class, 'resetPortalPassword'])
+        ->middleware('role_or_permission:administrator|pengajar.edit,admin')
+        ->name('teachers.portal-password');
+    Route::post('/pengajar/{teacher}/portal-information', [TeacherController::class, 'resendPortalInformation'])
+        ->middleware('role_or_permission:administrator|pengajar.edit,admin')
+        ->name('teachers.portal-information');
     Route::put('/pengajar/{teacher}', [TeacherController::class, 'update'])
         ->middleware('role_or_permission:administrator|pengajar.edit,admin')
         ->name('teachers.update');
@@ -431,6 +487,15 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::get('/pelajar', [MasterDataController::class, 'students'])
         ->middleware('role_or_permission:administrator|pelajar.view,admin')
         ->name('students');
+    Route::post('/pelajar', [StudentController::class, 'store'])
+        ->middleware('role_or_permission:administrator|pelajar.create,admin')
+        ->name('students.store');
+    Route::patch('/pelajar/{student}/portal-password', [StudentController::class, 'resetPortalPassword'])
+        ->middleware('role_or_permission:administrator|pelajar.edit,admin')
+        ->name('students.portal-password');
+    Route::post('/pelajar/{student}/portal-information', [StudentController::class, 'resendPortalInformation'])
+        ->middleware('role_or_permission:administrator|pelajar.edit,admin')
+        ->name('students.portal-information');
     Route::put('/pelajar/{student}', [StudentController::class, 'update'])
         ->middleware('role_or_permission:administrator|pelajar.edit,admin')
         ->name('students.update');
@@ -486,6 +551,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::get('/keuangan', [InvoiceController::class, 'index'])
         ->middleware('role_or_permission:administrator|keuangan.view,admin')
         ->name('keuangan');
+    Route::get('/keuangan/pelajar/{student}', [InvoiceController::class, 'show'])
+        ->middleware('role_or_permission:administrator|keuangan.view,admin')
+        ->name('keuangan.show');
     Route::post('/keuangan/invoice/{invoice}/confirm', [InvoiceController::class, 'confirm'])
         ->middleware('role_or_permission:administrator|keuangan.approve,admin')
         ->name('keuangan.invoice.confirm');
@@ -501,6 +569,15 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::post('/keuangan/from-registration/{studentRegistration}', [InvoiceController::class, 'createForRegistration'])
         ->middleware('role_or_permission:administrator|keuangan.create,admin')
         ->name('keuangan.create-from-registration');
+    Route::post('/keuangan/tagihan-bulanan-bersama', [InvoiceController::class, 'storeSelectedMonthlyInvoices'])
+        ->middleware('role_or_permission:administrator|keuangan.create,admin')
+        ->name('keuangan.monthly.selected-store');
+    Route::post('/keuangan/anggota/{member}/tagihan-bulanan', [InvoiceController::class, 'storeMonthlyInvoice'])
+        ->middleware('role_or_permission:administrator|keuangan.create,admin')
+        ->name('keuangan.monthly.store');
+    Route::post('/keuangan/kelas/{classGroup}/tagihan-bulanan', [InvoiceController::class, 'storeMonthlyClassInvoices'])
+        ->middleware('role_or_permission:administrator|keuangan.create,admin')
+        ->name('keuangan.monthly.bulk-store');
     Route::get('/keuangan/export', [InvoiceController::class, 'export'])
         ->middleware('role_or_permission:administrator|keuangan.export,admin')
         ->name('keuangan.export');
@@ -550,4 +627,22 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::get('/aktivitas', [OpsController::class, 'activities'])
         ->middleware('role_or_permission:administrator|users.view,admin')
         ->name('activities');
+    Route::get('/kritik-saran', [AdminFeedbackController::class, 'index'])
+        ->middleware('role_or_permission:administrator|kritik-saran.view,admin')
+        ->name('feedback.index');
+    Route::patch('/kritik-saran/{feedbackSubmission}', [AdminFeedbackController::class, 'update'])
+        ->middleware('role_or_permission:administrator|kritik-saran.edit,admin')
+        ->name('feedback.update');
 });
+
+Route::get('/error/{status?}', function (?string $status = '404') {
+    $code = (int) $status;
+    $validCodes = [400, 401, 403, 404, 419, 429, 500, 503];
+    if (! in_array($code, $validCodes, true)) {
+        $code = 404;
+    }
+
+    return Inertia::render('Error', [
+        'status' => $code,
+    ])->toResponse(request())->setStatusCode($code);
+})->name('error.show');

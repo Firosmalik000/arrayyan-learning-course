@@ -99,14 +99,14 @@ class RegistrationController extends Controller
 
             if ($portalResult) {
                 if ($portalResult['is_new']) {
-                    $portalExtra = 'Akun portal orang tua Anda telah dibuat. Login di '.route('portal.login')
+                    $portalExtra = 'Akun portal orang tua Anda telah dibuat. Login di '.route('login')
                         ." dengan email ini atau nomor WA dan password sementara: {$portalResult['password']}. Segera ganti password setelah login.";
 
                     if ($studentRegistration->parent_email) {
                         $emailService->sendApprovedNewParent($studentRegistration->fresh(), (string) $portalResult['password']);
                     }
                 } else {
-                    $portalExtra = 'Pendaftaran ananda telah terhubung ke akun Portal Orang Tua Anda yang sudah ada. Silakan login di '.route('portal.login');
+                    $portalExtra = 'Pendaftaran ananda telah terhubung ke akun Portal Orang Tua Anda yang sudah ada. Silakan login di '.route('login');
 
                     if ($studentRegistration->parent_email) {
                         $emailService->sendApprovedExistingParent($studentRegistration->fresh());
@@ -292,14 +292,14 @@ class RegistrationController extends Controller
 
             if ($portalResult) {
                 if ($portalResult['is_new']) {
-                    $portalExtra = 'Akun portal pengajar Anda telah dibuat. Login di '.route('portal.login')
+                    $portalExtra = 'Akun portal pengajar Anda telah dibuat. Login di '.route('login')
                         ." dengan email ini atau nomor WA dan password sementara: {$portalResult['password']}. Segera ganti password setelah login.";
 
                     if ($teacherRegistration->email) {
                         $emailService->sendApprovedNewTeacher($teacherRegistration->fresh(), (string) $portalResult['password']);
                     }
                 } else {
-                    $portalExtra = 'Pendaftaran pengajar Anda disetujui. Akun Portal Pengajar Anda sudah aktif. Silakan login di '.route('portal.login');
+                    $portalExtra = 'Pendaftaran pengajar Anda disetujui. Akun Portal Pengajar Anda sudah aktif. Silakan login di '.route('login');
 
                     if ($teacherRegistration->email) {
                         $emailService->sendApprovedExistingTeacher($teacherRegistration->fresh());

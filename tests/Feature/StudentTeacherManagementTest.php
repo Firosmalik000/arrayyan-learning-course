@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\EducationLevel;
 use App\Models\Program;
 use App\Models\Role;
 use App\Models\Student;
@@ -104,14 +105,17 @@ class StudentTeacherManagementTest extends TestCase
 
         $payload = [
             'name' => 'Ustadzah Hana',
+            'email' => 'hana@example.com',
             'address' => 'Jl. Mawar',
             'education' => 'S1',
             'subjects' => 'Matematika',
             'experience' => '2 tahun',
-            'contact' => '08123',
+            'contact' => '081234567890',
             'cv' => UploadedFile::fake()->create('cv.pdf', 120, 'application/pdf'),
             'notes' => 'Catatan',
             'is_active' => true,
+            'temporary_password' => 'Sementara123',
+            'temporary_password_confirmation' => 'Sementara123',
         ];
 
         $response = $this->actingAs($user, PermissionCatalog::GUARD)
@@ -197,6 +201,30 @@ class StudentTeacherManagementTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('Admin/Students', false)
             ->where('students.0.parent_email', 'ortu.murid@example.com')
+        );
+    }
+
+    public function test_admin_teacher_form_uses_master_levels_and_distinct_education_options(): void
+    {
+        $user = $this->actingAsAdmin();
+
+        EducationLevel::query()->update(['is_active' => false]);
+        EducationLevel::query()->updateOrCreate(['name' => 'SMP / MTs'], ['sort_order' => 30, 'is_active' => true]);
+        EducationLevel::query()->updateOrCreate(['name' => 'SD / MI'], ['sort_order' => 20, 'is_active' => true]);
+        EducationLevel::query()->create(['name' => 'Jenjang Nonaktif', 'sort_order' => 10, 'is_active' => false]);
+
+        Teacher::query()->create(['name' => 'Guru S2', 'education' => 'S2 Pendidikan', 'subjects' => 'IPA']);
+        Teacher::query()->create(['name' => 'Guru S1', 'education' => 'S1 Pendidikan', 'subjects' => 'Matematika']);
+        Teacher::query()->create(['name' => 'Guru S1 Lain', 'education' => 'S1 Pendidikan', 'subjects' => 'Bahasa Inggris']);
+
+        $response = $this->actingAs($user, PermissionCatalog::GUARD)
+            ->get(route('admin.teachers'));
+
+        $response->assertSuccessful();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Admin/Teachers', false)
+            ->where('teacherLevelOptions', ['SD / MI', 'SMP / MTs'])
+            ->where('educationOptions', ['S1 Pendidikan', 'S2 Pendidikan'])
         );
     }
 }
