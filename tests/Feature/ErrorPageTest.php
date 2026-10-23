@@ -10,6 +10,16 @@ class ErrorPageTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_minimal_error_view_renders_without_an_exception(): void
+    {
+        $view = $this->view('errors.minimal', [
+            'message' => 'Sistem sedang dalam pemeliharaan.',
+        ]);
+
+        $view->assertSee('500');
+        $view->assertSee('Sistem sedang dalam pemeliharaan.');
+    }
+
     public function test_non_existent_page_renders_404_error_page(): void
     {
         $response = $this->get('/halaman-acak-yang-tidak-ada-12345');

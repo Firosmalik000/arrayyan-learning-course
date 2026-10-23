@@ -9,19 +9,21 @@ import PublicLayout from './Layouts/PublicLayout';
 import { LanguageProvider } from './lib/i18n';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Ar Rayyan Learning Course';
-const pages = import.meta.glob('./Pages/**/*.jsx', { eager: true });
+const pages = import.meta.glob('./Pages/**/*.jsx');
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
-    resolve: (name) => {
+    resolve: async (name) => {
         // Support both flat files (Page.jsx) and folder structure (Page/index.jsx)
-        let page = pages[`./Pages/${name}.jsx`];
-        if (!page) {
-            page = pages[`./Pages/${name}/index.jsx`];
+        let loadPage = pages[`./Pages/${name}.jsx`];
+        if (!loadPage) {
+            loadPage = pages[`./Pages/${name}/index.jsx`];
         }
-        if (!page) {
+        if (!loadPage) {
             throw new Error(`Page not found: ${name}`);
         }
+
+        const page = await loadPage();
 
         if (!page.default.layout) {
             if (name.startsWith('Admin/')) {

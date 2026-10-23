@@ -1,0 +1,1 @@
+import{j as i}from"./vendor-react-ZwENbJqZ.js";import o from"./Login-DQYtd9jf.js";import"./vendor-inertia-Cb7oepGv.js";import"./AuthLayout-BZCOeJoK.js";function r(t){return i.jsx(o,{...t,context:"admin"})}r.layout=o.layout;export{r as default};
