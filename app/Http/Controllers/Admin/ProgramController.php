@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProgramRequest;
 use App\Http\Requests\UpdateProgramRequest;
+use App\Models\ClassGroup;
+use App\Models\Invoice;
 use App\Models\Program;
+use App\Models\Student;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 
@@ -47,8 +50,11 @@ class ProgramController extends Controller
 
     public function destroy(Program $program): RedirectResponse
     {
-        if ($program->packages()->exists() || $program->studentRegistrations()->exists()) {
-            return back()->with('error', 'Program sudah memiliki pilihan harga atau pendaftaran. Nonaktifkan program agar riwayat tetap aman.');
+        if ($program->packages()->exists() || $program->studentRegistrations()->exists()
+            || ClassGroup::query()->where('program_id', $program->id)->exists()
+            || Student::query()->where('program_id', $program->id)->exists()
+            || Invoice::query()->where('program_id', $program->id)->exists()) {
+            return back()->with('error', 'Program masih digunakan pada pilihan harga, murid, kelas, pendaftaran, atau tagihan. Nonaktifkan program agar riwayat tetap aman.');
         }
 
         $program->delete();

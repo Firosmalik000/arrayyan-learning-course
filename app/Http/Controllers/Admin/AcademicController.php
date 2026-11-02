@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CompleteClassMemberRequest;
+use App\Http\Requests\ExportAttendancePdfRequest;
 use App\Http\Requests\SaveClassGroupRequest;
 use App\Http\Requests\StoreAttendanceRequest;
 use App\Http\Requests\StoreClassMemberPeriodRequest;
@@ -20,6 +21,7 @@ use App\Models\Schedule;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Support\AcademicService;
+use App\Support\AttendancePdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -565,6 +567,16 @@ class AcademicController extends Controller
         return back()->with('success', "Nilai {$saved} murid ({$data['subject']} - {$data['term']}) tersimpan.");
     }
 
+    public function exportAttendancePdf(ExportAttendancePdfRequest $request, ClassGroup $classGroup, AttendancePdf $pdf): StreamedResponse
+    {
+        $data = $request->validated();
+        $contents = $pdf->render($classGroup, $data['month'], $data['search'] ?? '');
+
+        return response()->streamDownload(function () use ($contents): void {
+            echo $contents;
+        }, "absensi-{$classGroup->id}-{$data['month']}.pdf", ['Content-Type' => 'application/pdf']);
+    }
+
     public function export(Request $request, ClassGroup $classGroup, string $type): StreamedResponse
     {
         $data = $request->validate([
@@ -604,6 +616,7 @@ class AcademicController extends Controller
 
         return [
             'id' => $class->id,
+            'attendance_pdf_url' => route('admin.academic.attendance.pdf', $class),
             'name' => $class->name,
             'program_id' => $class->program_id,
             'program' => $class->program?->name ?? '-',

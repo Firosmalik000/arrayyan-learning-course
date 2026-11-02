@@ -520,9 +520,6 @@ export default function Home({ landingContent }) {
                             subtitle="Pilihan paket bimbingan dirancang sistematis untuk hasil akademik optimal."
                             className="max-w-2xl"
                         />
-                        <Button href="/program" variant="outline" size="sm" className="shrink-0">
-                            Lihat Semua ({programSource.length})
-                        </Button>
                     </div>
 
                     {programPreview.length > 0 ? (
@@ -540,6 +537,11 @@ export default function Home({ landingContent }) {
                             Program bimbingan belajar akan segera diperbarui.
                         </div>
                     )}
+                    <div className="flex justify-center pt-8 sm:pt-10">
+                        <Button href="/program" variant="outline" size="sm">
+                            Lihat Semua ({programSource.length})
+                        </Button>
+                    </div>
                 </Container>
             </section>
 

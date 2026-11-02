@@ -13,6 +13,7 @@ export default function TrackingAttendanceTable({
     members = [],
     attendances = [],
     canEdit = true,
+    canExport = false,
     onOpenAttendanceModal,
     onOpenGenerateModal,
 }) {
@@ -144,7 +145,7 @@ export default function TrackingAttendanceTable({
     // Filter members by search
     const filteredMembers = useMemo(() => {
         if (!searchTerm) return members;
-        const q = searchTerm.toLowerCase();
+        const q = searchTerm.trim().toLowerCase();
         return members.filter((m) =>
             (m.student_name || '').toLowerCase().includes(q) ||
             (m.student?.school_name || '').toLowerCase().includes(q)
@@ -212,7 +213,7 @@ export default function TrackingAttendanceTable({
                     <input
                         type="month"
                         value={selectedMonth}
-                        onChange={(event) => setSelectedMonth(event.target.value)}
+                        onChange={(event) => setSelectedMonth(event.target.value || currentMonthValue())}
                         className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-800 outline-none shadow-2xs focus:border-violet-500"
                         required
                     />
@@ -225,11 +226,24 @@ export default function TrackingAttendanceTable({
                         <input
                             type="text"
                             placeholder="Cari murid dalam tabel..."
+                            maxLength={255}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-violet-500 shadow-2xs"
                         />
                     </div>
+                )}
+                {canExport && (
+                    <a
+                        href={`${selectedClass.attendance_pdf_url}?${new URLSearchParams({
+                            month: selectedMonth,
+                            search: searchTerm.trim(),
+                        })}`}
+                        className="inline-flex items-center justify-center rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white hover:bg-violet-700"
+                        title="Unduh absensi sesuai bulan dan pencarian murid yang dipilih"
+                    >
+                        Download PDF Absensi
+                    </a>
                 )}
             </div>
 

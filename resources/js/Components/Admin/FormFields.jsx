@@ -1,7 +1,7 @@
 const inputClass =
     'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100';
 
-export function FormInput({ label, type = 'text', value, onChange, placeholder, required, error }) {
+export function FormInput({ label, type = 'text', value, onChange, placeholder, required, error, min, max, step }) {
     return (
         <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -9,6 +9,9 @@ export function FormInput({ label, type = 'text', value, onChange, placeholder, 
             </label>
             <input
                 type={type}
+                min={min}
+                max={max}
+                step={step}
                 value={value ?? ''}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}

@@ -25,7 +25,7 @@ echo  ALL CACHES CLEARED SUCCESSFULLY!
 echo ========================================
 echo.
 echo Next steps:
-echo 1. Rebuild frontend: npm run build
+echo 1. Rebuild frontend: bun run build
 echo 2. Refresh browser with Ctrl+Shift+R
 echo.
 pause

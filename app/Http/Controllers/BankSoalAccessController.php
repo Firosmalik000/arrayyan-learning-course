@@ -86,10 +86,10 @@ class BankSoalAccessController extends Controller
 
         if ($source === 'file' || filled($resource->file_path)) {
             abort_if(blank($resource->file_path), 404);
-            abort_unless(Storage::disk('public')->exists($resource->file_path), 404);
+            abort_unless(Storage::disk('local')->exists($resource->file_path), 404);
             $bankSoal->increment('download_count');
 
-            return Storage::disk('public')->download(
+            return Storage::disk('local')->download(
                 $resource->file_path,
                 $resource->file_name ?? basename($resource->file_path),
             );

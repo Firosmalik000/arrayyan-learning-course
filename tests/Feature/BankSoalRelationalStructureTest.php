@@ -31,6 +31,7 @@ class BankSoalRelationalStructureTest extends TestCase
     public function test_store_uses_one_class_and_relational_resources(): void
     {
         Storage::fake('public');
+        Storage::fake('local');
         [$level, $class, $subject] = $this->taxonomy();
 
         $this->actingAs($this->admin(), PermissionCatalog::GUARD)->post('/admin/bank-soal', [
@@ -54,7 +55,7 @@ class BankSoalRelationalStructureTest extends TestCase
         $this->assertSame('ready', $bankSoal->classification_status);
         $this->assertCount(2, $bankSoal->resources);
         $this->assertSame('https://example.com/latihan', $bankSoal->resources[1]->destination_url);
-        Storage::disk('public')->assertExists($bankSoal->resources[0]->file_path);
+        Storage::disk('local')->assertExists($bankSoal->resources[0]->file_path);
     }
 
     public function test_store_rejects_a_class_from_another_level(): void

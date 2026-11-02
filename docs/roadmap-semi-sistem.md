@@ -257,7 +257,7 @@ laporan keluar 1 klik.
   validasi ketat upload (mime+size), backup otomatis DB+storage,
   `APP_DEBUG=false`, audit ulang `role_or_permission` tiap route admin.
 - Performance: cache landing/program, eager loading (anti N+1),
-  optimasi/resize gambar, `npm run build` bersih (tanpa Vite manifest error).
+  optimasi/resize gambar, `bun run build` bersih (tanpa Vite manifest error).
 - Quality gate: test Pest per modul M1–M7, `vendor/bin/pint --dirty` tiap phase,
   seed demo + SOP 1 halaman per modul untuk training admin.
 

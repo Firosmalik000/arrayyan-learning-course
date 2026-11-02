@@ -42,7 +42,7 @@ class BankSoalController extends Controller
                 $this->createResources($bankSoal, $data['resources'], $storedPaths);
             });
         } catch (\Throwable $exception) {
-            Storage::disk('public')->delete($storedPaths);
+            Storage::disk('local')->delete($storedPaths);
             throw $exception;
         }
 
@@ -69,7 +69,7 @@ class BankSoalController extends Controller
                         if ($resource->file_path) {
                             $pathsToDelete[] = $resource->file_path;
                         }
-                        $payload['file_path'] = $file->store('bank-soals/files', 'public');
+                        $payload['file_path'] = $file->store('bank-soals/files', 'local');
                         $payload['file_name'] = $file->getClientOriginalName();
                         $storedPaths[] = $payload['file_path'];
                     }
@@ -83,7 +83,7 @@ class BankSoalController extends Controller
                 BankSoalResource::query()->whereIn('id', $removed->keys())->delete();
             });
         } catch (\Throwable $exception) {
-            Storage::disk('public')->delete($storedPaths);
+            Storage::disk('local')->delete($storedPaths);
             throw $exception;
         }
         $this->deleteUnreferencedResourceFiles($pathsToDelete);
@@ -138,7 +138,7 @@ class BankSoalController extends Controller
             $payload = $this->resourcePayload($resourceData, $index);
             $file = Arr::get($resourceData, 'file');
             if ($file instanceof UploadedFile) {
-                $payload['file_path'] = $file->store('bank-soals/files', 'public');
+                $payload['file_path'] = $file->store('bank-soals/files', 'local');
                 $payload['file_name'] = $file->getClientOriginalName();
                 $storedPaths[] = $payload['file_path'];
             }
@@ -166,6 +166,6 @@ class BankSoalController extends Controller
             ->values()
             ->all();
 
-        Storage::disk('public')->delete($unreferencedPaths);
+        Storage::disk('local')->delete($unreferencedPaths);
     }
 }

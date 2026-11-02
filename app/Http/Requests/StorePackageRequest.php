@@ -7,6 +7,19 @@ use Illuminate\Validation\Rule;
 
 class StorePackageRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $intensity = $this->input('intensity');
+        $options = array_combine(
+            array_map(fn (int $frequency): string => "{$frequency}x / minggu", range(1, 6)),
+            range(1, 6),
+        );
+
+        if (is_string($intensity) && isset($options[$intensity])) {
+            $this->merge(['sessions' => $options[$intensity] * 4]);
+        }
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -28,7 +41,7 @@ class StorePackageRequest extends FormRequest
                         ->where('level', $this->input('level')))
                     ->ignore($this->route('package')),
             ],
-            'intensity' => ['nullable', 'string', 'max:100'],
+            'intensity' => ['required', 'string', Rule::in(array_map(fn (int $frequency): string => "{$frequency}x / minggu", range(1, 6)))],
             'price' => ['required', 'numeric', 'min:0', 'max:9999999999'],
             'max_participants' => ['nullable', 'integer', 'min:1', 'max:100'],
             'mode' => ['required', 'string', Rule::in(['online', 'offline', 'hybrid'])],
@@ -47,6 +60,8 @@ class StorePackageRequest extends FormRequest
             'sessions.required' => 'Jumlah pertemuan wajib diisi.',
             'sessions.min' => 'Jumlah pertemuan minimal 1.',
             'sessions.unique' => 'Pilihan harga untuk program, jenjang, dan jumlah pertemuan tersebut sudah ada.',
+            'intensity.required' => 'Pilih intensitas belajar per minggu.',
+            'intensity.in' => 'Intensitas harus antara 1 hingga 6 kali per minggu.',
             'price.required' => 'Harga paket wajib diisi.',
             'price.min' => 'Harga paket tidak boleh negatif.',
             'mode.required' => 'Mode belajar wajib dipilih.',

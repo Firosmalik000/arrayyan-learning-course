@@ -463,6 +463,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::post('/akademik/kelas/{classGroup}/nilai', [AcademicController::class, 'storeGrades'])
         ->middleware('role_or_permission:administrator|akademik.edit,admin')
         ->name('academic.grades.store');
+    Route::get('/akademik/kelas/{classGroup}/absensi/pdf', [AcademicController::class, 'exportAttendancePdf'])
+        ->middleware('role_or_permission:administrator|akademik.export,admin')
+        ->name('academic.attendance.pdf');
     Route::get('/akademik/kelas/{classGroup}/export/{type}', [AcademicController::class, 'export'])
         ->middleware('role_or_permission:administrator|akademik.export,admin')
         ->name('academic.export');

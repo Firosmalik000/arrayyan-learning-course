@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePackageRequest;
 use App\Http\Requests\UpdatePackageRequest;
+use App\Models\ClassGroup;
+use App\Models\Invoice;
 use App\Models\Package;
 use App\Models\Program;
 use Illuminate\Http\RedirectResponse;
@@ -28,8 +30,11 @@ class PackageController extends Controller
 
     public function destroy(Package $package): RedirectResponse
     {
-        if ($package->studentRegistrations()->exists()) {
-            return back()->with('error', 'Pilihan harga sudah digunakan pada pendaftaran. Nonaktifkan agar riwayat tetap aman.');
+        if ($package->studentRegistrations()->exists()
+            || $package->students()->exists()
+            || ClassGroup::query()->where('package_id', $package->id)->exists()
+            || Invoice::query()->where('package_id', $package->id)->exists()) {
+            return back()->with('error', 'Pilihan harga sudah digunakan pada data murid, kelas, pendaftaran, atau tagihan. Nonaktifkan agar riwayat tetap aman.');
         }
 
         $package->delete();

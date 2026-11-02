@@ -242,6 +242,7 @@ export default function ClassDetailView({
                         attendances={selectedClass.attendances ?? []}
                         canEdit={canEdit && selectedClass.is_active}
                         onOpenAttendanceModal={onOpenAttendanceModal}
+                        canExport={canExport}
                         onOpenGenerateModal={onOpenGenerateModal}
                     />
                 )}

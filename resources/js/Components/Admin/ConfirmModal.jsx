@@ -7,9 +7,11 @@ export default function ConfirmModal({
     title = 'Konfirmasi Hapus',
     message,
     confirmLabel = 'Ya, Hapus',
+    processing = false,
+    showHelperText = true,
 }) {
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
+        <Modal isOpen={isOpen} onClose={() => !processing && onClose()} title={title} size="sm">
             <div className="text-center">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-500">
                     <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -17,12 +19,13 @@ export default function ConfirmModal({
                     </svg>
                 </div>
                 <p className="text-slate-600">{message}</p>
-                <p className="mt-1 text-sm text-slate-500">Tindakan ini tidak dapat dibatalkan.</p>
+                {showHelperText && <p className="mt-1 text-sm text-slate-500">Tindakan ini tidak dapat dibatalkan.</p>}
             </div>
             <div className="mt-6 flex flex-col-reverse xs:flex-row justify-center gap-2 xs:gap-3">
                 <button
                     type="button"
                     onClick={onClose}
+                    disabled={processing}
                     className="w-full xs:w-auto rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
                 >
                     Batal
@@ -30,9 +33,10 @@ export default function ConfirmModal({
                 <button
                     type="button"
                     onClick={onConfirm}
+                    disabled={processing}
                     className="w-full xs:w-auto rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
                 >
-                    {confirmLabel}
+                    {processing ? 'Menghapus...' : confirmLabel}
                 </button>
             </div>
         </Modal>

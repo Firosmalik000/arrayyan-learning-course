@@ -29,6 +29,17 @@ const packageModeOptions = [
     { value: 'hybrid', label: 'Tatap muka / Online' },
 ];
 const levelOptions = ['Pra TK', 'TK', 'SD', 'SMP', 'SMA', 'Pra TK - SMA', 'TK - SMA', 'SD - SMA'];
+const intensityOptions = Array.from({ length: 6 }, (_, index) => ({
+    value: `${index + 1}x / minggu`,
+    label: `${index + 1}x per minggu`,
+}));
+
+const resolvePackageIntensity = (pkg) => {
+    const match = String(pkg.intensity ?? '').match(/^([1-6])\s*x\s*(?:\/|per)\s*minggu$/i);
+    if (match) return `${match[1]}x / minggu`;
+    const frequency = Number(pkg.sessions) / 4;
+    return Number.isInteger(frequency) && frequency >= 1 && frequency <= 6 ? `${frequency}x / minggu` : '';
+};
 
 // Icons
 const icons = {
@@ -73,6 +84,7 @@ const formatModeLabel = (value) => {
     const normalized = normalizeModeValue(value);
     if (normalized === 'online') return 'Online';
     if (normalized === 'offline') return 'Offline';
+    if (normalized === 'hybrid') return 'Tatap muka / Online';
     return value || '-';
 };
 
@@ -130,17 +142,24 @@ export default function Programs() {
     const [activePriceProgramId, setActivePriceProgramId] = useState(programsData[0]?.id ? String(programsData[0].id) : '');
     const [packagePage, setPackagePage] = useState(1);
     const [packagePerPage, setPackagePerPage] = useState(10);
+    const [activeTab, setActiveTab] = useState('programs');
+    const [packageSearch, setPackageSearch] = useState('');
+    const [packageStatus, setPackageStatus] = useState('all');
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const resolvedPriceProgramId = programs.some((program) => String(program.id) === activePriceProgramId)
         ? activePriceProgramId
         : String(programs[0]?.id ?? '');
     const activePriceProgram = programs.find((program) => String(program.id) === resolvedPriceProgramId) ?? null;
-    const visiblePackages = packages.filter((pkg) => String(pkg.program_id) === resolvedPriceProgramId);
+    const visiblePackages = packages.filter((pkg) => String(pkg.program_id) === resolvedPriceProgramId
+        && (packageStatus === 'all' || pkg.is_active === (packageStatus === 'active'))
+        && `${pkg.level} ${pkg.intensity} ${pkg.schedule ?? ''} ${formatModeLabel(pkg.mode)}`.toLowerCase().includes(packageSearch.trim().toLowerCase()));
+    const resolvedPackagePage = Math.min(packagePage, Math.max(1, Math.ceil(visiblePackages.length / packagePerPage)));
     const activeStartingPrice = visiblePackages.length > 0 ? Math.min(...visiblePackages.map((pkg) => Number(pkg.price ?? 0))) : null;
     const paginatedPackages = useMemo(() => {
-        const start = (packagePage - 1) * packagePerPage;
+        const start = (resolvedPackagePage - 1) * packagePerPage;
         return visiblePackages.slice(start, start + packagePerPage);
-    }, [visiblePackages, packagePage, packagePerPage]);
+    }, [visiblePackages, resolvedPackagePage, packagePerPage]);
 
     // Program form state
     const programForm = useForm({
@@ -228,6 +247,7 @@ export default function Programs() {
     };
 
     const saveProgramForm = () => {
+        if (programForm.processing) return;
         const payload = {
             ...programForm.data,
             slug: programForm.data.slug || null,
@@ -271,7 +291,7 @@ export default function Programs() {
                 program_id: pkg.program_id ? String(pkg.program_id) : '',
                 level: pkg.level || '',
                 sessions: pkg.sessions ?? '',
-                intensity: pkg.intensity || '',
+                intensity: resolvePackageIntensity(pkg),
                 price: pkg.price ?? '',
                 max_participants: pkg.max_participants ?? '',
                 mode: normalizeModeValue(pkg.mode),
@@ -299,10 +319,11 @@ export default function Programs() {
     };
 
     const savePackageForm = () => {
+        if (packageForm.processing) return;
         const payload = {
             ...packageForm.data,
             program_id: Number(packageForm.data.program_id),
-            sessions: Number(packageForm.data.sessions),
+            sessions: Number.parseInt(packageForm.data.intensity, 10) * 4,
             price: Number(packageForm.data.price),
             max_participants: packageForm.data.max_participants === '' ? null : Number(packageForm.data.max_participants),
             sort_order: Number(packageForm.data.sort_order || 0),
@@ -317,7 +338,13 @@ export default function Programs() {
         const url = editingPackage ? `/admin/paket/${editingPackage.id}` : '/admin/paket';
         packageForm.post(url, {
             preserveScroll: true,
-            onSuccess: () => setShowPackageModal(false),
+            onSuccess: () => {
+                setShowPackageModal(false);
+                setActivePriceProgramId(String(payload.program_id));
+                setPackagePage(1);
+                setPackageSearch('');
+                setPackageStatus('all');
+            },
             onFinish: () => packageForm.transform((data) => data),
         });
     };
@@ -329,15 +356,19 @@ export default function Programs() {
     };
 
     const confirmDelete = () => {
+        if (isDeleting || !deleteTarget.item) return;
+        setIsDeleting(true);
         if (deleteTarget.type === 'program') {
             router.delete(`/admin/program/${deleteTarget.item.id}`, {
                 preserveScroll: true,
                 onSuccess: () => setShowDeleteModal(false),
+                onFinish: () => setIsDeleting(false),
             });
         } else {
             router.delete(`/admin/paket/${deleteTarget.item.id}`, {
                 preserveScroll: true,
                 onSuccess: () => setShowDeleteModal(false),
+                onFinish: () => setIsDeleting(false),
             });
         }
     };
@@ -352,7 +383,7 @@ export default function Programs() {
                 <PageHeader
                     title="Program & Daftar Harga"
                     actions={
-                        canCreate && (
+                        canCreate && activeTab === 'programs' && (
                             <button
                                 type="button"
                                 onClick={() => openProgramModal()}
@@ -366,13 +397,21 @@ export default function Programs() {
                 />
 
                 {/* Program Cards */}
+                <div className="flex gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm" role="tablist" aria-label="Program dan daftar harga">
+                    {[['programs', 'Program'], ['prices', 'Daftar Harga']].map(([value, label]) => (
+                        <button key={value} id={`program-section-tab-${value}`} type="button" role="tab" aria-selected={activeTab === value} aria-controls={`program-section-${value}`} onClick={() => setActiveTab(value)} className={`flex-1 rounded-xl px-5 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 sm:flex-none ${activeTab === value ? 'bg-brand-primary text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}>
+                            {label}
+                        </button>
+                    ))}
+                </div>
+                <div id="program-section-programs" role="tabpanel" aria-labelledby="program-section-tab-programs" hidden={activeTab !== 'programs'}>
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {programs.map((program) => {
                         const statusLabel = program.is_active ? 'Aktif' : 'Nonaktif';
                         const modeLabel = formatModeLabel(program.mode);
 
                         return (
-                            <div key={program.id} className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
+                            <div key={program.id} className="group flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
                                 <div className="mb-4 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
                                     {program.image_url ? (
                                         <img src={program.image_url} alt={program.name} className="h-40 w-full object-cover" loading="lazy" />
@@ -431,7 +470,7 @@ export default function Programs() {
                                     </div>
                                 )}
                                 {(canView || canEdit || canDelete) && (
-                                    <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                                    <div className="mt-auto flex flex-wrap gap-2 border-t border-slate-100 pt-4">
                                         {canView && (
                                             <button
                                                 type="button"
@@ -465,13 +504,15 @@ export default function Programs() {
                         );
                     })}
                 </div>
+                {programs.length === 0 && <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center text-sm text-slate-500">Belum ada program.</div>}
+                </div>
 
                 {/* Package prices by program */}
+                <div id="program-section-prices" role="tabpanel" aria-labelledby="program-section-tab-prices" hidden={activeTab !== 'prices'}>
                 <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
                     <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="font-semibold text-slate-800">Daftar Harga per Program</h2>
-                            <p className="mt-0.5 text-sm text-slate-500">Pilih program untuk melihat dan mengatur pilihan harganya.</p>
                         </div>
                         {canCreate && activePriceProgram && (
                             <button
@@ -505,6 +546,8 @@ export default function Programs() {
                                                 onClick={() => {
                                                     setActivePriceProgramId(String(program.id));
                                                     setPackagePage(1);
+                                                    setPackageSearch('');
+                                                    setPackageStatus('all');
                                                 }}
                                                 className={`rounded-t-xl px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
                                                     isActive ? 'bg-brand-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -541,6 +584,12 @@ export default function Programs() {
                                     </p>
                                 </div>
 
+                                <div className="grid gap-3 border-b border-slate-100 p-4 sm:grid-cols-[1fr_180px]">
+                                    <input aria-label="Cari pilihan harga" placeholder="Cari jenjang, intensitas, atau mode..." value={packageSearch} onChange={(event) => { setPackageSearch(event.target.value); setPackagePage(1); }} className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-violet-400" />
+                                    <select aria-label="Filter status pilihan harga" value={packageStatus} onChange={(event) => { setPackageStatus(event.target.value); setPackagePage(1); }} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-400">
+                                        <option value="all">Semua status</option><option value="active">Aktif</option><option value="inactive">Nonaktif</option>
+                                    </select>
+                                </div>
                                 <div className="overflow-x-auto">
                                     <table className="min-w-[760px] w-full text-left text-sm">
                                         <thead>
@@ -556,7 +605,7 @@ export default function Programs() {
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             {paginatedPackages.map((pkg, idx) => {
-                                                const rowNumber = (packagePage - 1) * packagePerPage + idx + 1;
+                                                const rowNumber = (resolvedPackagePage - 1) * packagePerPage + idx + 1;
                                                 const statusLabel = pkg.is_active ? 'Aktif' : 'Nonaktif';
                                                 const actionItems = [];
                                                 if (canEdit) {
@@ -581,7 +630,7 @@ export default function Programs() {
                                                         <td className="px-3 py-4 text-center">
                                                             <ActionDropdown items={actionItems} />
                                                         </td>
-                                                        <td className="px-5 py-4 font-medium text-slate-700">{pkg.level || '-'}</td>
+                                                        <td className="px-5 py-4 font-medium text-slate-700">{pkg.level || '-'}<span className="block text-xs font-normal text-slate-500">{formatModeLabel(pkg.mode)}</span></td>
                                                         <td className="px-5 py-4 text-slate-600">
                                                             <p className="font-medium text-slate-800">{pkg.sessions ? `${pkg.sessions}x / bulan` : '-'}</p>
                                                             <p className="mt-0.5 text-xs text-slate-500">
@@ -605,8 +654,7 @@ export default function Programs() {
                                             {visiblePackages.length === 0 && (
                                                 <tr>
                                                     <td colSpan="7" className="px-5 py-10 text-center text-sm text-slate-500">
-                                                        Belum ada pilihan harga untuk {activePriceProgram.name}. Tambahkan harga pertama agar customer dapat
-                                                        memilihnya saat mendaftar.
+                                                        {packageSearch || packageStatus !== 'all' ? 'Tidak ada pilihan harga yang sesuai filter.' : `Belum ada pilihan harga untuk ${activePriceProgram.name}.`}
                                                     </td>
                                                 </tr>
                                             )}
@@ -615,14 +663,8 @@ export default function Programs() {
                                 </div>
 
                                 <Pagination
-                                    pagination={{
-                                        current_page: packagePage,
-                                        last_page: Math.ceil(visiblePackages.length / packagePerPage) || 1,
-                                        per_page: packagePerPage,
-                                        total: visiblePackages.length,
-                                        from: visiblePackages.length === 0 ? 0 : (packagePage - 1) * packagePerPage + 1,
-                                        to: Math.min(packagePage * packagePerPage, visiblePackages.length),
-                                    }}
+                                    currentPage={resolvedPackagePage}
+                                    totalItems={visiblePackages.length}
                                     onPageChange={(page) => setPackagePage(page)}
                                     perPage={packagePerPage}
                                     onPerPageChange={(perPage) => {
@@ -635,20 +677,38 @@ export default function Programs() {
                     ) : (
                         <div className="px-5 py-10 text-center">
                             <p className="text-sm font-semibold text-slate-700">Belum ada program</p>
-                            <p className="mt-1 text-sm text-slate-500">Tambahkan program terlebih dahulu sebelum membuat pilihan harga.</p>
                         </div>
                     )}
+                </div>
                 </div>
             </div>
 
             {/* Program Modal */}
             <Modal
                 isOpen={showProgramModal}
-                onClose={() => setShowProgramModal(false)}
+                onClose={() => !programForm.processing && setShowProgramModal(false)}
                 title={editingProgram ? 'Edit Program' : 'Tambah Program Baru'}
                 size="lg"
+                footer={
+                    <div className="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            disabled={programForm.processing} onClick={() => setShowProgramModal(false)}
+                            className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit" form="program-form"
+                            disabled={programForm.processing}
+                            className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                        >
+                            {editingProgram ? 'Simpan Perubahan' : 'Tambah Program'}
+                        </button>
+                    </div>
+                }
             >
-                <form
+                <form id="program-form"
                     onSubmit={(e) => {
                         e.preventDefault();
                         saveProgramForm();
@@ -804,22 +864,7 @@ export default function Programs() {
                         )}
                         {programForm.errors.image && <p className="mt-1 text-xs text-rose-500">{programForm.errors.image}</p>}
                     </div>
-                    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
-                        <button
-                            type="button"
-                            onClick={() => setShowProgramModal(false)}
-                            className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-                        >
-                            Batal
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={programForm.processing}
-                            className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
-                        >
-                            {editingProgram ? 'Simpan Perubahan' : 'Tambah Program'}
-                        </button>
-                    </div>
+
                 </form>
             </Modal>
 
@@ -915,136 +960,92 @@ export default function Programs() {
             {/* Package Modal */}
             <Modal
                 isOpen={showPackageModal}
-                onClose={() => setShowPackageModal(false)}
+                onClose={() => !packageForm.processing && setShowPackageModal(false)}
                 title={editingPackage ? 'Edit Pilihan Harga' : 'Tambah Pilihan Harga'}
                 size="lg"
+                bodyClassName="bg-white p-5 sm:p-6"
+                footer={
+                    <div className="flex justify-end">
+                        <div className="flex items-center justify-end gap-2">
+                            <button type="button" disabled={packageForm.processing} onClick={() => setShowPackageModal(false)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50">Batal</button>
+                            <button type="submit" form="package-price-form" disabled={packageForm.processing} className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-wait disabled:opacity-60">
+                                {packageForm.processing ? 'Menyimpan...' : editingPackage ? 'Simpan Perubahan' : 'Simpan Pilihan Harga'}
+                            </button>
+                        </div>
+                    </div>
+                }
             >
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        savePackageForm();
-                    }}
-                    className="space-y-4"
-                >
-                    <div className="rounded-xl bg-violet-50 px-4 py-3 text-sm text-violet-800">
-                        Nama pilihan akan dibuat otomatis dari program, jenjang, dan jumlah pertemuan.
-                    </div>
-                    <div className="space-y-1">
-                        <FormSelect
-                            label="Program"
-                            value={packageForm.data.program_id}
-                            onChange={(v) => packageForm.setData('program_id', v)}
-                            options={programs.map((program) => ({
-                                value: String(program.id),
-                                label: program.name,
-                            }))}
-                            required
-                        />
-                        {packageForm.errors.program_id && <p className="text-xs text-rose-500">{packageForm.errors.program_id}</p>}
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="space-y-1">
-                            <FormSelect
-                                label="Jenjang"
-                                value={packageForm.data.level}
-                                onChange={(v) => packageForm.setData('level', v)}
-                                options={levelOptions}
-                                required
-                            />
-                            {packageForm.errors.level && <p className="text-xs text-rose-500">{packageForm.errors.level}</p>}
+                <form id="package-price-form" onSubmit={(event) => { event.preventDefault(); savePackageForm(); }} className="flex flex-col gap-6">
+                    <section className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-1">
+                            <h4 className="text-sm font-bold text-slate-900">Informasi program</h4>
                         </div>
-                        <div className="space-y-1">
-                            <FormInput
-                                label="Jumlah Pertemuan / Bulan"
-                                value={packageForm.data.sessions}
-                                onChange={(v) => packageForm.setData('sessions', v)}
-                                placeholder="contoh: 8"
-                                required
-                            />
-                            {packageForm.errors.sessions && <p className="text-xs text-rose-500">{packageForm.errors.sessions}</p>}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-1">
+                                <FormSelect label="Program" value={packageForm.data.program_id} onChange={(value) => packageForm.setData('program_id', value)} options={programs.map((program) => ({ value: String(program.id), label: program.name }))} required />
+                                {packageForm.errors.program_id && <p className="text-xs text-rose-500">{packageForm.errors.program_id}</p>}
+                            </div>
+                            <div className="space-y-1">
+                                <FormSelect label="Jenjang" value={packageForm.data.level} onChange={(value) => packageForm.setData('level', value)} options={levelOptions} required />
+                                {packageForm.errors.level && <p className="text-xs text-rose-500">{packageForm.errors.level}</p>}
+                            </div>
                         </div>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormInput
-                            label="Intensitas"
-                            value={packageForm.data.intensity}
-                            onChange={(v) => packageForm.setData('intensity', v)}
-                            placeholder="contoh: 2x / minggu"
-                        />
-                        <div className="space-y-1">
-                            <FormInput
-                                label="Harga per Bulan"
-                                value={packageForm.data.price}
-                                onChange={(v) => packageForm.setData('price', v)}
-                                placeholder="contoh: 400000"
-                                required
-                            />
-                            {packageForm.errors.price && <p className="text-xs text-rose-500">{packageForm.errors.price}</p>}
+                    </section>
+
+                    <section className="flex flex-col gap-4 rounded-2xl border border-violet-100 bg-violet-50/50 p-4">
+                        <div className="flex flex-col gap-1">
+                            <h4 className="text-sm font-bold text-slate-900">Frekuensi belajar</h4>
                         </div>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormInput
-                            label="Maksimal Siswa"
-                            value={packageForm.data.max_participants}
-                            onChange={(v) => packageForm.setData('max_participants', v)}
-                            placeholder="1 untuk privat, 5 untuk reguler"
-                        />
-                        <div className="space-y-1">
-                            <FormSelect
-                                label="Mode Belajar"
-                                value={packageForm.data.mode}
-                                onChange={(v) => packageForm.setData('mode', v)}
-                                options={packageModeOptions}
-                                required
-                            />
-                            {packageForm.errors.mode && <p className="text-xs text-rose-500">{packageForm.errors.mode}</p>}
+                        <div className="grid items-start gap-4 sm:grid-cols-2">
+                            <div className="space-y-1">
+                                <FormSelect label="Intensitas per Minggu" value={packageForm.data.intensity} onChange={(value) => packageForm.setData({ ...packageForm.data, intensity: value, sessions: value ? Number.parseInt(value, 10) * 4 : '' })} options={intensityOptions} required />
+                                {packageForm.errors.intensity && <p className="text-xs text-rose-500">{packageForm.errors.intensity}</p>}
+                            </div>
+                            <div className="flex flex-col gap-1 rounded-xl border border-violet-100 bg-white px-4 py-3">
+                                <span className="text-xs font-semibold text-slate-500">Pertemuan per bulan</span>
+                                <output aria-live="polite" className="text-xl font-bold text-violet-800">{packageForm.data.intensity ? `${Number.parseInt(packageForm.data.intensity, 10) * 4} pertemuan` : 'Pilih intensitas'}</output>
+                            </div>
                         </div>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormInput
-                            label="Keterangan Jadwal"
-                            value={packageForm.data.schedule}
-                            onChange={(v) => packageForm.setData('schedule', v)}
-                            placeholder="contoh: Senin - Jumat, fleksibel"
-                        />
-                        <FormInput
-                            label="Urutan Tampil"
-                            value={packageForm.data.sort_order}
-                            onChange={(v) => packageForm.setData('sort_order', v)}
-                            placeholder="0"
-                        />
-                    </div>
-                    <FormSelect
-                        label="Status"
-                        value={packageForm.data.is_active ? 'Aktif' : 'Nonaktif'}
-                        onChange={(v) => packageForm.setData('is_active', v === 'Aktif')}
-                        options={statusOptions}
-                    />
-                    {packageForm.hasErrors && (
-                        <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">Periksa kembali data pilihan harga yang ditandai.</p>
-                    )}
-                    <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
-                        <button
-                            type="button"
-                            onClick={() => setShowPackageModal(false)}
-                            className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-                        >
-                            Batal
-                        </button>
-                        <button
-                            type="submit"
-                            className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
-                        >
-                            {packageForm.processing ? 'Menyimpan...' : editingPackage ? 'Simpan Perubahan' : 'Tambah Pilihan Harga'}
-                        </button>
-                    </div>
+                        {packageForm.errors.sessions && <p className="text-xs text-rose-600">{packageForm.errors.sessions}</p>}
+                    </section>
+
+                    <section className="flex flex-col gap-4">
+                        <h4 className="text-sm font-bold text-slate-900">Harga & pelaksanaan</h4>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-1">
+                                <FormInput label="Harga per Bulan (Rp)" type="number" min="0" step="1" value={packageForm.data.price} onChange={(value) => packageForm.setData('price', value)} placeholder="Contoh: 400000" required />
+                                {packageForm.errors.price && <p className="text-xs text-rose-500">{packageForm.errors.price}</p>}
+                            </div>
+                            <div className="space-y-1">
+                                <FormSelect label="Mode Belajar" value={packageForm.data.mode} onChange={(value) => packageForm.setData('mode', value)} options={packageModeOptions} required />
+                                {packageForm.errors.mode && <p className="text-xs text-rose-500">{packageForm.errors.mode}</p>}
+                            </div>
+                            <div className="space-y-1">
+                                <FormInput label="Maksimal Siswa" type="number" min="1" max="100" value={packageForm.data.max_participants} onChange={(value) => packageForm.setData('max_participants', value)} placeholder="1 untuk privat, 5 untuk reguler" />
+                                {packageForm.errors.max_participants && <p className="text-xs text-rose-500">{packageForm.errors.max_participants}</p>}
+                            </div>
+                            <div className="space-y-1">
+                                <FormInput label="Keterangan Jadwal" value={packageForm.data.schedule} onChange={(value) => packageForm.setData('schedule', value)} placeholder="Contoh: Senin & Kamis sore" />
+                                {packageForm.errors.schedule && <p className="text-xs text-rose-500">{packageForm.errors.schedule}</p>}
+                            </div>
+                        </div>
+                        <div className="grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
+                            <div className="space-y-1">
+                                <FormInput label="Urutan Tampil" type="number" min="0" max="10000" value={packageForm.data.sort_order} onChange={(value) => packageForm.setData('sort_order', value)} placeholder="0" />
+                                {packageForm.errors.sort_order && <p className="text-xs text-rose-500">{packageForm.errors.sort_order}</p>}
+                            </div>
+                            <FormSelect label="Status" value={packageForm.data.is_active ? 'Aktif' : 'Nonaktif'} onChange={(value) => packageForm.setData('is_active', value === 'Aktif')} options={statusOptions} />
+                        </div>
+                    </section>
                 </form>
             </Modal>
 
             {/* Delete Confirmation Modal */}
             <ConfirmModal
                 isOpen={showDeleteModal}
-                onClose={() => setShowDeleteModal(false)}
+                onClose={() => !isDeleting && setShowDeleteModal(false)}
+                processing={isDeleting}
+                showHelperText={false}
                 title="Konfirmasi Hapus"
                 message={
                     <>

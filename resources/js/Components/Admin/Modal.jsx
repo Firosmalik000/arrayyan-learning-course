@@ -1,4 +1,4 @@
-export default function Modal({ isOpen, onClose, title, children, size = 'md', maxWidth }) {
+export default function Modal({ isOpen, onClose, title, footer, children, size = 'md', maxWidth, bodyClassName = 'p-5' }) {
     if (!isOpen) return null;
 
     const sizeClasses = {
@@ -20,7 +20,9 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', m
             />
             <div className={`relative w-full ${widthClass} max-h-[88vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150`}>
                 <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 shrink-0 bg-white">
-                    <h3 className="text-base font-bold text-slate-800 xs:text-lg truncate pr-2">{title}</h3>
+                    <div className="min-w-0 flex flex-col gap-1 pr-2">
+                        <h3 className="text-base font-bold text-slate-800 xs:text-lg">{title}</h3>
+                    </div>
                     <button
                         type="button"
                         onClick={onClose}
@@ -32,9 +34,10 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', m
                         </svg>
                     </button>
                 </div>
-                <div className="overflow-y-auto flex-1 p-5">
+                <div className={`overflow-y-auto flex-1 min-h-0 ${bodyClassName}`}>
                     {children}
                 </div>
+                {footer && <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-5 py-4">{footer}</div>}
             </div>
         </div>
     );

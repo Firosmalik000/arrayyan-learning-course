@@ -37,6 +37,7 @@ class BankSoalManagementTest extends TestCase
     public function test_uploaded_file_and_destination_can_live_on_the_same_resource(): void
     {
         Storage::fake('public');
+        Storage::fake('local');
         [$level, $class, $subject] = $this->taxonomy();
 
         $this->actingAs($this->admin(), PermissionCatalog::GUARD)->post('/admin/bank-soal', [
@@ -56,7 +57,8 @@ class BankSoalManagementTest extends TestCase
         $resource = BankSoal::query()->firstOrFail()->resources()->firstOrFail();
         $this->assertSame('paket.pdf', $resource->file_name);
         $this->assertSame('https://example.com/lebih-lengkap', $resource->destination_url);
-        Storage::disk('public')->assertExists($resource->file_path);
+        Storage::disk('local')->assertExists($resource->file_path);
+        Storage::disk('public')->assertMissing($resource->file_path);
     }
 
     public function test_resource_without_file_or_destination_is_rejected(): void
@@ -76,9 +78,10 @@ class BankSoalManagementTest extends TestCase
     public function test_shared_backfilled_file_is_only_deleted_after_its_last_bank_soal_is_deleted(): void
     {
         Storage::fake('public');
+        Storage::fake('local');
         [, $class, $subject] = $this->taxonomy();
         $path = 'bank-soals/files/shared-package.pdf';
-        Storage::disk('public')->put($path, 'pdf contents');
+        Storage::disk('local')->put($path, 'pdf contents');
 
         $first = BankSoal::factory()->create(['education_class_id' => $class->id, 'subject_id' => $subject->id]);
         $second = BankSoal::factory()->create(['education_class_id' => $class->id, 'subject_id' => $subject->id]);
@@ -95,12 +98,12 @@ class BankSoalManagementTest extends TestCase
         $this->actingAs($admin, PermissionCatalog::GUARD)
             ->delete("/admin/bank-soal/{$first->id}")
             ->assertRedirect();
-        Storage::disk('public')->assertExists($path);
+        Storage::disk('local')->assertExists($path);
 
         $this->actingAs($admin, PermissionCatalog::GUARD)
             ->delete("/admin/bank-soal/{$second->id}")
             ->assertRedirect();
-        Storage::disk('public')->assertMissing($path);
+        Storage::disk('local')->assertMissing($path);
     }
 
     private function admin(): User

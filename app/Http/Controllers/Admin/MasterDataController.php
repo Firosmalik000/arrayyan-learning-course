@@ -423,6 +423,10 @@ class MasterDataController extends Controller
                 ->where('classification_status', 'needs_review')->latest()->get();
 
         return Inertia::render('Admin/BankSoal', [
+            'uploadLimits' => [
+                'fileBytes' => min(20 * 1024 * 1024, ini_parse_quantity(ini_get('upload_max_filesize'))),
+                'postBytes' => ini_parse_quantity(ini_get('post_max_size')),
+            ],
             'globalPasskey' => is_array($bankSoalContent)
                 ? (string) ($bankSoalContent['bankSoalPasskey'] ?? '')
                 : '',

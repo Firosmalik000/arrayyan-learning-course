@@ -7,11 +7,20 @@ const text = (value) =>
         : value || "";
 const emptyResource = () => ({
     id: null,
+    client_id: crypto.randomUUID(),
     label: "",
     destination_url: "",
     file: null,
     file_name: "",
 });
+
+const defaultUploadLimits = { fileBytes: 20 * 1024 * 1024, postBytes: 0 };
+const megabytes = (bytes) => Math.round(bytes / 1024 / 1024 * 10) / 10;
+
+export const uploadSizeError = (file, limit) =>
+    file && file.size > limit
+        ? `Ukuran file maksimal ${megabytes(limit)} MB pada server ini.`
+        : null;
 
 export default function BankSoalAdmin({
     globalPasskey = "",
@@ -21,6 +30,7 @@ export default function BankSoalAdmin({
     subjects = [],
     allLevels = [],
     selection = {},
+    uploadLimits = defaultUploadLimits,
 }) {
     const [editing, setEditing] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,6 +60,8 @@ export default function BankSoalAdmin({
 
     const openCreate = () => {
         setEditing(null);
+        form.clearErrors();
+        form.transform((data) => data);
         setIsModalOpen(true);
         form.setData({
             education_level_id: selection.education_level_id || "",
@@ -65,6 +77,7 @@ export default function BankSoalAdmin({
         });
     };
     const openEdit = (item) => {
+        form.clearErrors();
         setEditing(item);
         setIsModalOpen(true);
         form.setData({
@@ -85,7 +98,8 @@ export default function BankSoalAdmin({
                 : [emptyResource()],
         });
     };
-    const closeModal = () => {
+    const closeModal = (force = false) => {
+        if (form.processing && force !== true) return;
         setEditing(null);
         setIsModalOpen(false);
         form.clearErrors();
@@ -93,10 +107,18 @@ export default function BankSoalAdmin({
     };
     const submit = (event) => {
         event.preventDefault();
+        if (form.processing) return;
+        const totalBytes = (form.data.image?.size || 0) + form.data.resources.reduce(
+            (total, resource) => total + (resource.file?.size || 0), 0,
+        );
+        if (uploadLimits.postBytes > 0 && totalBytes >= uploadLimits.postBytes) {
+            form.setError('resources', `Total file harus di bawah ${megabytes(uploadLimits.postBytes)} MB. Kurangi file atau simpan bertahap.`);
+            return;
+        }
         const options = {
             forceFormData: true,
             preserveScroll: true,
-            onSuccess: closeModal,
+            onSuccess: () => closeModal(true),
         };
         if (editing)
             form.transform((data) => ({ ...data, _method: "put" })).post(
@@ -105,7 +127,14 @@ export default function BankSoalAdmin({
             );
         else form.post("/admin/bank-soal", options);
     };
-    const updateResource = (index, key, value) =>
+    const updateResource = (index, key, value) => {
+        const errorKey = `resources.${index}.${key}`;
+        const error = key === 'file' ? uploadSizeError(value, uploadLimits.fileBytes) : null;
+        if (error) {
+            form.setError(errorKey, error);
+            return false;
+        }
+        form.clearErrors(errorKey, 'resources');
         form.setData(
             "resources",
             form.data.resources.map((resource, resourceIndex) =>
@@ -114,6 +143,8 @@ export default function BankSoalAdmin({
                     : resource,
             ),
         );
+        return true;
+    };
     const breadcrumbs = [{ label: "Bank Soal", url: "/admin/bank-soal" }];
     if (selection.education_level_id)
         breadcrumbs.push({
@@ -338,288 +369,339 @@ export default function BankSoalAdmin({
                 </form>
             </div>
 
-            {isModalOpen && <BankSoalModal />}
+            {isModalOpen && (
+                <BankSoalModal
+                    editing={editing}
+                    form={form}
+                    allLevels={allLevels}
+                    availableClasses={availableClasses}
+                    availableSubjects={availableSubjects}
+                    closeModal={closeModal}
+                    submit={submit}
+                    updateResource={updateResource}
+                    uploadLimits={uploadLimits}
+                />
+            )}
         </>
     );
+}
 
-    function BankSoalModal() {
-        return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
-                <form
-                    onSubmit={submit}
-                    className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
-                >
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-black">
-                            {editing ? "Edit Bank Soal" : "Tambah Bank Soal"}
-                        </h2>
-                        <button
-                            type="button"
-                            onClick={closeModal}
-                            className="rounded-lg px-3 py-2 text-slate-500"
-                        >
-                            ✕
-                        </button>
+export function BankSoalModal({
+    editing,
+    form,
+    allLevels,
+    availableClasses,
+    availableSubjects,
+    closeModal,
+    submit,
+    updateResource,
+    uploadLimits = defaultUploadLimits,
+}) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+            <form
+                onSubmit={submit}
+                role="dialog"
+                aria-modal="true"
+                aria-label={editing ? "Edit Bank Soal" : "Tambah Bank Soal"}
+                className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
+            >
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-black">
+                        {editing ? "Edit Bank Soal" : "Tambah Bank Soal"}
+                    </h2>
+                    <button
+                        type="button"
+                        onClick={closeModal}
+                        disabled={form.processing}
+                        className="rounded-lg px-3 py-2 text-slate-500"
+                    >
+                        ✕
+                    </button>
+                </div>
+                {Object.keys(form.errors).length > 0 && (
+                    <div role="alert" className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">
+                        Belum berhasil disimpan. Periksa kolom yang ditandai di bawah.
                     </div>
-                    <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                        <Field
-                            label="Jenjang"
-                            error={form.errors.education_level_id}
+                )}
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                    <Field
+                        label="Jenjang"
+                        error={form.errors.education_level_id}
+                    >
+                        <select
+                            value={form.data.education_level_id}
+                            onChange={(event) =>
+                                form.setData({
+                                    ...form.data,
+                                    education_level_id: Number(
+                                        event.target.value,
+                                    ),
+                                    education_class_id: "",
+                                    subject_id: "",
+                                })
+                            }
+                            className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
                         >
-                            <select
-                                value={form.data.education_level_id}
-                                onChange={(event) =>
-                                    form.setData({
-                                        ...form.data,
-                                        education_level_id: Number(
-                                            event.target.value,
-                                        ),
-                                        education_class_id: "",
-                                        subject_id: "",
-                                    })
-                                }
-                                className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
-                            >
-                                <option value="">Pilih jenjang</option>
-                                {allLevels.map((level) => (
-                                    <option key={level.id} value={level.id}>
-                                        {level.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </Field>
-                        <Field
-                            label="Kelas"
-                            error={form.errors.education_class_id}
+                            <option value="">Pilih jenjang</option>
+                            {allLevels.map((level) => (
+                                <option key={level.id} value={level.id}>
+                                    {level.name}
+                                </option>
+                            ))}
+                        </select>
+                    </Field>
+                    <Field
+                        label="Kelas"
+                        error={form.errors.education_class_id}
+                    >
+                        <select
+                            value={form.data.education_class_id}
+                            onChange={(event) =>
+                                form.setData(
+                                    "education_class_id",
+                                    Number(event.target.value),
+                                )
+                            }
+                            className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
                         >
-                            <select
-                                value={form.data.education_class_id}
+                            <option value="">Pilih satu kelas</option>
+                            {availableClasses.map((item) => (
+                                <option key={item.id} value={item.id}>
+                                    {item.name}
+                                </option>
+                            ))}
+                        </select>
+                    </Field>
+                    <Field
+                        label="Mata Pelajaran"
+                        error={form.errors.subject_id}
+                    >
+                        <select
+                            value={form.data.subject_id}
+                            onChange={(event) =>
+                                form.setData(
+                                    "subject_id",
+                                    Number(event.target.value),
+                                )
+                            }
+                            className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                        >
+                            <option value="">Pilih mapel</option>
+                            {availableSubjects.map((item) => (
+                                <option key={item.id} value={item.id}>
+                                    {item.name}
+                                </option>
+                            ))}
+                        </select>
+                    </Field>
+                    <Field label="Nama Bank Soal" error={form.errors.name}>
+                        <input
+                            value={form.data.name}
+                            onChange={(event) =>
+                                form.setData("name", event.target.value)
+                            }
+                            className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                        />
+                    </Field>
+                    <Field label="Format" error={form.errors.format}>
+                        <input
+                            value={form.data.format}
+                            onChange={(event) =>
+                                form.setData("format", event.target.value)
+                            }
+                            className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                        />
+                    </Field>
+                    <Field label="Jumlah Soal" error={form.errors.questions}>
+                        <input
+                            type="number"
+                            min="0"
+                            value={form.data.questions}
+                            onChange={(event) =>
+                                form.setData(
+                                    "questions",
+                                    event.target.value,
+                                )
+                            }
+                            className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                        />
+                    </Field>
+                    <div className="sm:col-span-2">
+                        <Field label="Deskripsi" error={form.errors.description}>
+                            <textarea
+                                value={form.data.description}
                                 onChange={(event) =>
                                     form.setData(
-                                        "education_class_id",
-                                        Number(event.target.value),
-                                    )
-                                }
-                                className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
-                            >
-                                <option value="">Pilih satu kelas</option>
-                                {availableClasses.map((item) => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </Field>
-                        <Field
-                            label="Mata Pelajaran"
-                            error={form.errors.subject_id}
-                        >
-                            <select
-                                value={form.data.subject_id}
-                                onChange={(event) =>
-                                    form.setData(
-                                        "subject_id",
-                                        Number(event.target.value),
-                                    )
-                                }
-                                className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
-                            >
-                                <option value="">Pilih mapel</option>
-                                {availableSubjects.map((item) => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </Field>
-                        <Field label="Nama Bank Soal" error={form.errors.name}>
-                            <input
-                                value={form.data.name}
-                                onChange={(event) =>
-                                    form.setData("name", event.target.value)
-                                }
-                                className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
-                            />
-                        </Field>
-                        <Field label="Format">
-                            <input
-                                value={form.data.format}
-                                onChange={(event) =>
-                                    form.setData("format", event.target.value)
-                                }
-                                className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
-                            />
-                        </Field>
-                        <Field label="Jumlah Soal">
-                            <input
-                                type="number"
-                                min="0"
-                                value={form.data.questions}
-                                onChange={(event) =>
-                                    form.setData(
-                                        "questions",
+                                        "description",
                                         event.target.value,
                                     )
                                 }
+                                rows="3"
                                 className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
                             />
                         </Field>
-                        <div className="sm:col-span-2">
-                            <Field label="Deskripsi">
-                                <textarea
-                                    value={form.data.description}
-                                    onChange={(event) =>
-                                        form.setData(
-                                            "description",
-                                            event.target.value,
-                                        )
-                                    }
-                                    rows="3"
-                                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
-                                />
-                            </Field>
-                        </div>
-                        <div className="sm:col-span-2">
-                            <Field label="Gambar Sampul">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(event) =>
-                                        form.setData(
-                                            "image",
-                                            event.target.files[0],
-                                        )
-                                    }
-                                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
-                                />
-                            </Field>
-                        </div>
                     </div>
-                    <div className="mt-6">
-                        <div className="flex items-center justify-between">
-                            <h3 className="font-black">
-                                File & Link Destinasi
-                            </h3>
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    form.setData("resources", [
-                                        ...form.data.resources,
-                                        emptyResource(),
-                                    ])
-                                }
-                                className="text-sm font-bold text-violet-700"
-                            >
-                                + Tambah Sumber
-                            </button>
-                        </div>
-                        <div className="mt-3 grid gap-3">
-                            {form.data.resources.map((resource, index) => (
-                                <div
-                                    key={resource.id || index}
-                                    className="rounded-2xl border border-slate-200 p-4"
-                                >
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        <input
-                                            placeholder="Label sumber"
-                                            value={resource.label}
-                                            onChange={(event) =>
-                                                updateResource(
-                                                    index,
-                                                    "label",
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className="rounded-xl border border-slate-300 px-3 py-2.5"
-                                        />
-                                        <input
-                                            placeholder="https://..."
-                                            value={
-                                                resource.destination_url || ""
-                                            }
-                                            onChange={(event) =>
-                                                updateResource(
-                                                    index,
-                                                    "destination_url",
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className="rounded-xl border border-slate-300 px-3 py-2.5"
-                                        />
-                                        <input
-                                            type="file"
-                                            onChange={(event) =>
-                                                updateResource(
-                                                    index,
-                                                    "file",
-                                                    event.target.files[0],
-                                                )
-                                            }
-                                            className="sm:col-span-2 rounded-xl border border-slate-300 px-3 py-2.5"
-                                        />
-                                        {resource.file_name && (
-                                            <p className="text-xs text-slate-500">
-                                                File saat ini:{" "}
-                                                {resource.file_name}
-                                            </p>
-                                        )}
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                form.setData(
-                                                    "resources",
-                                                    form.data.resources.filter(
-                                                        (_, i) => i !== index,
-                                                    ),
-                                                )
-                                            }
-                                            className="text-left text-xs font-bold text-rose-600"
-                                        >
-                                            Hapus sumber
-                                        </button>
-                                    </div>
-                                    {form.errors[`resources.${index}.file`] && (
-                                        <p className="mt-2 text-xs font-bold text-rose-600">
-                                            {
-                                                form.errors[
-                                                    `resources.${index}.file`
-                                                ]
-                                            }
-                                        </p>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                    <div className="sm:col-span-2">
+                        <Field label={`Gambar Sampul (opsional, JPG/PNG/WEBP, maksimal ${megabytes(Math.min(4 * 1024 * 1024, uploadLimits.fileBytes))} MB)`} error={form.errors.image}>
+                            <input
+                                type="file"
+                                accept=".jpg,.jpeg,.png,.webp"
+                                onChange={(event) => {
+                                    const file = event.target.files[0];
+                                    const error = uploadSizeError(file, Math.min(4 * 1024 * 1024, uploadLimits.fileBytes));
+                                    if (error) {
+                                        form.setError('image', error);
+                                        event.target.value = '';
+                                        return;
+                                    }
+                                    form.clearErrors('image');
+                                    form.setData('image', file || null);
+                                }}
+                                className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+                            />
+                        </Field>
                     </div>
-                    <label className="mt-5 flex items-center gap-2 text-sm font-semibold">
-                        <input
-                            type="checkbox"
-                            checked={form.data.is_active}
-                            onChange={(event) =>
-                                form.setData("is_active", event.target.checked)
-                            }
-                        />{" "}
-                        Aktif
-                    </label>
-                    <div className="mt-6 flex justify-end gap-3">
+                </div>
+                <div className="mt-6">
+                    <div className="flex items-center justify-between">
+                        <h3 className="font-black">
+                            File atau Link Soal
+                        </h3>
                         <button
                             type="button"
-                            onClick={closeModal}
-                            className="rounded-xl border border-slate-300 px-5 py-2.5 font-bold"
+                            onClick={() =>
+                                form.setData("resources", [
+                                    ...form.data.resources,
+                                    emptyResource(),
+                                ])
+                            }
+                            className="text-sm font-bold text-violet-700"
                         >
-                            Batal
-                        </button>
-                        <button
-                            disabled={form.processing}
-                            className="rounded-xl bg-violet-600 px-5 py-2.5 font-bold text-white disabled:opacity-60"
-                        >
-                            Simpan
+                            + Tambah Sumber
                         </button>
                     </div>
-                </form>
-            </div>
-        );
-    }
+                    <p className="mt-2 text-sm text-slate-500">Isi file atau link pada setiap sumber. File maksimal {megabytes(uploadLimits.fileBytes)} MB: PDF, Word, Excel, PowerPoint, ZIP, JPG, PNG, atau WEBP.</p>
+                    {form.errors.resources && <p role="alert" className="text-sm text-rose-600">{form.errors.resources}</p>}
+                    <div className="mt-3 grid gap-3">
+                        {form.data.resources.map((resource, index) => (
+                            <div
+                                key={resource.id ? `existing-${resource.id}` : resource.client_id}
+                                className="rounded-2xl border border-slate-200 p-4"
+                            >
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <input
+                                        aria-label={`Label sumber ${index + 1}`}
+                                        placeholder="Label sumber (opsional)"
+                                        value={resource.label}
+                                        onChange={(event) =>
+                                            updateResource(
+                                                index,
+                                                "label",
+                                                event.target.value,
+                                            )
+                                        }
+                                        className="rounded-xl border border-slate-300 px-3 py-2.5"
+                                    />
+                                    <input
+                                        type="url"
+                                        aria-label={`Link sumber ${index + 1}`}
+                                        placeholder="https://..."
+                                        value={
+                                            resource.destination_url || ""
+                                        }
+                                        onChange={(event) =>
+                                            updateResource(
+                                                index,
+                                                "destination_url",
+                                                event.target.value,
+                                            )
+                                        }
+                                        className="rounded-xl border border-slate-300 px-3 py-2.5"
+                                    />
+                                    <input
+                                        type="file"
+                                        aria-label={`File sumber ${index + 1}`}
+                                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.jpg,.jpeg,.png,.webp"
+                                        onChange={(event) => {
+                                            const accepted = updateResource(
+                                                index,
+                                                "file",
+                                                event.target.files[0] || null,
+                                            );
+                                            if (accepted === false) event.target.value = '';
+                                        }}
+                                        className="sm:col-span-2 rounded-xl border border-slate-300 px-3 py-2.5"
+                                    />
+                                    {(resource.file?.name || resource.file_name) && (
+                                        <p className="text-xs text-slate-500">
+                                            File saat ini:{" "}
+                                            {resource.file?.name || resource.file_name}
+                                        </p>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            form.setData(
+                                                "resources",
+                                                form.data.resources.filter(
+                                                    (_, i) => i !== index,
+                                                ),
+                                            )
+                                        }
+                                        className="text-left text-xs font-bold text-rose-600"
+                                    >
+                                        Hapus sumber
+                                    </button>
+                                </div>
+                                {['label', 'destination_url', 'id'].map((key) => (
+                                    form.errors[`resources.${index}.${key}`] && (
+                                        <p key={key} role="alert" className="mt-2 text-xs font-bold text-rose-600">
+                                            {form.errors[`resources.${index}.${key}`]}
+                                        </p>
+                                    )
+                                ))}
+                                {form.errors[`resources.${index}.file`] && (
+                                    <p className="mt-2 text-xs font-bold text-rose-600">
+                                        {
+                                            form.errors[
+                                                `resources.${index}.file`
+                                            ]
+                                        }
+                                    </p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <label className="mt-5 flex items-center gap-2 text-sm font-semibold">
+                    <input
+                        type="checkbox"
+                        checked={form.data.is_active}
+                        onChange={(event) =>
+                            form.setData("is_active", event.target.checked)
+                        }
+                    />{" "}
+                    Aktif
+                </label>
+                <div className="mt-6 flex justify-end gap-3">
+                    <button
+                        type="button"
+                        onClick={closeModal}
+                        className="rounded-xl border border-slate-300 px-5 py-2.5 font-bold"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        disabled={form.processing}
+                        className="rounded-xl bg-violet-600 px-5 py-2.5 font-bold text-white disabled:opacity-60"
+                    >
+                        {form.processing ? "Menyimpan..." : "Simpan"}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
 }
 
 function HierarchyGrid({ title, items, href, countKey }) {
